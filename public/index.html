@@ -1,12 +1,429 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=../template/login.html">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lion Training</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lion Training</title>
+  <link href="https://fonts.googleapis.com/css?family=Rubik:400,500,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/vendors/bootstrap.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/color-1.css">
+  <link rel="stylesheet" href="/assets/css/responsive.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <style>
+    [v-cloak] { display: none; }
+    .auth-error { color: #dc3545; font-size: 0.875rem; margin-top: 4px; }
+    .nav-tabs .nav-link { cursor: pointer; }
+    .sponsor-section { border-top: 1px dashed #dee2e6; margin-top: 20px; padding-top: 20px; }
+    .sponsee-item { background: var(--light, #f9f9f9); border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; }
+    .badge-pending { background: #ffc107; color: #000; }
+    .badge-active { background: #28a745; color: #fff; }
+    .badge-inactive { background: #6c757d; color: #fff; }
+  </style>
 </head>
 <body>
-    <p>Redirecting to <a href="../template/login.html">Lion Training</a>…</p>
+<div id="app" v-cloak>
+  <!-- Login / Register / Sponsor-Register view -->
+  <div v-if="!auth.user" class="container-fluid p-0">
+    <div class="row m-0">
+      <div class="col-12 p-0">
+        <div class="login-card login-dark">
+          <div>
+            <div>
+              <a class="logo" href="#">
+                <img class="img-fluid for-light" src="/assets/images/logo/logo.png" alt="Lion Training" onerror="this.style.display='none'">
+                <span class="h4 text-white">Lion Training</span>
+              </a>
+            </div>
+
+            <!-- Tab navigation -->
+            <ul class="nav nav-tabs mt-3 mb-3" v-if="view !== 'dashboard'">
+              <li class="nav-item">
+                <a class="nav-link" :class="{active: view==='login'}" @click="view='login'">Sign In</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" :class="{active: view==='register'}" @click="view='register'">Register</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" :class="{active: view==='sponsor'}" @click="view='sponsor'">Sponsor Registration</a>
+              </li>
+            </ul>
+
+            <div class="login-main">
+              <!-- LOGIN -->
+              <form v-if="view==='login'" class="theme-form" @submit.prevent="login">
+                <h4>Sign in to account</h4>
+                <p>Enter your email &amp; password to login</p>
+                <div v-if="error" class="alert alert-danger py-2">{{ error }}</div>
+                <div class="form-group">
+                  <label class="col-form-label">Email Address</label>
+                  <input class="form-control" type="email" v-model="form.email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Password</label>
+                  <div class="form-input position-relative">
+                    <input class="form-control" :type="showPw ? 'text' : 'password'" v-model="form.password" required placeholder="••••••••">
+                    <div class="show-hide" @click="showPw=!showPw" style="cursor:pointer">
+                      <span>{{ showPw ? 'Hide' : 'Show' }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group mb-0">
+                  <div class="text-end mt-3">
+                    <button class="btn btn-primary btn-block w-100" type="submit" :disabled="loading">
+                      <span v-if="loading">Signing in…</span>
+                      <span v-else>Sign in</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- REGISTER -->
+              <form v-if="view==='register'" class="theme-form" @submit.prevent="register">
+                <h4>Create Account</h4>
+                <p>Fill in your details to get started</p>
+                <div v-if="error" class="alert alert-danger py-2">{{ error }}</div>
+                <div v-if="validationErrors" class="alert alert-warning py-2">
+                  <ul class="mb-0 ps-3">
+                    <li v-for="(msgs, field) in validationErrors" :key="field" v-for="msg in msgs">{{ msg }}</li>
+                  </ul>
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Full Name</label>
+                  <input class="form-control" type="text" v-model="form.name" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Email Address</label>
+                  <input class="form-control" type="email" v-model="form.email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Password</label>
+                  <input class="form-control" type="password" v-model="form.password" required placeholder="Min 8 characters">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Confirm Password</label>
+                  <input class="form-control" type="password" v-model="form.password_confirmation" required placeholder="Repeat password">
+                </div>
+                <div class="form-group mb-0">
+                  <div class="text-end mt-3">
+                    <button class="btn btn-primary btn-block w-100" type="submit" :disabled="loading">
+                      <span v-if="loading">Creating account…</span>
+                      <span v-else>Create Account</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- SPONSOR REGISTRATION -->
+              <form v-if="view==='sponsor'" class="theme-form" @submit.prevent="sponsorRegister">
+                <h4>Sponsor Registration</h4>
+                <p>Register with a sponsor who can vouch for you</p>
+                <div v-if="error" class="alert alert-danger py-2">{{ error }}</div>
+                <div v-if="success" class="alert alert-success py-2">{{ success }}</div>
+                <div class="form-group">
+                  <label class="col-form-label">Full Name</label>
+                  <input class="form-control" type="text" v-model="form.name" required placeholder="Your full name">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Email Address</label>
+                  <input class="form-control" type="email" v-model="form.email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Password</label>
+                  <input class="form-control" type="password" v-model="form.password" required placeholder="Min 8 characters">
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label">Confirm Password</label>
+                  <input class="form-control" type="password" v-model="form.password_confirmation" required placeholder="Repeat password">
+                </div>
+                <div class="sponsor-section">
+                  <h6 class="text-muted">Sponsor Information</h6>
+                  <div class="form-group">
+                    <label class="col-form-label">Sponsor's Email Address</label>
+                    <input class="form-control" type="email" v-model="form.sponsor_email" required placeholder="sponsor@example.com">
+                    <small class="text-muted">Your sponsor must already have an account</small>
+                  </div>
+                  <div class="form-group">
+                    <label class="col-form-label">Notes (optional)</label>
+                    <textarea class="form-control" v-model="form.notes" rows="2" placeholder="Add a note for your sponsor…"></textarea>
+                  </div>
+                </div>
+                <div class="form-group mb-0">
+                  <div class="text-end mt-3">
+                    <button class="btn btn-primary btn-block w-100" type="submit" :disabled="loading">
+                      <span v-if="loading">Registering…</span>
+                      <span v-else>Register with Sponsor</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard view (authenticated) -->
+  <div v-else class="page-wrapper compact-wrapper" id="pageWrapper">
+    <div class="page-header" style="position:relative;top:0;">
+      <div class="header-wrapper row m-0 align-items-center p-3">
+        <div class="col">
+          <h5 class="mb-0">Welcome, {{ auth.user.name }}</h5>
+          <small class="text-muted">{{ auth.user.email }}</small>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-outline-danger btn-sm" @click="logout">Sign Out</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-body-wrapper">
+      <div class="page-body p-4">
+        <div class="row">
+          <!-- My Sponsees -->
+          <div class="col-md-6 mb-4">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">People I Sponsor ({{ sponsees.length }})</h6>
+              </div>
+              <div class="card-body">
+                <div v-if="loadingSponsees" class="text-center py-3 text-muted">Loading…</div>
+                <div v-else-if="sponsees.length === 0" class="text-muted text-center py-3">
+                  You haven't sponsored anyone yet.
+                </div>
+                <div v-else>
+                  <div v-for="s in sponsees" :key="s.id" class="sponsee-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <strong>{{ s.name }}</strong>
+                        <div class="text-muted small">{{ s.email }}</div>
+                        <div v-if="s.pivot.notes" class="text-muted small mt-1">{{ s.pivot.notes }}</div>
+                      </div>
+                      <span class="badge" :class="'badge-' + s.pivot.status">{{ s.pivot.status }}</span>
+                    </div>
+                    <div class="mt-2" v-if="s.pivot.status === 'pending'">
+                      <button class="btn btn-sm btn-success me-1" @click="updateStatus(s.pivot.id || findSponsorship(s.id), 'active')">Approve</button>
+                      <button class="btn btn-sm btn-secondary" @click="updateStatus(s.pivot.id || findSponsorship(s.id), 'inactive')">Decline</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- My Sponsors -->
+          <div class="col-md-6 mb-4">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">My Sponsors ({{ sponsors.length }})</h6>
+              </div>
+              <div class="card-body">
+                <div v-if="loadingSponsors" class="text-center py-3 text-muted">Loading…</div>
+                <div v-else-if="sponsors.length === 0" class="text-muted text-center py-3">
+                  You don't have a sponsor yet.<br>
+                  <a href="#" @click.prevent="logout(); view='sponsor';" class="text-primary">Register with a sponsor</a>
+                </div>
+                <div v-else>
+                  <div v-for="s in sponsors" :key="s.id" class="sponsee-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <strong>{{ s.name }}</strong>
+                        <div class="text-muted small">{{ s.email }}</div>
+                      </div>
+                      <span class="badge" :class="'badge-' + s.pivot.status">{{ s.pivot.status }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://lion-api.onlinebros.com/api';
+
+const { createApp, ref, reactive, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const view = ref('login');
+    const loading = ref(false);
+    const loadingSponsees = ref(false);
+    const loadingSponsors = ref(false);
+    const error = ref('');
+    const success = ref('');
+    const showPw = ref(false);
+    const validationErrors = ref(null);
+    const sponsees = ref([]);
+    const sponsors = ref([]);
+
+    const auth = reactive({ user: null, token: null });
+
+    const form = reactive({
+      name: '',
+      email: '',
+      password: '',
+      password_confirmation: '',
+      sponsor_email: '',
+      notes: '',
+    });
+
+    function resetForm() {
+      Object.assign(form, { name: '', email: '', password: '', password_confirmation: '', sponsor_email: '', notes: '' });
+      error.value = '';
+      success.value = '';
+      validationErrors.value = null;
+    }
+
+    function apiHeaders() {
+      const h = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (auth.token) h['Authorization'] = 'Bearer ' + auth.token;
+      return h;
+    }
+
+    async function login() {
+      error.value = '';
+      loading.value = true;
+      try {
+        const res = await axios.post(API_BASE + '/auth/login', {
+          email: form.email,
+          password: form.password,
+        }, { headers: apiHeaders() });
+        auth.user = res.data.user;
+        auth.token = res.data.token;
+        localStorage.setItem('lion_token', res.data.token);
+        resetForm();
+        loadDashboard();
+      } catch (e) {
+        error.value = e.response?.data?.message || 'Login failed';
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    async function register() {
+      error.value = '';
+      validationErrors.value = null;
+      loading.value = true;
+      try {
+        const res = await axios.post(API_BASE + '/auth/register', {
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          password_confirmation: form.password_confirmation,
+        }, { headers: apiHeaders() });
+        auth.user = res.data.user;
+        auth.token = res.data.token;
+        localStorage.setItem('lion_token', res.data.token);
+        resetForm();
+        loadDashboard();
+      } catch (e) {
+        if (e.response?.status === 422) {
+          validationErrors.value = e.response.data.errors;
+        } else {
+          error.value = e.response?.data?.message || 'Registration failed';
+        }
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    async function sponsorRegister() {
+      error.value = '';
+      success.value = '';
+      loading.value = true;
+      try {
+        const res = await axios.post(API_BASE + '/auth/sponsor-register', {
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          password_confirmation: form.password_confirmation,
+          sponsor_email: form.sponsor_email,
+          notes: form.notes,
+        }, { headers: apiHeaders() });
+        auth.user = res.data.user;
+        auth.token = res.data.token;
+        localStorage.setItem('lion_token', res.data.token);
+        resetForm();
+        loadDashboard();
+      } catch (e) {
+        if (e.response?.status === 422) {
+          const errs = e.response.data.errors;
+          error.value = Object.values(errs).flat().join(', ');
+        } else {
+          error.value = e.response?.data?.message || 'Registration failed';
+        }
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    async function logout() {
+      if (auth.token) {
+        try {
+          await axios.post(API_BASE + '/auth/logout', {}, { headers: apiHeaders() });
+        } catch (_) {}
+      }
+      auth.user = null;
+      auth.token = null;
+      localStorage.removeItem('lion_token');
+      sponsees.value = [];
+      sponsors.value = [];
+      view.value = 'login';
+    }
+
+    async function loadDashboard() {
+      loadingSponsees.value = true;
+      loadingSponsors.value = true;
+      try {
+        const [se, sp] = await Promise.all([
+          axios.get(API_BASE + '/sponsor/sponsees', { headers: apiHeaders() }),
+          axios.get(API_BASE + '/sponsor/sponsors', { headers: apiHeaders() }),
+        ]);
+        sponsees.value = se.data.sponsees;
+        sponsors.value = sp.data.sponsors;
+      } catch (_) {} finally {
+        loadingSponsees.value = false;
+        loadingSponsors.value = false;
+      }
+    }
+
+    async function updateStatus(sponsorshipId, status) {
+      try {
+        await axios.patch(API_BASE + '/sponsor/' + sponsorshipId + '/status', { status }, { headers: apiHeaders() });
+        loadDashboard();
+      } catch (e) {
+        alert('Failed to update status: ' + (e.response?.data?.message || 'Unknown error'));
+      }
+    }
+
+    onMounted(async () => {
+      const token = localStorage.getItem('lion_token');
+      if (token) {
+        auth.token = token;
+        try {
+          const res = await axios.get(API_BASE + '/auth/me', { headers: apiHeaders() });
+          auth.user = res.data.user;
+          loadDashboard();
+        } catch (_) {
+          localStorage.removeItem('lion_token');
+          auth.token = null;
+        }
+      }
+    });
+
+    return {
+      view, loading, loadingSponsees, loadingSponsors,
+      error, success, showPw, validationErrors,
+      form, auth, sponsees, sponsors,
+      login, register, sponsorRegister, logout, updateStatus,
+    };
+  }
+}).mount('#app');
+</script>
 </body>
 </html>
