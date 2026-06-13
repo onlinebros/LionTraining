@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Lion Training - Sponsor Registration">
+  <meta name="author" content="Lion Training">
+  <link rel="icon" href="../assets/images/favicon.png" type="image/x-icon">
+  <link rel="shortcut icon" href="../assets/images/favicon.png" type="image/x-icon">
+  <title>Sponsor Registration – Lion Training</title>
+  <!-- Google font -->
+  <link href="https://fonts.googleapis.com/css?family=Rubik:400,400i,500,500i,700,700i&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" type="text/css" href="../assets/css/vendors/fontawesome.css">
+  <!-- ico-font -->
+  <link rel="stylesheet" type="text/css" href="../assets/css/vendors/icofont.css">
+  <!-- Feather icon -->
+  <link rel="stylesheet" type="text/css" href="../assets/css/vendors/feather-icon.css">
+  <!-- Bootstrap css -->
+  <link rel="stylesheet" type="text/css" href="../assets/css/vendors/bootstrap.css">
+  <!-- App css -->
+  <link rel="stylesheet" type="text/css" href="../assets/css/style.css">
+  <link id="color" rel="stylesheet" href="../assets/css/color-1.css" media="screen">
+  <!-- Responsive css -->
+  <link rel="stylesheet" type="text/css" href="../assets/css/responsive.css">
+  <script defer src="../assets/css/color-1.js"></script>
+  <script defer src="../assets/css/responsive.js"></script>
+  <script defer src="../assets/css/style.js"></script>
+  <style>
+    .sponsor-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--theme-default, #7366ff);
+      color: #fff;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .sponsor-divider {
+      border-top: 1px dashed #dee2e6;
+      margin: 20px 0;
+    }
+    .sponsee-card {
+      background: var(--light, #f9f9f9);
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 8px;
+    }
+    .sponsee-card .remove-sponsee {
+      cursor: pointer;
+      color: #dc3545;
+      float: right;
+      font-size: 1rem;
+    }
+    #sponsee-list { display: flex; flex-direction: column; gap: 8px; }
+  </style>
+</head>
+<body>
+<!-- Sponsor Registration page start -->
+<div class="container-fluid p-0">
+  <div class="row m-0">
+    <div class="col-12 p-0">
+      <div class="login-card login-dark">
+        <div>
+          <div>
+            <a class="logo" href="dashboard-02.html">
+              <img class="img-fluid for-light" src="../assets/images/logo/logo.png" alt="Lion Training">
+              <img class="img-fluid for-dark" src="../assets/images/logo/logo_dark.png" alt="Lion Training">
+            </a>
+          </div>
+          <div class="login-main create-account">
+            <form class="theme-form" id="sponsor-register-form" novalidate>
+              <div class="sponsor-badge">
+                <i data-feather="star" style="width:14px;height:14px;"></i>
+                Sponsor Account
+              </div>
+              <h4>Register as a Sponsor</h4>
+              <p>Create a sponsor account to support and manage athletes under your sponsorship.</p>
+
+              <!-- Sponsor personal info -->
+              <div class="form-group">
+                <label class="col-form-label pt-0">Your Name</label>
+                <div class="row g-2">
+                  <div class="col-sm-6">
+                    <input class="form-control" type="text" id="firstName" required placeholder="First name">
+                    <div class="invalid-feedback">First name is required.</div>
+                  </div>
+                  <div class="col-sm-6">
+                    <input class="form-control" type="text" id="lastName" required placeholder="Last name">
+                    <div class="invalid-feedback">Last name is required.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-form-label">Email Address</label>
+                <input class="form-control" type="email" id="email" required placeholder="sponsor@example.com">
+                <div class="invalid-feedback">A valid email address is required.</div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-form-label">Phone Number <span class="text-muted">(optional)</span></label>
+                <input class="form-control" type="tel" id="phone" placeholder="+1 (555) 000-0000">
+              </div>
+
+              <div class="form-group">
+                <label class="col-form-label">Organization / Club <span class="text-muted">(optional)</span></label>
+                <input class="form-control" type="text" id="organization" placeholder="e.g. Lion MMA Academy">
+              </div>
+
+              <div class="form-group">
+                <label class="col-form-label">Password</label>
+                <div class="form-input position-relative">
+                  <input class="form-control" type="password" id="password" required minlength="8" placeholder="Min. 8 characters">
+                  <div class="show-hide"><span class="show"></span></div>
+                  <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-form-label">Confirm Password</label>
+                <div class="form-input position-relative">
+                  <input class="form-control" type="password" id="confirmPassword" required placeholder="Re-enter password">
+                  <div class="invalid-feedback">Passwords do not match.</div>
+                </div>
+              </div>
+
+              <div class="sponsor-divider"></div>
+
+              <!-- Sponsored users section -->
+              <h6 class="mb-3">
+                <i data-feather="users" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>
+                Athletes to Sponsor
+              </h6>
+              <p class="text-muted" style="font-size:0.875rem;">
+                Add the athletes you intend to sponsor. You can also add more later from your dashboard.
+              </p>
+
+              <div id="sponsee-list"></div>
+
+              <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-sponsee-btn">
+                <i data-feather="user-plus" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>
+                Add Athlete
+              </button>
+
+              <div class="sponsor-divider"></div>
+
+              <!-- Sponsor tier -->
+              <div class="form-group">
+                <label class="col-form-label">Sponsorship Level</label>
+                <select class="form-select" id="sponsorTier" required>
+                  <option value="" disabled selected>Select a tier</option>
+                  <option value="bronze">Bronze – up to 2 athletes</option>
+                  <option value="silver">Silver – up to 5 athletes</option>
+                  <option value="gold">Gold – up to 10 athletes</option>
+                  <option value="platinum">Platinum – unlimited athletes</option>
+                </select>
+                <div class="invalid-feedback">Please select a sponsorship level.</div>
+              </div>
+
+              <!-- Terms -->
+              <div class="form-group mb-0">
+                <div class="checkbox p-0">
+                  <input id="termsCheck" type="checkbox" required>
+                  <label class="text-muted" for="termsCheck">
+                    I agree to the
+                    <a class="ms-1" href="#">Terms & Conditions</a> and
+                    <a class="ms-1" href="#">Sponsorship Policy</a>
+                  </label>
+                  <div class="invalid-feedback">You must accept the terms to continue.</div>
+                </div>
+                <button class="btn btn-primary btn-block w-100 mt-3" type="submit">
+                  Create Sponsor Account
+                </button>
+              </div>
+
+              <p class="mt-4 mb-0">
+                Already have an account?
+                <a class="ms-2" href="login.html">Sign in</a>
+              </p>
+              <p class="mt-2 mb-0">
+                Registering as an athlete instead?
+                <a class="ms-2" href="sign-up.html">Athlete Sign Up</a>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Sponsor Registration page end -->
+
+<!-- jQuery -->
+<script src="../assets/js/jquery.min.js"></script>
+<!-- Bootstrap js -->
+<script src="../assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+<!-- Feather icon js -->
+<script src="../assets/js/icons/feather-icon/feather.min.js"></script>
+<script src="../assets/js/icons/feather-icon/feather-icon.js"></script>
+<!-- Theme js -->
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/script.js"></script>
+<script src="../assets/js/script1.js"></script>
+
+<script>
+  (function () {
+    'use strict';
+
+    var sponseeCount = 0;
+
+    function addSponseeRow(prefillName, prefillEmail) {
+      sponseeCount++;
+      var id = 'sponsee-' + sponseeCount;
+      var html = '<div class="sponsee-card" id="' + id + '">' +
+        '<span class="remove-sponsee" data-target="' + id + '" title="Remove">&times;</span>' +
+        '<div class="row g-2">' +
+          '<div class="col-sm-6">' +
+            '<label class="col-form-label py-0" style="font-size:.8rem">Athlete Name</label>' +
+            '<input class="form-control form-control-sm" type="text" placeholder="Full name" value="' + (prefillName || '') + '">' +
+          '</div>' +
+          '<div class="col-sm-6">' +
+            '<label class="col-form-label py-0" style="font-size:.8rem">Athlete Email</label>' +
+            '<input class="form-control form-control-sm" type="email" placeholder="athlete@example.com" value="' + (prefillEmail || '') + '">' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+      document.getElementById('sponsee-list').insertAdjacentHTML('beforeend', html);
+    }
+
+    document.getElementById('add-sponsee-btn').addEventListener('click', function () {
+      addSponseeRow();
+    });
+
+    document.getElementById('sponsee-list').addEventListener('click', function (e) {
+      var target = e.target.closest('.remove-sponsee');
+      if (target) {
+        var card = document.getElementById(target.dataset.target);
+        if (card) card.remove();
+      }
+    });
+
+    document.getElementById('sponsor-register-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var password = document.getElementById('password').value;
+      var confirm = document.getElementById('confirmPassword').value;
+
+      if (password !== confirm) {
+        document.getElementById('confirmPassword').setCustomValidity('Passwords do not match.');
+      } else {
+        document.getElementById('confirmPassword').setCustomValidity('');
+      }
+
+      if (!this.checkValidity()) {
+        e.stopPropagation();
+        this.classList.add('was-validated');
+        return;
+      }
+
+      this.classList.add('was-validated');
+      // TODO: replace with real API call
+      alert('Sponsor account created! Check your email to verify your account.');
+    });
+  })();
+</script>
+</body>
+</html>

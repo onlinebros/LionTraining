@@ -1,0 +1,43 @@
+{
+  "name": "cuba",
+  "version": "1.0.0",
+  "description": "A project configured with Webpack, SCSS, and Pug",
+  "main": "/template/index.html",
+  "scripts": {
+    "start": "webpack serve",
+    "build": "webpack",
+    "postbuild": "node beautify-html.js"
+  },
+  "author": "Pixelstrap",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "browser-sync": "^2.29.3",
+    "browser-sync-webpack-plugin": "^2.3.0",
+    "clean-webpack-plugin": "^4.0.0",
+    "css-loader": "^7.1.2",
+    "cssnano": "^7.0.6",
+    "gulp": "^5.0.0",
+    "gulp-sass": "^5.1.0",
+    "html-loader": "^5.1.0",
+    "html-webpack-plugin": "^5.6.3",
+    "mini-css-extract-plugin": "^2.9.2",
+    "postcss": "^8.4.49",
+    "postcss-loader": "^8.1.1",
+    "pug": "^2.0.4",
+    "pug-loader": "^2.4.0",
+    "sass": "1.77.6",
+    "sass-loader": "^16.0.3",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.1.0"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.2",
+    "gulp-livereload": "^4.0.2",
+    "gulp-pug": "^5.0.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "livereload": "^0.9.3"
+  }
+}
