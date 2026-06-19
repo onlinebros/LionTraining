@@ -1,0 +1,24 @@
+/* ============================================================
+   Lion Training — Global UI overrides for Cuba theme
+   Loaded last so these rules win over style.css.
+   ============================================================ */
+
+/* ── Feather icon sizing inside buttons ─────────────────────────────
+   Cuba's .table-hover td svg rule adds padding:5px which clips icons.
+   Override it for any SVG inside a .btn so icons render at 14×14. */
+.btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    margin-right: 4px;
+    vertical-align: -2px;
+}
+
+/* ── badge-light-* — explicit colors for tinted status badges ──────── */
+.badge-light-primary   { background-color: #ede9ff !important; color: #4b3ec7 !important; }
+.badge-light-info      { background-color: #daf0f8 !important; color: #065773 !important; }
+.badge-light-success   { background-color: #d4f0e3 !important; color: #0e5233 !important; }
+.badge-light-warning   { background-color: #fff3cc !important; color: #6b4500 !important; }
+.badge-light-danger    { background-color: #fde8ea !important; color: #7d1e28 !important; }
+.badge-light-secondary { background-color: #e9ecef !important; color: #343a40 !important; }

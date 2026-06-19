@@ -1,0 +1,11 @@
+# AI tool artifacts
+.claudine/
+.ai-platform/
+CLAUDINE.AGENTS.md
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

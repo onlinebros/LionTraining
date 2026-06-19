@@ -259,24 +259,12 @@
     }
   });
 
-  // page active
+  // page active — use server-rendered active classes (set by Laravel's request()->routeIs())
+  // rather than trying to re-detect via URL matching, which breaks with absolute URLs.
   if ($("#pageWrapper").hasClass("compact-wrapper")) {
-    $(".sidebar-wrapper nav").find("a").removeClass("active");
-    $(".sidebar-wrapper nav").find("li").removeClass("active");
-
-    var current = window.location.pathname;
-    $(".sidebar-wrapper nav ul li a").filter(function () {
-      var link = $(this).attr("href");
-      if (link) {
-        if (current.indexOf(link) != -1) {
-          $(this).parents().children("a").addClass("active");
-          $(this).parents().parents().children("ul").css("display", "block");
-          $(this).addClass("active");
-          $(this).parent().parent().parent().children("a").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-          $(this).parent().parent().parent().parent().parent().children("a").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-          return false;
-        }
-      }
+    jQuery(".sidebar-title.active").each(function () {
+      jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
+      jQuery(this).next(".sidebar-submenu, .menu-content").show();
     });
   }
 

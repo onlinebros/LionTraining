@@ -13,11 +13,45 @@
         <div class="col-xl-4">
             <div class="card">
                 <div class="card-body text-center">
+                    @if(session('success'))
+                        <div class="alert alert-success text-start mb-3">{{ session('success') }}</div>
+                    @endif
                     <img class="img-70 rounded-circle mb-3" src="{{ asset('assets/images/dashboard/profile.png') }}" alt="">
                     <h5>{{ $user->name }}</h5>
-                    <p class="f-light">{{ $user->email }}</p>
-                    <p><span class="badge badge-light-primary">Member since {{ $user->created_at->format('M Y') }}</span></p>
-                    <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-primary">Edit User</a>
+                    <p class="f-light mb-1">{{ $user->email }}</p>
+
+                    {{-- Role badge --}}
+                    @php $roleColors = ['free_member'=>'info','paid_member'=>'success','support_admin'=>'warning','super_admin'=>'danger']; @endphp
+                    @if($user->role)
+                        <span class="badge badge-light-{{ $roleColors[$user->role->name] ?? 'secondary' }} mb-2">
+                            {{ $user->role->display_name }}
+                        </span>
+                    @endif
+
+                    {{-- Active status badge --}}
+                    <div class="mb-3">
+                        @if($user->is_active)
+                            <span class="badge badge-light-success">Active</span>
+                        @else
+                            <span class="badge badge-light-danger">Deactivated</span>
+                        @endif
+                        <span class="badge badge-light-primary ms-1">Member since {{ $user->created_at->format('M Y') }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-primary btn-sm">Edit</a>
+
+                        @if($user->id !== auth()->id())
+                        <form method="POST" action="{{ route('admin.users.toggle-active', $user) }}">
+                            @csrf @method('PATCH')
+                            <button type="submit"
+                                    class="btn btn-sm {{ $user->is_active ? 'btn-outline-danger' : 'btn-outline-success' }}"
+                                    onclick="return confirm('{{ $user->is_active ? 'Deactivate this user?' : 'Reactivate this user?' }}')">
+                                {{ $user->is_active ? 'Deactivate' : 'Reactivate' }}
+                            </button>
+                        </form>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

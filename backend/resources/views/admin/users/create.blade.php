@@ -39,6 +39,17 @@
                             <label class="form-label">Confirm Password</label>
                             <input type="password" name="password_confirmation" class="form-control" required>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select name="role_id" class="form-select @error('role_id') is-invalid @enderror">
+                                @foreach(\App\Models\Role::orderBy('level')->get() as $role)
+                                    <option value="{{ $role->id }}" {{ old('role_id') == $role->id ? 'selected' : '' }}>
+                                        {{ $role->display_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('role_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">Create User</button>
                             <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancel</a>

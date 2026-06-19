@@ -139,7 +139,7 @@
                     </svg>
                 </div>
                 <div class="ProfileCard-details">
-                    <div class="ProfileCard-realName">{{name}}</div>
+                    <div class="ProfileCard-realName">@{{name}}</div>
                 </div>
             </div>
         </script>
