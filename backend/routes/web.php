@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CrmContactController;
 use App\Http\Controllers\Admin\CrmDashboardController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ErrorLogController;
+use App\Http\Controllers\Admin\KartraImportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\SponsorController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Admin\TrainingCategoryController;
 use App\Http\Controllers\Admin\TrainingContentBlockController;
 use App\Http\Controllers\Admin\TrainingLessonController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VideoAssetController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberCrmController;
 use App\Http\Controllers\MemberSupportController;
@@ -208,6 +210,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('content-blocks/{block}',           [TrainingContentBlockController::class, 'update'])->name('content-blocks.update');
             Route::delete('content-blocks/{block}',        [TrainingContentBlockController::class, 'destroy'])->name('content-blocks.destroy');
             Route::post('content-blocks/reorder',          [TrainingContentBlockController::class, 'reorder'])->name('content-blocks.reorder');
+        });
+
+        // Video library
+        Route::prefix('video-assets')->name('video-assets.')->group(function () {
+            Route::get('/',                                    [VideoAssetController::class, 'index'])->name('index');
+            Route::get('/{videoAsset}',                        [VideoAssetController::class, 'show'])->name('show');
+            Route::put('/{videoAsset}',                        [VideoAssetController::class, 'update'])->name('update');
+            Route::delete('/{videoAsset}',                     [VideoAssetController::class, 'destroy'])->name('destroy');
+            Route::post('/{videoAsset}/upload-vimeo',          [VideoAssetController::class, 'uploadToVimeo'])->name('upload-vimeo');
+            Route::post('/{videoAsset}/assign-block',          [VideoAssetController::class, 'assignToBlock'])->name('assign-block');
+        });
+
+        // Kartra import management
+        Route::prefix('kartra')->name('kartra.')->group(function () {
+            Route::get('/',                                    [KartraImportController::class, 'index'])->name('index');
+            Route::get('/{kartraImport}',                      [KartraImportController::class, 'show'])->name('show');
+            Route::patch('/{kartraImport}/map',                [KartraImportController::class, 'map'])->name('map');
+            Route::delete('/{kartraImport}',                   [KartraImportController::class, 'destroy'])->name('destroy');
+            Route::post('/download-videos',                    [KartraImportController::class, 'downloadVideos'])->name('download-videos');
+            Route::post('/import-json',                        [KartraImportController::class, 'importJson'])->name('import-json');
         });
     });
 });

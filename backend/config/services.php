@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'vimeo' => [
+        'access_token' => env('VIMEO_ACCESS_TOKEN'),
+        'privacy'      => env('VIMEO_PRIVACY', 'disable'),
+    ],
+
 ];

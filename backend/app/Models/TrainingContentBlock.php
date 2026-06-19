@@ -9,7 +9,7 @@ class TrainingContentBlock extends Model
 {
     protected $fillable = [
         'lesson_id', 'type', 'title',
-        'video_url', 'video_provider',
+        'video_url', 'video_provider', 'video_asset_id',
         'body',
         'file_path', 'file_name', 'file_size', 'file_mime',
         'sort_order', 'is_active',
@@ -20,6 +20,11 @@ class TrainingContentBlock extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(TrainingLesson::class, 'lesson_id');
+    }
+
+    public function videoAsset(): BelongsTo
+    {
+        return $this->belongsTo(VideoAsset::class, 'video_asset_id');
     }
 
     /** Returns an embeddable iframe src for YouTube/Vimeo, or the raw URL for direct video files. */

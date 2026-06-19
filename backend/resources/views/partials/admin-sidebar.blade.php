@@ -109,6 +109,22 @@
                         </ul>
                     </li>
 
+                    {{-- Video Library --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.video-assets.*') || request()->routeIs('admin.kartra.*') ? 'active' : '' }}" href="#">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-gallery') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-gallery') }}"></use></svg>
+                            <span>Video Library</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{{ route('admin.video-assets.index') }}"
+                                   class="{{ request()->routeIs('admin.video-assets.*') ? 'active' : '' }}">All Videos</a></li>
+                            <li><a href="{{ route('admin.kartra.index') }}"
+                                   class="{{ request()->routeIs('admin.kartra.*') ? 'active' : '' }}">Kartra Import</a></li>
+                        </ul>
+                    </li>
+
                     {{-- Commissions --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
