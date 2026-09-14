@@ -35,10 +35,9 @@ class RequireActiveSubscription
             return $next($request);
         }
 
-        // During pre-launch nothing is billed yet, so this gate would lock every
-        // new enrollee out of the tree they were just placed in. PrelaunchGuard
-        // still closes everything that costs or pays money, so passing them
-        // through here exposes nothing.
+        // Only when config/prelaunch.php switches bypass_membership back on. It
+        // ships off: pre-launch partners put a card on file like everyone else,
+        // and their trial is parked until launch.
         if (Prelaunch::bypassesMembership()) {
             return $next($request);
         }
@@ -52,6 +51,7 @@ class RequireActiveSubscription
             ], 402);
         }
 
-        return redirect()->route('member.billing.start')->with('info', $message);
+        // `status` is the flash key the member layout renders.
+        return redirect()->route('member.billing.start')->with('status', $message);
     }
 }

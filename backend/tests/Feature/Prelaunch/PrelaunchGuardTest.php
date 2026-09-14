@@ -46,7 +46,9 @@ class PrelaunchGuardTest extends TestCase
             'level' => 1,
         ]);
 
-        return User::factory()->create($attributes + ['role_id' => $role->id]);
+        // Billing-exempt so the subscription gate stays out of the way; card
+        // capture is Tests\Feature\Billing\SubscriptionGateTest's concern.
+        return User::factory()->create($attributes + ['role_id' => $role->id, 'billing_exempt' => true]);
     }
 
     private function admin(): User

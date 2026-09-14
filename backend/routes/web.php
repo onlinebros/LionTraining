@@ -91,37 +91,28 @@ Route::post('/logout', [UserAuthController::class, 'logout'])->name('logout')->m
 // reason; if a new billing route genuinely needs the gate, it belongs in the
 // group below instead.
 Route::prefix('member/billing')->name('member.billing.')->middleware('auth')->group(function () {
+    // Card writes are throttled per partner. Every attempt checks a card with
+    // the provider, and an unthrottled card form is how stolen card numbers get
+    // tested against a live account.
     Route::get('/start',        [MemberBillingController::class, 'start'])->name('start');
-    Route::post('/setup-intent', [MemberBillingController::class, 'setupIntent'])->name('setup-intent');
-    Route::post('/confirm',     [MemberBillingController::class, 'confirm'])->name('confirm');
+    Route::post('/setup-intent', [MemberBillingController::class, 'setupIntent'])->middleware('throttle:10,60')->name('setup-intent');
+    Route::post('/confirm',     [MemberBillingController::class, 'confirm'])->middleware('throttle:10,60')->name('confirm');
 
     Route::get('/',             [MemberBillingController::class, 'index'])->name('index');
-    Route::post('/card',        [MemberBillingController::class, 'replaceCard'])->name('card');
+    Route::post('/card',        [MemberBillingController::class, 'replaceCard'])->middleware('throttle:10,60')->name('card');
     Route::delete('/card/{paymentMethod}', [MemberBillingController::class, 'removeCard'])->name('card.remove');
     Route::post('/cancel',      [MemberBillingController::class, 'cancel'])->name('cancel');
     Route::post('/resume',      [MemberBillingController::class, 'resume'])->name('resume');
 });
 
+// Also outside the gate: a partner held at card capture still needs to fix their
+// profile and ask for help.
 Route::prefix('member')->name('member.')->middleware('auth')->group(function () {
-    Route::get('/dashboard',         [MemberController::class, 'dashboard'])->name('dashboard');
-    Route::get('/network',           [MemberController::class, 'network'])->name('network');
-    Route::get('/training',                      [MemberController::class, 'trainingIndex'])->name('training');
-    Route::get('/training/c/{slug}',             [MemberController::class, 'trainingCategory'])->name('training.category');
-    Route::get('/training/l/{slug}',             [MemberController::class, 'trainingLesson'])->name('training.lesson');
-    Route::get('/training/download/{block}',     [MemberController::class, 'trainingDownload'])->name('training.download');
-    Route::get('/referrals',         [MemberController::class, 'referral'])->name('referrals');
     Route::get('/profile',           [MemberController::class, 'profile'])->name('profile');
     Route::post('/profile',               [MemberController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/address',       [MemberController::class, 'updateAddress'])->name('profile.address');
     Route::delete('/profile/photo',       [MemberController::class, 'removePhoto'])->name('profile.photo.remove');
     Route::post('/profile/password',      [MemberController::class, 'updatePassword'])->name('profile.password');
-
-    // Commissions portal
-    Route::prefix('commissions')->name('commissions.')->group(function () {
-        Route::get('/',         [MemberController::class, 'commissions'])->name('index');
-        Route::get('/history',  [MemberController::class, 'commissionHistory'])->name('history');
-        Route::get('/payouts',  [MemberController::class, 'commissionPayouts'])->name('payouts');
-    });
 
     // Support tickets
     Route::prefix('support')->name('support.')->group(function () {
@@ -129,6 +120,26 @@ Route::prefix('member')->name('member.')->middleware('auth')->group(function () 
         Route::post('/',               [MemberSupportController::class, 'store'])->name('store');
         Route::get('/{ticket}',        [MemberSupportController::class, 'show'])->name('show');
         Route::post('/{ticket}/reply', [MemberSupportController::class, 'reply'])->name('reply');
+    });
+});
+
+// Everything else in the member area needs a card on file, pre-launch included.
+// A trialing subscription counts, so a partner is let in as soon as card capture
+// succeeds and is not charged until the trial ends.
+Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->group(function () {
+    Route::get('/dashboard',         [MemberController::class, 'dashboard'])->name('dashboard');
+    Route::get('/network',           [MemberController::class, 'network'])->name('network');
+    Route::get('/training',                      [MemberController::class, 'trainingIndex'])->name('training');
+    Route::get('/training/c/{slug}',             [MemberController::class, 'trainingCategory'])->name('training.category');
+    Route::get('/training/l/{slug}',             [MemberController::class, 'trainingLesson'])->name('training.lesson');
+    Route::get('/training/download/{block}',     [MemberController::class, 'trainingDownload'])->name('training.download');
+    Route::get('/referrals',         [MemberController::class, 'referral'])->name('referrals');
+
+    // Commissions portal
+    Route::prefix('commissions')->name('commissions.')->group(function () {
+        Route::get('/',         [MemberController::class, 'commissions'])->name('index');
+        Route::get('/history',  [MemberController::class, 'commissionHistory'])->name('history');
+        Route::get('/payouts',  [MemberController::class, 'commissionPayouts'])->name('payouts');
     });
 
     // Vendor product sales — the partner's own leads and share links.

@@ -26,7 +26,8 @@ class Q3ThemeTest extends TestCase
             'level' => 1,
         ]);
 
-        return User::factory()->create(['role_id' => $role->id]);
+        // Billing-exempt: these pin the theme wiring, not the subscription gate.
+        return User::factory()->create(['role_id' => $role->id, 'billing_exempt' => true]);
     }
 
     public function test_member_shell_loads_the_theme_after_the_template_stylesheets(): void

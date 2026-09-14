@@ -123,16 +123,43 @@ class SubscriptionGateTest extends TestCase
         }
     }
 
-    public function test_prelaunch_bypasses_the_membership_gate(): void
+    public function test_an_unsubscribed_partner_is_sent_to_card_capture(): void
     {
-        config(['prelaunch.enabled' => true, 'prelaunch.bypass_membership' => true]);
+        $user = $this->member();
 
-        // During pre-launch nothing is billed, so the gate must not lock a new
-        // enrollee out of the tree they were just placed in.
-        $this->assertTrue(Prelaunch::bypassesMembership());
+        foreach (['member.dashboard', 'member.network', 'member.referrals', 'member.training'] as $route) {
+            $this->actingAs($user)->get(route($route))
+                ->assertRedirect(route('member.billing.start'));
+        }
+    }
+
+    public function test_prelaunch_still_requires_a_card_on_file(): void
+    {
+        config(['prelaunch.enabled' => true]);
+
+        // Ships off: pre-launch partners put a card on file too, and the trial
+        // it opens is what lets them in.
+        $this->assertFalse(Prelaunch::bypassesMembership());
 
         $user = $this->member();
-        $this->actingAs($user)->get(route('member.dashboard'))->assertOk();
+        $this->actingAs($user)->get(route('member.dashboard'))
+            ->assertRedirect(route('member.billing.start'));
+
+        $this->subscribe($user, Subscription::STATUS_TRIALING);
+        $this->actingAs($user->fresh())->get(route('member.dashboard'))->assertOk();
+    }
+
+    public function test_profile_and_support_stay_reachable_without_a_card(): void
+    {
+        $user = $this->member();
+
+        foreach (['member.profile', 'member.support.index'] as $route) {
+            $this->assertNotEquals(
+                302,
+                $this->actingAs($user)->get(route($route))->getStatusCode(),
+                "{$route} redirected — a partner stuck at card capture must still reach it.",
+            );
+        }
     }
 
     public function test_start_redirects_to_manage_when_already_subscribed(): void

@@ -34,6 +34,27 @@ class BillingException extends RuntimeException
         );
     }
 
+    public static function cardRequired(): self
+    {
+        return new self(
+            'Membership needs a credit or debit card. Bank accounts and Link cannot be used — no charge has been made.'
+        );
+    }
+
+    public static function walletNotAccepted(): self
+    {
+        return new self(
+            'Apple Pay and Google Pay cannot be used for membership. Please enter your card details instead — no charge has been made.'
+        );
+    }
+
+    public static function cardNotVerifiable(): self
+    {
+        return new self(
+            'We could not verify that card. Please try a different card — no charge has been made.'
+        );
+    }
+
     public static function lastCardOnActiveSubscription(): self
     {
         return new self(

@@ -74,17 +74,19 @@ return [
     | Membership bypass
     |--------------------------------------------------------------------------
     |
-    | Registration ends at card capture, and the subscription gate normally
-    | holds partners at the door until the provider confirms a live membership.
-    | During pre-launch nothing is billed yet, so that gate would lock every new
-    | enrollee out of the tree they were just placed in.
+    | Off. Registration ends at card capture during pre-launch too. Capture opens
+    | a trial parked until launch (see BillingService), so the subscription gate
+    | lets the partner in without charging anything.
     |
-    | Deliberately tied to the guard rather than being its own switch: the day
-    | the guard comes off is the day billing has to start mattering.
+    | The card is also what the one-card-per-account check runs against. Skipping
+    | capture during pre-launch would skip that check for exactly the people who
+    | join first, and leave them to be chased for a card on launch day.
+    |
+    | Set true to let unsubscribed partners through while the guard is on.
     |
     */
 
-    'bypass_membership' => true,
+    'bypass_membership' => false,
 
     /*
     |--------------------------------------------------------------------------

@@ -72,7 +72,7 @@ class UserAuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('member.dashboard');
+        return redirect($this->afterSignup($user));
     }
 
     public function showReferral(string $code)
@@ -109,7 +109,19 @@ class UserAuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('member.dashboard')->with('status', "You're now connected with {$sponsor->name} as your sponsor!");
+        return redirect($this->afterSignup($user))->with('status', "You're now connected with {$sponsor->name} as your sponsor!");
+    }
+
+    /**
+     * Where a new partner lands: card capture, unless their access does not
+     * depend on a card. The subscription gate would send them there anyway, but
+     * the extra redirect would drop the welcome message.
+     */
+    private function afterSignup(User $user): string
+    {
+        return $user->hasActiveMembership()
+            ? route('member.dashboard')
+            : route('member.billing.start');
     }
 
     public function logout(Request $request)

@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active'      => \App\Http\Middleware\EnsureUserIsActive::class,
             'prelaunch'   => \App\Http\Middleware\PrelaunchGuard::class,
             'invitation'  => \App\Http\Middleware\RequireInvitation::class,
+            'subscribed'  => \App\Http\Middleware\RequireActiveSubscription::class,
         ]);
 
         // Check is_active on every authenticated web request

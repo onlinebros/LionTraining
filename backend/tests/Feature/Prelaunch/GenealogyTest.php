@@ -69,7 +69,7 @@ class GenealogyTest extends TestCase
             'email' => 'new@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-        ])->assertRedirect(route('member.dashboard'));
+        ])->assertRedirect(route('member.billing.start'));
 
         $partner = User::where('email', 'new@example.com')->firstOrFail();
 
@@ -123,7 +123,7 @@ class GenealogyTest extends TestCase
             'email' => 'root@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-        ])->assertRedirect(route('member.dashboard'));
+        ])->assertRedirect(route('member.billing.start'));
 
         $partner = User::where('email', 'root@example.com')->firstOrFail();
 

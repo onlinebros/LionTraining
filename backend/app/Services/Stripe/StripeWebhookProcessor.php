@@ -2,6 +2,7 @@
 
 namespace App\Services\Stripe;
 
+use App\Models\CardFingerprint;
 use App\Models\PaymentMethod;
 use App\Models\StripeWebhookEvent;
 use App\Models\Subscription as SubscriptionModel;
@@ -168,7 +169,33 @@ class StripeWebhookProcessor
             return;
         }
 
-        $card = $object['card'] ?? [];
+        $card        = $object['card'] ?? [];
+        $fingerprint = $card['fingerprint'] ?? null;
+
+        // A card refused as a duplicate is attached by the browser's SetupIntent
+        // and then detached by BillingService::attachPaymentMethod(). Stripe does
+        // not deliver events in order, so this event can be processed after that
+        // detach. Recording it would put the refused card on the second account.
+        if ($fingerprint !== null && CardFingerprint::isHeldByAnother($fingerprint, $user)) {
+            Log::info('Ignored attach of a card held by another account', [
+                'user_id'        => $user->id,
+                'payment_method' => $object['id'] ?? null,
+            ]);
+
+            return;
+        }
+
+        // The same ordering problem for a card the partner has since removed:
+        // record it only if the provider still has it on this customer.
+        $current = $this->stripe->client()->paymentMethods->retrieve($object['id']);
+
+        if ($current->customer !== $customerId) {
+            return;
+        }
+
+        if ($fingerprint !== null) {
+            CardFingerprint::claim($fingerprint, $user);
+        }
 
         PaymentMethod::updateOrCreate(
             ['provider_payment_method_id' => $object['id']],

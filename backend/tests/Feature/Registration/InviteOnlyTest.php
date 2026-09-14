@@ -88,7 +88,7 @@ class InviteOnlyTest extends TestCase
         $this->get(route('join', $sponsor->referral_code))->assertOk();
 
         $this->post(route('join.post', $sponsor->referral_code), $this->signupPayload())
-            ->assertRedirect(route('member.dashboard'));
+            ->assertRedirect(route('member.billing.start'));
 
         $this->assertDatabaseHas('users', [
             'email'      => 'new@example.com',
@@ -122,7 +122,7 @@ class InviteOnlyTest extends TestCase
         $this->get(route('register'))->assertOk()->assertViewIs('public.auth.register');
 
         $this->post(route('register.post'), $this->signupPayload())
-            ->assertRedirect(route('member.dashboard'));
+            ->assertRedirect(route('member.billing.start'));
 
         $this->assertDatabaseHas('users', ['email' => 'new@example.com']);
     }

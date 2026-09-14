@@ -31,7 +31,8 @@ class TeamTreeTest extends TestCase
 
     private function enroll(?User $sponsor, array $attributes = []): User
     {
-        $user = User::factory()->create($attributes);
+        // Billing-exempt so the subscription gate stays out of the way.
+        $user = User::factory()->create($attributes + ['billing_exempt' => true]);
         app(EnrollmentService::class)->enroll($user, $sponsor);
 
         return $user->refresh();

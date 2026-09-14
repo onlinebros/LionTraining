@@ -6,6 +6,7 @@ use App\Exceptions\BillingException;
 use App\Models\PaymentMethod;
 use App\Services\Stripe\BillingService;
 use App\Services\Stripe\StripeClientFactory;
+use App\Support\Prelaunch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -36,12 +37,18 @@ class MemberBillingController extends Controller
             return redirect()->route('member.billing.index');
         }
 
+        [$trialEnd, $isPrelaunchTrial] = $this->billing->resolveTrialEnd();
+
         return view('member.billing.start', [
             'user'           => $user,
             'publishableKey' => $this->stripe->publishableKey(),
             'configured'     => $this->stripe->isConfigured(),
             'testMode'       => $this->stripe->isConfigured() && $this->stripe->isTestMode(),
-            'trialEnd'       => $this->billing->resolveTrialEnd()[0],
+            'trialEnd'       => $trialEnd,
+            // With no launch date published, $trialEnd is only a placeholder and
+            // must not be shown as the first charge date.
+            'awaitingLaunch' => $isPrelaunchTrial && Prelaunch::endsAt() === null,
+            'trialDays'      => (int) config('stripe.subscription.trial_days'),
             'amount'         => (int) config('stripe.subscription.amount'),
             'currency'       => config('stripe.subscription.currency'),
             'interval'       => config('stripe.subscription.interval'),

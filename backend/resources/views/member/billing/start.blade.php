@@ -24,13 +24,19 @@
                 </div>
             @endif
 
+            @php($price = strtoupper($currency) . ' ' . number_format($amount / 100, 2))
+
             <div class="card">
                 <div class="card-body p-4">
 
                     <h5 class="mb-1">Add a payment method</h5>
                     <p class="text-muted small mb-4">
-                        {{ strtoupper($currency) }} {{ number_format($amount / 100, 2) }} per {{ $interval }},
-                        starting {{ $trialEnd->format('j F Y') }}.
+                        @if($awaitingLaunch)
+                            Your {{ $trialDays }}-day free trial starts on launch day. Your first charge of
+                            {{ $price }} is {{ $trialDays }} days after launch, then every {{ $interval }}.
+                        @else
+                            {{ $price }} per {{ $interval }}, starting {{ $trialEnd->format('j F Y') }}.
+                        @endif
                         <strong>You will not be charged today.</strong>
                     </p>
 
@@ -46,7 +52,12 @@
                         <span id="submit-spinner" class="spinner-border spinner-border-sm d-none"></span>
                     </button>
 
-                    <p class="text-muted small mt-3 mb-0">
+                    <p class="text-muted small mt-3 mb-2">
+                        Charges after your trial are non-refundable. A card can back only one membership.
+                        See the <a href="https://q3.life/terms" target="_blank" rel="noopener">Terms</a>
+                        and <a href="https://q3.life/refunds" target="_blank" rel="noopener">Refund Policy</a>.
+                    </p>
+                    <p class="text-muted small mb-0">
                         Card details go directly to our payment provider and are never stored on our servers.
                     </p>
                 </div>
@@ -105,7 +116,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     const elements = stripe.elements({ clientSecret });
-    elements.create('payment').mount('#payment-element');
+
+    // Card fields only. Apple Pay and Google Pay hand over a device-specific card
+    // number, and Link offers saved cards and bank accounts, all of which would
+    // slip past the one-card-per-account check. The server refuses them too.
+    elements.create('payment', {
+        wallets: { applePay: 'never', googlePay: 'never', link: 'never' },
+    }).mount('#payment-element');
 
     button.addEventListener('click', async function () {
         busy(true);

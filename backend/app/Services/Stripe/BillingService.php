@@ -3,6 +3,7 @@
 namespace App\Services\Stripe;
 
 use App\Exceptions\BillingException;
+use App\Models\CardFingerprint;
 use App\Models\PaymentMethod;
 use App\Models\Role;
 use App\Models\Subscription as SubscriptionModel;
@@ -94,9 +95,15 @@ class BillingService
     /**
      * Attach a confirmed payment method to the partner and record it locally.
      *
-     * One physical card, one account. The application check produces a friendly
-     * error; the unique index on `unique_fingerprint` is what actually holds
-     * under a race.
+     * One physical card, one account, for good. The first account to save a card
+     * claims its fingerprint in `card_fingerprints`, and the claim is never
+     * released: not when that account removes the card, and not when the account
+     * is deleted. The check below gives a friendly error; the ledger's unique
+     * index is what holds under a race.
+     *
+     * Apple Pay and Google Pay are refused while enforcement is on. A wallet hands
+     * over a device-specific card number, so one physical card fingerprints
+     * differently in a wallet than typed in, and could back two accounts.
      */
     public function attachPaymentMethod(User $user, string $paymentMethodId, bool $makeDefault = true): PaymentMethod
     {
@@ -119,23 +126,35 @@ class BillingService
         $fingerprint = $card->fingerprint ?? null;
         $enforce     = (bool) config('stripe.safeguards.enforce_card_uniqueness');
 
-        if ($enforce && $fingerprint) {
-            // Queries `fingerprint`, which is always populated, rather than
-            // `unique_fingerprint`, which is only set while enforcement is on —
-            // so switching enforcement on immediately covers cards captured
-            // while it was off.
-            $takenByAnother = PaymentMethod::where('fingerprint', $fingerprint)
-                ->where('user_id', '!=', $user->id)
-                ->exists();
+        if ($enforce) {
+            $refusal = null;
 
-            if ($takenByAnother) {
+            if ($pm->type !== 'card') {
+                // Link and bank payment methods carry no card fingerprint to check.
+                $refusal = BillingException::cardRequired();
+            } elseif (($card->wallet ?? null) !== null) {
+                $refusal = BillingException::walletNotAccepted();
+            } elseif (blank($fingerprint)) {
+                $refusal = BillingException::cardNotVerifiable();
+            } elseif (CardFingerprint::isHeldByAnother($fingerprint, $user)) {
+                $refusal = BillingException::duplicateCard();
+            }
+
+            if ($refusal !== null) {
+                // Leave nothing on this customer that could be charged later.
                 $client->paymentMethods->detach($paymentMethodId);
-                throw BillingException::duplicateCard();
+                throw $refusal;
             }
         }
 
         try {
             $record = DB::transaction(function () use ($user, $pm, $card, $fingerprint, $enforce, $makeDefault) {
+                // Same transaction as the card row: a card is never saved without
+                // its claim, or claimed without being saved.
+                if ($enforce && ! CardFingerprint::claim($fingerprint, $user)) {
+                    throw BillingException::duplicateCard();
+                }
+
                 if ($makeDefault) {
                     $user->paymentMethods()->update(['is_default' => false]);
                 }
@@ -156,8 +175,9 @@ class BillingService
                     ],
                 );
             });
-        } catch (QueryException) {
-            // Lost the race on the unique index.
+        } catch (QueryException|BillingException) {
+            // Lost the race for the card: the ledger claim, or the unique index
+            // on payment_methods.
             $client->paymentMethods->detach($paymentMethodId);
             throw BillingException::duplicateCard();
         }

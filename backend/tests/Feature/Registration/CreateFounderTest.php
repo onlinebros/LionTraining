@@ -84,7 +84,7 @@ class CreateFounderTest extends TestCase
             'email'                 => 'second@example.com',
             'password'              => 'sup3rSecret!',
             'password_confirmation' => 'sup3rSecret!',
-        ])->assertRedirect(route('member.dashboard'));
+        ])->assertRedirect(route('member.billing.start'));
 
         $second = User::where('email', 'second@example.com')->firstOrFail();
 
