@@ -281,11 +281,13 @@ return [
             | shorter than theirs and we pay out on orders they can still
             | refund; the difference comes out of our pocket.
             |
-            | TODO: `basis` is honoured once the direct-charge work lands.
-            | VendorReferralService::raiseCommission() still computes against the
-            | order total, which was correct for the payment-link flow where our
-            | share did not exist as a separate figure. It is wrong under the new
-            | terms and must change with it.
+            | `basis` is honoured by VendorReferralService::raiseCommission() from
+            | 2026-09-14. Before that it computed against the order total, so
+            | credits raised earlier are 10% of the whole charge.
+            |
+            | Who is paid is decided per order (App\Services\Vendor\
+            | PurchaseAttribution): the partner whose link made the sale, or,
+            | when a partner bought for themselves, that partner's sponsor.
             |
             */
 

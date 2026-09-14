@@ -56,6 +56,90 @@
                 </dl>
             </div>
         </div>
+
+        {{-- Who the sale counts for and who is paid, which is not always the
+             partner whose link was used: a partner's own purchase counts for
+             them and pays their sponsor. --}}
+        @php
+            $attributionLabels = [
+                'customer' => ['Customer sale', 'secondary'],
+                'self'     => ['Own purchase', 'info'],
+                'review'   => ['Needs review', 'warning'],
+            ];
+            [$attributionLabel, $attributionColor] = $attributionLabels[$lead->attribution] ?? $attributionLabels['customer'];
+        @endphp
+        <div class="card mt-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Credit &amp; commission</h5>
+                <span class="badge bg-{{ $attributionColor }}">{{ $attributionLabel }}</span>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted fw-normal">Share link</dt>
+                    <dd class="col-sm-8">{{ $lead->member?->name ?? $lead->referral_code }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Buyer</dt>
+                    <dd class="col-sm-8">
+                        @if ($lead->buyer)
+                            <a href="{{ route('admin.users.show', $lead->buyer->id) }}">{{ $lead->buyer->name }}</a>
+                            <span class="text-muted">(partner)</span>
+                        @else
+                            Customer
+                        @endif
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Counts for</dt>
+                    <dd class="col-sm-8">{{ $lead->creditedMember?->name ?? '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Commission to</dt>
+                    <dd class="col-sm-8">
+                        @if ($lead->attribution === 'review')
+                            <span class="text-warning">Held until decided</span>
+                        @elseif ($lead->earner)
+                            {{ $lead->earner->name }}
+                        @else
+                            No one
+                        @endif
+                    </dd>
+
+                    @if ($lead->attribution_reason)
+                        <dt class="col-sm-4 text-muted fw-normal">Why</dt>
+                        <dd class="col-sm-8">{{ $lead->attribution_reason }}</dd>
+                    @endif
+
+                    @if ($lead->attribution_resolved_at)
+                        <dt class="col-sm-4 text-muted fw-normal">Decided</dt>
+                        <dd class="col-sm-8">
+                            {{ $lead->attributionResolvedBy?->name ?? 'An admin' }},
+                            {{ $lead->attribution_resolved_at->format('d M Y H:i') }}
+                        </dd>
+                    @endif
+                </dl>
+
+                @if (! $lead->commission_ledger_id && ($lead->buyer || $lead->attribution !== 'customer'))
+                    <hr class="my-3">
+                    <p class="text-muted small mb-2">
+                        Decide who this order counts for.
+                        {{ $lead->isConverted()
+                            ? 'Commission is raised as soon as you decide.'
+                            : 'Your decision stands when the payment is confirmed.' }}
+                    </p>
+                    <form method="POST" action="{{ route('admin.vendor-leads.attribution', $lead->id) }}"
+                          class="d-flex flex-wrap gap-2">
+                        @csrf
+                        @if ($lead->buyer)
+                            <button class="btn btn-sm btn-outline-info" name="decision" value="self">
+                                {{ $lead->buyer->name }}'s own purchase: pay
+                                {{ $lead->buyer->sponsor?->name ?? 'no one (no sponsor)' }}
+                            </button>
+                        @endif
+                        <button class="btn btn-sm btn-outline-secondary" name="decision" value="customer">
+                            Customer sale: pay {{ $lead->member?->name ?? 'the link owner' }}
+                        </button>
+                    </form>
+                @endif
+            </div>
+        </div>
     </div>
 
     <div class="col-lg-5">
@@ -178,7 +262,8 @@
                          proving it. --}}
                     <p class="text-muted small">
                         No confirmation received. If {{ $lead->vendorName() }} has confirmed this order
-                        out of band, record it here — the commission is raised from the total you enter.
+                        out of band, record it here. Commission is raised on it at the same time, unless
+                        the order is held for attribution review.
                     </p>
 
                     <form method="POST" action="{{ route('admin.vendor-leads.convert', $lead->id) }}">

@@ -167,6 +167,8 @@
                                    class="{{ request()->routeIs('admin.vendor-leads.index') ? 'active' : '' }}">All Orders</a></li>
                             <li><a href="{{ route('admin.vendor-leads.reconciliation') }}"
                                    class="{{ request()->routeIs('admin.vendor-leads.reconciliation') ? 'active' : '' }}">Reconciliation</a></li>
+                            <li><a href="{{ route('admin.vendor-leads.promotion') }}"
+                                   class="{{ request()->routeIs('admin.vendor-leads.promotion') ? 'active' : '' }}">Promotion</a></li>
                         </ul>
                     </li>
 

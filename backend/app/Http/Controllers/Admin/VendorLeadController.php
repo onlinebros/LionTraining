@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VendorLead;
+use App\Services\Vendor\PromotionTracker;
 use App\Services\Vendor\VendorReferralService;
 use App\Support\Vendors;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -18,7 +21,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class VendorLeadController extends Controller
 {
-    public function __construct(private readonly VendorReferralService $referrals) {}
+    public function __construct(
+        private readonly VendorReferralService $referrals,
+        private readonly PromotionTracker $promotions,
+    ) {}
 
     public function index(Request $request)
     {
@@ -30,6 +36,10 @@ class VendorLeadController extends Controller
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);
+        }
+
+        if ($attribution = $request->query('attribution')) {
+            $query->where('attribution', $attribution);
         }
 
         if ($search = $request->query('q')) {
@@ -44,13 +54,16 @@ class VendorLeadController extends Controller
         return view('admin.vendor.leads', [
             'leads'   => $query->paginate(30)->withQueryString(),
             'vendors' => Vendors::all(),
-            'filters' => $request->only(['vendor', 'status', 'q']),
+            'filters' => $request->only(['vendor', 'status', 'q', 'attribution']),
             'stats'   => [
                 'awaiting'  => VendorLead::awaitingPurchase()->count(),
                 'converted' => VendorLead::converted()->count(),
                 // Converted with no commission raised: either the vendor sent no
                 // amount, or the rate is unset. Both need a human.
                 'unpaid'    => VendorLead::uncommissioned()->count(),
+                // Matched a partner on address alone. Nobody is paid until an
+                // admin decides who the order counts for.
+                'review'    => VendorLead::needsAttributionReview()->count(),
             ],
         ]);
     }
@@ -89,6 +102,18 @@ class VendorLeadController extends Controller
                 'settled'   => (int) (clone $settled)->sum('our_share_amount'),
                 'settled_n' => (clone $settled)->count(),
             ],
+        ]);
+    }
+
+    /** Every order holding a place in the running promotion, with the detail to check it. */
+    public function promotion(Request $request)
+    {
+        $key = (string) ($request->query('promotion') ?: $this->promotions->currentKey());
+
+        return view('admin.vendor.promotion', [
+            'standings' => $key !== '' && $this->promotions->find($key) !== null
+                ? $this->promotions->standings($key)
+                : null,
         ]);
     }
 
@@ -158,7 +183,10 @@ class VendorLeadController extends Controller
     public function show(VendorLead $vendorLead)
     {
         return view('admin.vendor.lead-show', [
-            'lead'   => $vendorLead->load(['member', 'crmContact', 'confirmedBy']),
+            'lead'   => $vendorLead->load([
+                'member', 'crmContact', 'confirmedBy',
+                'buyer.sponsor', 'creditedMember', 'earner', 'attributionResolvedBy',
+            ]),
             'vendor' => Vendors::find($vendorLead->vendor),
         ]);
     }
@@ -185,7 +213,34 @@ class VendorLeadController extends Controller
             'vendor_order_ref' => $data['vendor_order_ref'] ?? null,
         ], VendorLead::VIA_MANUAL, $request->user());
 
-        return back()->with('status', "Marked {$vendorLead->public_ref} as converted and raised the commission.");
+        return back()->with('status', $vendorLead->fresh()?->commission_ledger_id
+            ? "Marked {$vendorLead->public_ref} as converted and raised the commission."
+            : "Marked {$vendorLead->public_ref} as converted. No commission was raised; see Credit & commission.");
+    }
+
+    /**
+     * Settle who an order counts for.
+     *
+     * For an order held on an address-only match, or to correct an automatic
+     * decision before any commission has been raised.
+     */
+    public function attribution(Request $request, VendorLead $vendorLead)
+    {
+        $data = $request->validate([
+            'decision' => ['required', Rule::in([VendorLead::ATTRIBUTION_SELF, VendorLead::ATTRIBUTION_CUSTOMER])],
+        ]);
+
+        try {
+            $lead = $this->referrals->resolveAttribution($vendorLead, $data['decision'], $request->user());
+        } catch (RuntimeException $e) {
+            return back()->withErrors($e->getMessage());
+        }
+
+        $message = $lead->isOwnPurchase()
+            ? "{$lead->public_ref} recorded as {$lead->buyer?->name}'s own purchase."
+            : "{$lead->public_ref} recorded as a customer sale for {$lead->member?->name}.";
+
+        return back()->with('status', $message.($lead->commission_ledger_id ? ' Commission raised.' : ''));
     }
 
     public function lost(VendorLead $vendorLead)

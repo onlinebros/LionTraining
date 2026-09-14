@@ -25,6 +25,10 @@ class VendorReferralTest extends TestCase
         config()->set('vendors.vendors.plasmaguard.webhook_secret', self::SECRET);
         config()->set('vendors.vendors.plasmaguard.checkout.url', 'https://buy.stripe.com/test_link');
         config()->set('vendors.vendors.plasmaguard.commission.rate', 0.10);
+        // These exercise the payment-link flow, where no revenue share is
+        // recorded on the lead. Commission on the order total is that flow's
+        // basis; the revenue-share basis is covered in SelfPurchaseTest.
+        config()->set('vendors.vendors.plasmaguard.commission.basis', 'order_total');
         config()->set('stripe.webhook_tolerance', 300);
 
         $this->member = User::factory()->create([

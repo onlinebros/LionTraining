@@ -23,14 +23,20 @@ use RuntimeException;
  */
 class VendorReferralService
 {
+    public function __construct(private readonly PurchaseAttribution $attribution) {}
+
     /**
      * Record an interested customer and the partner who found them.
      *
      * Also files them in the partner's CRM, because a lead that converts three
      * weeks later needs to be somewhere the partner can work it in the meantime.
      *
+     * A partner ordering for themselves from the back office passes themselves as
+     * `buyer` in the context. That order is not filed in their CRM: they are not
+     * their own prospect.
+     *
      * @param  array<string,mixed>  $data     Validated customer fields.
-     * @param  array<string,mixed>  $context  ip / user_agent / utm.
+     * @param  array<string,mixed>  $context  ip / user_agent / utm / source / buyer.
      */
     public function capture(
         string $vendor,
@@ -43,10 +49,17 @@ class VendorReferralService
             throw new RuntimeException("Unknown vendor product: {$vendor}/{$productKey}");
         }
 
-        return DB::transaction(function () use ($vendor, $productKey, $member, $data, $context) {
-            $contact = $this->syncCrmContact($member, $data, $vendor, $productKey);
+        $buyer    = $context['buyer'] ?? null;
+        $ownOrder = $buyer instanceof User;
 
-            return VendorLead::create([
+        if ($ownOrder && $buyer->id !== $member->id) {
+            throw new RuntimeException('A back-office order can only be placed by the partner it is recorded against.');
+        }
+
+        return DB::transaction(function () use ($vendor, $productKey, $member, $data, $context, $ownOrder) {
+            $contact = $ownOrder ? null : $this->syncCrmContact($member, $data, $vendor, $productKey);
+
+            $lead = VendorLead::create([
                 'public_ref'     => $this->generateReference(),
                 'vendor'         => $vendor,
                 'product_key'    => $productKey,
@@ -71,11 +84,17 @@ class VendorReferralService
                 'qualifiers'    => $data['qualifiers']   ?? null,
 
                 'status'     => VendorLead::STATUS_NEW,
-                'source'     => $context['source'] ?? 'member_page',
+                'source'     => $ownOrder ? VendorLead::SOURCE_BACK_OFFICE : ($context['source'] ?? 'member_page'),
                 'ip'         => $context['ip']         ?? null,
                 'user_agent' => $context['user_agent'] ?? null,
                 'utm'        => $context['utm']        ?? null,
             ]);
+
+            // Worked out now so the partner's screens are right from the start,
+            // and again at conversion, once the shipping address is known.
+            $this->attribution->apply($lead)->save();
+
+            return $lead;
         });
     }
 
@@ -202,7 +221,7 @@ class VendorReferralService
     }
 
     /**
-     * Record a confirmed sale and raise the partner's commission.
+     * Record a confirmed sale and raise the commission.
      *
      * Idempotent by construction: a lead already converted returns unchanged, so
      * a redelivered webhook cannot pay twice. The row is locked because the
@@ -233,10 +252,55 @@ class VendorReferralService
                 'currency'                   => $confirmation['currency'] ?? null,
                 'confirmed_via'              => $via,
                 'confirmed_by'               => $actor?->id,
-            ])->save();
+            ]);
+
+            // Decided at the moment of sale, from everything the order now
+            // carries. This is what stops a partner being paid on their own
+            // purchase, whichever share link they used.
+            $this->attribution->apply($lead)->save();
 
             $this->syncContactStatus($lead, 'purchased');
             $this->raiseCommission($lead);
+
+            return $lead;
+        });
+    }
+
+    /**
+     * An admin settles who an order counts for.
+     *
+     * The path for an order held on an address-only match, and for correcting an
+     * automatic decision. Only allowed before commission is raised: once a credit
+     * exists, moving it is a clawback plus a new credit, not an edit.
+     */
+    public function resolveAttribution(VendorLead $lead, string $decision, User $admin): VendorLead
+    {
+        return DB::transaction(function () use ($lead, $decision, $admin) {
+            $lead = VendorLead::lockForUpdate()->findOrFail($lead->id);
+
+            if ($lead->commission_ledger_id !== null) {
+                throw new RuntimeException(
+                    'Commission has already been raised on this order. Use a clawback to change who is paid.'
+                );
+            }
+
+            $buyer = match ($decision) {
+                VendorLead::ATTRIBUTION_SELF => $lead->buyer
+                    ?? throw new RuntimeException('No partner has been identified as the buyer of this order.'),
+                VendorLead::ATTRIBUTION_CUSTOMER => null,
+                default => throw new RuntimeException("Unknown attribution decision: {$decision}"),
+            };
+
+            $this->attribution->assign($lead, $decision, $buyer, $lead->attribution_reason);
+
+            $lead->forceFill([
+                'attribution_resolved_by' => $admin->id,
+                'attribution_resolved_at' => now(),
+            ])->save();
+
+            if ($lead->isConverted()) {
+                $this->raiseCommission($lead);
+            }
 
             return $lead;
         });
@@ -289,21 +353,29 @@ class VendorReferralService
     }
 
     /**
-     * Credit the partner for a confirmed sale.
+     * Credit the commission for a confirmed sale.
      *
-     * Guarded by `commission_ledger_id`, so this can be called more than once
-     * and still raise exactly one credit.
+     * Paid to the lead's `earner_id`, which is not always the partner whose link
+     * was used: a partner's own purchase pays their sponsor. Guarded by
+     * `commission_ledger_id`, so this can be called more than once and still
+     * raise exactly one credit.
+     *
+     * Nothing is raised while the order waits for an admin's attribution
+     * decision, or when nobody is due it (a partner with no sponsor buying for
+     * themselves).
      */
     public function raiseCommission(VendorLead $lead): ?CommissionLedger
     {
-        if ($lead->commission_ledger_id !== null || $lead->member_id === null) {
+        if ($lead->commission_ledger_id !== null
+            || $lead->attribution === VendorLead::ATTRIBUTION_REVIEW
+            || $lead->earner_id === null) {
             return null;
         }
 
-        $rate   = Vendors::commissionRate((string) $lead->vendor);
-        $amount = (int) $lead->amount_total;
+        $rate = Vendors::commissionRate((string) $lead->vendor);
+        $base = $this->commissionBase($lead);
 
-        if ($rate <= 0 || $amount <= 0) {
+        if ($rate <= 0 || $base <= 0) {
             // Nothing to pay on. Left uncommissioned and visible on the admin
             // reconciliation list rather than written as a zero-value credit
             // that looks settled.
@@ -313,24 +385,28 @@ class VendorReferralService
         $clawbackDays = Vendors::clawbackDays((string) $lead->vendor);
 
         $ledger = CommissionLedger::create([
-            'earner_id'   => $lead->member_id,
+            'earner_id'   => $lead->earner_id,
             'source_type' => VendorLead::class,
             'source_id'   => $lead->id,
             'type'        => 'credit',
-            'amount'      => round(($amount / 100) * $rate, 4),
+            'amount'      => round(($base / 100) * $rate, 4),
             'status'      => 'pending',
             'clawback_eligible_until' => $clawbackDays > 0
                 ? Carbon::parse($lead->converted_at ?? now())->addDays($clawbackDays)->toDateString()
                 : null,
             'notes' => sprintf(
-                '%s — %s (%s) · order %s · %s%s at %s%%',
+                '%s — %s (%s) · order %s · %s %s%s at %s%%%s',
                 $lead->vendorName(),
                 $lead->productName(),
                 $lead->public_ref,
                 $lead->vendor_order_ref ?: 'n/a',
-                Str::upper((string) $lead->currency),
-                $lead->amountDecimal(),
+                Vendors::commissionBasis((string) $lead->vendor) === 'order_total' ? 'order total' : 'revenue share',
+                Str::upper((string) ($lead->currency ?: 'USD')),
+                number_format($base / 100, 2, '.', ''),
                 rtrim(rtrim(number_format($rate * 100, 2, '.', ''), '0'), '.'),
+                $lead->isOwnPurchase()
+                    ? sprintf(' · own purchase by %s, paid to their sponsor', $lead->buyer->name ?? 'a partner')
+                    : '',
             ),
         ]);
 
@@ -340,6 +416,47 @@ class VendorReferralService
     }
 
     // ── Internals ─────────────────────────────────────────────────────────────
+
+    /**
+     * What the commission rate is applied to, in minor units.
+     *
+     * Normally our revenue share as recorded when the order was built. An order
+     * confirmed without passing our checkout (a payment link, or marked by hand)
+     * has no share recorded, so it is worked out from the product's terms the
+     * same way a quote does. A product with no price yields nothing, and the
+     * order stays on the reconciliation worklist rather than being guessed at.
+     */
+    private function commissionBase(VendorLead $lead): int
+    {
+        $vendor = (string) $lead->vendor;
+
+        if (Vendors::commissionBasis($vendor) === 'order_total') {
+            return (int) $lead->amount_total;
+        }
+
+        if ((int) $lead->our_share_amount > 0) {
+            return (int) $lead->our_share_amount;
+        }
+
+        $product  = Vendors::product($vendor, (string) $lead->product_key) ?? [];
+        $quantity = max(1, (int) $lead->quantity);
+        $subtotal = (int) ($lead->subtotal_amount ?: (int) round(((float) ($product['price'] ?? 0)) * 100) * $quantity);
+
+        if ($subtotal <= 0) {
+            return 0;
+        }
+
+        try {
+            return Vendors::revenueShare($vendor, (string) $lead->product_key, $quantity, $subtotal);
+        } catch (RuntimeException $e) {
+            Log::warning('No commission base for vendor order', [
+                'lead'  => $lead->public_ref,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
+    }
 
     /**
      * File the customer in the partner's CRM.

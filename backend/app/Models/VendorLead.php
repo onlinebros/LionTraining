@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Support\Vendors;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -28,6 +30,19 @@ class VendorLead extends Model
     public const VIA_IMPORT         = 'import';
     public const VIA_RECONCILIATION = 'reconciliation';
 
+    /** A partner ordering for themselves from the member area. */
+    public const SOURCE_BACK_OFFICE = 'back_office';
+
+    // Who a sale counts for and who is paid. See PurchaseAttribution.
+    public const ATTRIBUTION_CUSTOMER = 'customer';  // sold to a customer through a partner's link
+    public const ATTRIBUTION_SELF     = 'self';      // a partner's own purchase; commission to their sponsor
+    public const ATTRIBUTION_REVIEW   = 'review';    // matches a partner on address only; commission held
+
+    /*
+     * The attribution columns (attribution, buyer_user_id, credited_member_id,
+     * earner_id, attribution_resolved_*) are deliberately not fillable. They
+     * decide who is paid, and are only ever written by PurchaseAttribution.
+     */
     protected $fillable = [
         'public_ref', 'vendor', 'product_key',
         'member_id', 'referral_code', 'crm_contact_id',
@@ -63,24 +78,78 @@ class VendorLead extends Model
             'handed_off_at' => 'datetime',
             'converted_at'  => 'datetime',
             'refunded_at'   => 'datetime',
+            'attribution_resolved_at' => 'datetime',
         ];
     }
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
-    public function member()
+    /**
+     * The partner whose share link was used.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function member(): BelongsTo
     {
         return $this->belongsTo(User::class, 'member_id');
     }
 
-    public function crmContact()
+    /**
+     * The partner who bought for themselves, when one did.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'buyer_user_id');
+    }
+
+    /**
+     * Who the sale counts for, in their sales record and in promotions.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function creditedMember(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'credited_member_id');
+    }
+
+    /**
+     * Who the commission is paid to.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function earner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'earner_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function attributionResolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'attribution_resolved_by');
+    }
+
+    /** @return BelongsTo<CrmContact, $this> */
+    public function crmContact(): BelongsTo
     {
         return $this->belongsTo(CrmContact::class);
     }
 
-    public function confirmedBy()
+    /** @return BelongsTo<User, $this> */
+    public function confirmedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'confirmed_by');
+    }
+
+    /**
+     * The one credit raised for this sale, if it has been.
+     *
+     * @return BelongsTo<CommissionLedger, $this>
+     */
+    public function commissionCredit(): BelongsTo
+    {
+        return $this->belongsTo(CommissionLedger::class, 'commission_ledger_id');
     }
 
     /**
@@ -89,8 +158,10 @@ class VendorLead extends Model
      * The inverse side is CommissionLedger's polymorphic `source`, which already
      * existed — a converted vendor lead is exactly the qualifying revenue event
      * the compensation engine was built to pay against.
+     *
+     * @return MorphMany<CommissionLedger, $this>
      */
-    public function ledgerEntries()
+    public function ledgerEntries(): MorphMany
     {
         return $this->morphMany(CommissionLedger::class, 'source');
     }
@@ -120,11 +191,24 @@ class VendorLead extends Model
             ->where('our_share_amount', '>', 0);
     }
 
-    /** Converted but with no commission raised — the reconciliation worklist. */
+    /**
+     * Converted, someone is due commission, and none has been raised — the
+     * reconciliation worklist.
+     *
+     * Orders with no earner are left off: an own purchase by a partner with no
+     * sponsor pays no one by design, and a held order is on its own list.
+     */
     public function scopeUncommissioned($query)
     {
         return $query->where('status', self::STATUS_CONVERTED)
+            ->whereNotNull('earner_id')
             ->whereNull('commission_ledger_id');
+    }
+
+    /** Matched a partner on address alone; waiting for an admin to decide. */
+    public function scopeNeedsAttributionReview($query)
+    {
+        return $query->where('attribution', self::ATTRIBUTION_REVIEW);
     }
 
     // ── Derived ───────────────────────────────────────────────────────────────
@@ -132,6 +216,11 @@ class VendorLead extends Model
     public function isConverted(): bool
     {
         return $this->status === self::STATUS_CONVERTED;
+    }
+
+    public function isOwnPurchase(): bool
+    {
+        return $this->attribution === self::ATTRIBUTION_SELF;
     }
 
     public function fullName(): string

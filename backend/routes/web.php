@@ -153,9 +153,15 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
         Route::get('/payouts',  [MemberController::class, 'commissionPayouts'])->name('payouts');
     });
 
-    // Vendor product sales — the partner's own leads and share links.
+    // Vendor product sales — the partner's own leads and share links, ordering
+    // for themselves, and the running promotion. The fixed segments come before
+    // {lead} so /sales/promotion is never read as a lead id.
     Route::prefix('sales')->name('sales.')->group(function () {
         Route::get('/',            [MemberVendorLeadController::class, 'index'])->name('index');
+        Route::get('/promotion',   [MemberVendorLeadController::class, 'promotion'])->name('promotion');
+        Route::get('/buy/{vendor}/{product}',  [MemberVendorLeadController::class, 'buy'])->name('buy');
+        Route::post('/buy/{vendor}/{product}', [MemberVendorLeadController::class, 'placeOwnOrder'])
+            ->middleware('throttle:10,1')->name('buy.store');
         Route::get('/{lead}',      [MemberVendorLeadController::class, 'show'])->name('show');
     });
 
@@ -262,12 +268,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // is taken at the point of sale, so this is how the revenue share
             // actually gets collected.
             Route::get('/reconciliation',    [VendorLeadController::class, 'reconciliation'])->name('reconciliation');
+            // The running sales promotion: every order holding a place.
+            Route::get('/promotion',         [VendorLeadController::class, 'promotion'])->name('promotion');
             Route::post('/invoice',          [VendorLeadController::class, 'invoice'])->name('invoice');
             Route::post('/settle',           [VendorLeadController::class, 'settle'])->name('settle');
             Route::post('/{vendorLead}/fulfil', [VendorLeadController::class, 'fulfil'])->name('fulfil');
             Route::get('/{vendorLead}',      [VendorLeadController::class, 'show'])->name('show');
             Route::post('/{vendorLead}/convert', [VendorLeadController::class, 'convert'])->name('convert');
             Route::post('/{vendorLead}/lost',    [VendorLeadController::class, 'lost'])->name('lost');
+            // Who an order counts for: a customer sale or a partner's own purchase.
+            Route::post('/{vendorLead}/attribution', [VendorLeadController::class, 'attribution'])->name('attribution');
         });
 
         // Commission system

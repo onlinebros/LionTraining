@@ -20,19 +20,19 @@
 @endphp
 
 <div class="row g-3 mb-3">
-    <div class="col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card mb-0"><div class="card-body py-3 text-center">
             <div class="fs-4 fw-bold">{{ $stats['awaiting'] }}</div>
             <div class="text-muted small">At Checkout</div>
         </div></div>
     </div>
-    <div class="col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card mb-0"><div class="card-body py-3 text-center">
             <div class="fs-4 fw-bold text-success">{{ $stats['converted'] }}</div>
             <div class="text-muted small">Converted</div>
         </div></div>
     </div>
-    <div class="col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card mb-0"><div class="card-body py-3 text-center">
             <div class="fs-4 fw-bold {{ $stats['unpaid'] > 0 ? 'text-warning' : '' }}">{{ $stats['unpaid'] }}</div>
             {{-- Converted but with no commission raised — the vendor sent no
@@ -40,6 +40,16 @@
                  money the ledger does not know about. --}}
             <div class="text-muted small">Needs Reconciliation</div>
         </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <a class="card mb-0 text-reset text-decoration-none" href="{{ route('admin.vendor-leads.index', ['attribution' => 'review']) }}">
+            <div class="card-body py-3 text-center">
+                {{-- Details match a partner on address alone. Commission is
+                     held until someone decides whose purchase it was. --}}
+                <div class="fs-4 fw-bold {{ $stats['review'] > 0 ? 'text-warning' : '' }}">{{ $stats['review'] }}</div>
+                <div class="text-muted small">Attribution Review</div>
+            </div>
+        </a>
     </div>
 </div>
 

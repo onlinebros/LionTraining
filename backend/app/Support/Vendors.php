@@ -62,6 +62,22 @@ class Vendors
     }
 
     /**
+     * What the partner commission rate is applied to.
+     *
+     * 'revenue_share' (the default) is our cut of the goods. 'order_total' is
+     * the customer's whole charge, which the payment-link flow used and which
+     * overpays under the direct-charge terms: 10% of a $6,414 order is $641,
+     * against $300 on our $3,000 share. Anything unrecognised reads as the
+     * smaller, correct basis.
+     */
+    public static function commissionBasis(string $slug): string
+    {
+        return (self::find($slug)['commission']['basis'] ?? null) === 'order_total'
+            ? 'order_total'
+            : 'revenue_share';
+    }
+
+    /**
      * Our cut of one order, in minor units — the Connect application fee.
      *
      * Quantity is an argument rather than something the caller multiplies

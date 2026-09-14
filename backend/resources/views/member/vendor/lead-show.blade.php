@@ -109,6 +109,22 @@
             </div>
         </div>
 
+        @if ($lead->isOwnPurchase())
+            <div class="alert alert-info mt-3 mb-0 py-3 small">
+                @if ((int) $lead->buyer_user_id === (int) auth()->id())
+                    This is your own purchase. It counts as your sale, and the commission on it goes to your sponsor.
+                @else
+                    This order was placed by another partner buying for themselves. It counts as their sale,
+                    and the commission goes to their sponsor.
+                @endif
+            </div>
+        @elseif ($lead->attribution === 'review')
+            <div class="alert alert-warning mt-3 mb-0 py-3 small">
+                The details on this order match a partner account, so it is being checked before any
+                commission is paid.
+            </div>
+        @endif
+
         @if (! $lead->isConverted() && $lead->status !== 'refunded')
             <div class="alert alert-info mt-3 mb-0 py-3 small">
                 {{-- Managing the expectation directly. A partner who does not know

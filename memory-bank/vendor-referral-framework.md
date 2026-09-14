@@ -173,3 +173,59 @@ Only item 1 is required to launch. Item 2 is what makes it not manual.
 - **No address validation.** We capture the address for the vendor's benefit but
   do not validate it — that is the merchant of record's job, and duplicating it
   invites two systems disagreeing about the same address.
+
+## 11. A partner's own purchase (owner, 2026-09-14)
+
+A partner is never paid commission on their own purchase. It counts as their
+sale (their record, promotions), and the commission goes to **their sponsor**,
+whichever share link was used. Buying through your own link, or swapping links
+with another partner, therefore cannot cut the sponsor out. A partner with no
+sponsor buying for themselves pays no one.
+
+Partners order for themselves from **Product Sales → Buy for yourself**
+(`member.sales.buy`). The order uses the account email and goes through the
+normal checkout.
+
+Each lead records four people:
+
+| Column | Meaning |
+|---|---|
+| `member_id` | whose share link was used |
+| `buyer_user_id` | the partner who bought for themselves, if any |
+| `credited_member_id` | who the sale counts for |
+| `earner_id` | who commission is paid to |
+
+`App\Services\Vendor\PurchaseAttribution` sets them at capture and again at
+conversion. The `attribution` column records the outcome:
+
+- `self`: back-office order, or the buyer's email or phone (last 10 digits)
+  matches a partner account. Automatic.
+- `review`: only the shipping address (line 1 + ZIP5) matches, or a phone
+  matches several partners. Commission is held until an admin decides on the
+  lead page (`admin.vendor-leads.attribution`). The decision is final and later
+  webhooks do not re-evaluate it.
+- `customer`: no match. The link owner is credited and paid.
+
+Attribution cannot be changed after commission is raised. Use a clawback.
+
+**Not detectable:** a partner using a different email and phone and shipping
+elsewhere. Card fingerprints are no help, because the charge is on the vendor's
+Stripe account.
+
+**Commission basis** is now honoured: 10% of our revenue share ($300 per
+system), not of the order total. Credits raised before 2026-09-14 used the order
+total.
+
+## 12. Promotions
+
+`config/promotions.php`. The current one is **First 100 PlasmaGuard PRO
+Systems**:
+
+- Counts **units** (a 3-system order fills 3 places), in order of confirmed payment.
+- Starts 2026-09-14 00:00 Eastern (`PROMO_PG_PRO_100_STARTS_AT`).
+- Refunded orders drop out and the next sale moves up.
+- The order that fills the last place counts only the places left.
+
+`PromotionTracker` computes standings from converted leads on every read. No
+places are stored. Partners see a leaderboard at `member.sales.promotion`, and
+admins see every qualifying order at `admin.vendor-leads.promotion`.
