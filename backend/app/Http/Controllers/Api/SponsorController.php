@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Sponsorship;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 
 class SponsorController extends Controller
@@ -26,21 +26,20 @@ class SponsorController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
         ]);
 
-        Sponsorship::create([
-            'sponsor_id' => $sponsor->id,
-            'sponsored_id' => $user->id,
-            'status' => 'pending',
-            'notes' => $request->notes,
-        ]);
+        // Goes through EnrollmentService so the genealogy and the sponsorships
+        // row are written together — see that class for why nothing writes
+        // either one directly.
+        app(\App\Services\Genealogy\EnrollmentService::class)
+            ->enroll($user, $sponsor, $request->notes);
 
-        $token = $user->createToken('lion-auth')->plainTextToken;
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
 
         return response()->json([
             'user' => $user,
-            'token' => $token,
             'sponsor' => ['name' => $sponsor->name, 'email' => $sponsor->email],
         ], 201);
     }

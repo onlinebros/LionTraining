@@ -18,14 +18,16 @@
         transition: transform .15s, border-color .15s;
     }
     .color-swatch-label input:checked + .color-dot {
-        border-color: #2d3748;
+        border-color: var(--q3-gold);
         transform: scale(1.15);
     }
-    .color-swatch-label span { font-size: .7rem; color: #718096; }
-    .logo-preview { max-height: 60px; border-radius: 6px; border: 1px solid #e9edf1; padding: 4px; background: #fff; }
-    .logo-preview-dark { background: #2b2b3b; }
-    .mode-card { border: 2px solid #e9edf1; border-radius: 10px; padding: 20px; cursor: pointer; transition: border-color .15s; }
-    .mode-card.selected { border-color: var(--theme-default); }
+    .color-swatch-label span { font-size: .7rem; color: var(--q3-text-muted); }
+    .logo-preview { max-height: 60px; border-radius: var(--q3-radius-sm); border: 1px solid var(--q3-border);
+        padding: 4px; background: var(--q3-surface-2); }
+    .logo-preview-dark { background: var(--q3-black); }
+    .mode-card { border: 1px solid var(--q3-border); border-radius: var(--q3-radius); padding: 20px;
+        cursor: pointer; transition: border-color .15s; }
+    .mode-card.selected { border-color: var(--q3-gold); background: var(--q3-gold-tint); }
     .mode-card input[type=radio] { display: none; }
 </style>
 @endpush
@@ -54,8 +56,8 @@
                         <div class="mb-4">
                             <label class="form-label fw-semibold">Site Name</label>
                             <input type="text" name="site_name" class="form-control"
-                                   value="{{ $settings['site_name'] ?? 'Lion Training' }}"
-                                   placeholder="Lion Training">
+                                   value="{{ $settings['site_name'] ?? 'Quantum Life' }}"
+                                   placeholder="Quantum Life">
                         </div>
 
                         {{-- Logo Light --}}
@@ -146,7 +148,15 @@
                             </label>
                             @endforeach
                         </div>
-                        <p class="small text-muted mt-3 mb-0">Applies to both admin and member areas site-wide.</p>
+                        {{-- The Q3 black-and-gold theme owns the accent colour, so these
+                             swatches no longer repaint the UI. The setting is left in place
+                             (and still saved) rather than dropped, so nothing that reads
+                             color_scheme breaks. --}}
+                        <p class="small text-muted mt-3 mb-0">
+                            <strong class="q3-gold">Overridden by the Q3 theme.</strong>
+                            The brand accent is fixed to Q3 gold across the admin and member
+                            areas. This preference is still stored but no longer changes the UI.
+                        </p>
                     </div>
                 </div>
 
@@ -154,7 +164,13 @@
                 <div class="card">
                     <div class="card-header"><h5 class="mb-0">Default Mode</h5></div>
                     <div class="card-body">
-                        <p class="text-muted small mb-3">Sets the site-wide default. Users can still toggle their personal preference.</p>
+                        {{-- Same story as the colour scheme: the back office is dark by
+                             design, so the layouts pin data-theme rather than reading this. --}}
+                        <p class="text-muted small mb-3">
+                            <strong class="q3-gold">Overridden by the Q3 theme.</strong>
+                            The back office renders dark by design. This preference is still
+                            stored but no longer changes the UI.
+                        </p>
                         <div class="row g-3">
                             @foreach(['light' => ['☀️', 'Light Mode', 'Clean and bright'], 'dark' => ['🌙', 'Dark Mode', 'Easy on the eyes']] as $val => [$icon, $label, $desc])
                             <div class="col-6">

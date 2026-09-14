@@ -1,0 +1,99 @@
+{
+    "version": "1.0.0",
+    "namespace": "App\\Events\\Taxonomy",
+    "description": "Quantum Life product-event taxonomy. Single source of truth for the funnel events the platform emits. Generates strongly-typed PHP DTOs under app/Events/Taxonomy/ via scripts/codegen-events.php. Bump the file name (taxonomy.v2.json) for a breaking change; bump the version field for additive changes.",
+    "field_types": {
+        "string": "PHP string",
+        "int": "PHP int",
+        "bool": "PHP bool",
+        "iso8601": "ISO-8601 timestamp as PHP string (codegen maps to string)"
+    },
+    "events": [
+        {
+            "name": "EbookLandingViewed",
+            "slug": "ebook_landing_viewed",
+            "description": "Visitor loaded the free-E-Book landing page.",
+            "fields": [
+                {"name": "placement_id", "type": "string", "required": true, "doc": "Which landing-page placement variant was served (A/B test, campaign id, source page)."},
+                {"name": "session_id",   "type": "string", "required": true, "doc": "Anonymous session id from the visitor cookie."},
+                {"name": "affiliate_id", "type": "int",    "required": false, "doc": "Affiliate user_id captured from the sharing link, if the visitor arrived via one."},
+                {"name": "referrer",     "type": "string", "required": false}
+            ]
+        },
+        {
+            "name": "FreeAccountCreated",
+            "slug": "free_account_created",
+            "description": "Visitor completed the free-account signup form. Always fires once per user.",
+            "fields": [
+                {"name": "user_id",      "type": "int",    "required": true},
+                {"name": "placement_id", "type": "string", "required": true, "doc": "Placement attribution carried from the landing page that converted the signup."},
+                {"name": "affiliate_id", "type": "int",    "required": false, "doc": "Sponsor user_id if the signup was attributed to a sharing link."}
+            ]
+        },
+        {
+            "name": "EbookDownloaded",
+            "slug": "ebook_downloaded",
+            "description": "Newly-created member downloaded (or re-downloaded) the lead-magnet E-Book.",
+            "fields": [
+                {"name": "user_id",         "type": "int",    "required": true},
+                {"name": "ebook_version",   "type": "string", "required": true},
+                {"name": "delivery_channel","type": "string", "required": true, "doc": "in_app | email_link"}
+            ]
+        },
+        {
+            "name": "UpgradeOfferShown",
+            "slug": "upgrade_offer_shown",
+            "description": "Paid-upgrade offer was rendered to a logged-in free member.",
+            "fields": [
+                {"name": "user_id",      "type": "int",    "required": true},
+                {"name": "placement_id", "type": "string", "required": true, "doc": "Which in-app placement showed the offer (dashboard banner, post-ebook modal, email link)."},
+                {"name": "plan_id",      "type": "int",    "required": true}
+            ]
+        },
+        {
+            "name": "UpgradeCompleted",
+            "slug": "upgrade_completed",
+            "description": "Member successfully purchased a paid plan. Source of truth for commission accrual triggers.",
+            "fields": [
+                {"name": "user_id",      "type": "int",    "required": true},
+                {"name": "plan_id",      "type": "int",    "required": true},
+                {"name": "amount_cents", "type": "int",    "required": true},
+                {"name": "currency",     "type": "string", "required": true},
+                {"name": "placement_id", "type": "string", "required": true, "doc": "Placement attribution carried from the offer that converted the purchase."},
+                {"name": "affiliate_id", "type": "int",    "required": false, "doc": "Sponsor user_id who earns the commission, if attributed."}
+            ]
+        },
+        {
+            "name": "AffiliateTermsAccepted",
+            "slug": "affiliate_terms_accepted",
+            "description": "Paid member explicitly accepted the affiliate ToS — unlocks sharing-link generation.",
+            "fields": [
+                {"name": "user_id",          "type": "int",    "required": true},
+                {"name": "terms_version",    "type": "string", "required": true},
+                {"name": "accepted_ip",      "type": "string", "required": true}
+            ]
+        },
+        {
+            "name": "AffiliateLinkShareCreated",
+            "slug": "affiliate_link_share_created",
+            "description": "An eligible affiliate generated a new sharing link (placement-scoped share token).",
+            "fields": [
+                {"name": "affiliate_id", "type": "int",    "required": true, "doc": "user_id of the affiliate creating the link."},
+                {"name": "share_token",  "type": "string", "required": true, "doc": "Opaque token attached to outbound URLs."},
+                {"name": "placement_id", "type": "string", "required": true, "doc": "Which placement context the share was generated from (dashboard, ebook reader, email signature)."}
+            ]
+        },
+        {
+            "name": "AffiliateLinkClicked",
+            "slug": "affiliate_link_clicked",
+            "description": "Visitor clicked through an affiliate sharing link. Joined to FreeAccountCreated/UpgradeCompleted via session_id for attribution.",
+            "fields": [
+                {"name": "affiliate_id", "type": "int",    "required": true},
+                {"name": "share_token",  "type": "string", "required": true},
+                {"name": "placement_id", "type": "string", "required": true, "doc": "Placement attribution captured from the link payload."},
+                {"name": "session_id",   "type": "string", "required": true},
+                {"name": "user_agent",   "type": "string", "required": false}
+            ]
+        }
+    ]
+}

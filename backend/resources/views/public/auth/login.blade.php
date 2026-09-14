@@ -1,68 +1,63 @@
 @extends('layouts.public')
-@section('title', 'Sign In — Lion Training')
+@section('title', 'Sign In — Quantum Life')
+@section('body-class', 'dark-only q3-theme q3-auth')
 
 @section('content')
-<div class="container-fluid p-0">
-    <div class="row m-0">
-        <div class="col-12 p-0">
-            <div class="login-card login-dark">
-                <div>
-                    <div>
-                        <a class="logo" href="{{ route('home') }}">
-                            <img class="img-fluid for-light" src="{{ asset('assets/images/logo/logo.png') }}" alt="Lion Training">
-                            <img class="img-fluid for-dark" src="{{ asset('assets/images/logo/logo_dark.png') }}" alt="Lion Training">
-                        </a>
-                    </div>
-                    <div class="login-main">
-                        <form class="theme-form" method="POST" action="{{ route('login.post') }}">
-                            @csrf
-                            <h4>Sign in to your account</h4>
-                            <p>Welcome back! Enter your credentials below.</p>
+<div class="q3-auth-shell">
+    <div class="q3-auth-card">
 
-                            @if($errors->any())
-                                <div class="alert alert-danger py-2">{{ $errors->first() }}</div>
-                            @endif
+        <a href="{{ route('home') }}">
+            <img class="q3-auth-logo" src="{{ \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png') }}" alt="Quantum Life">
+        </a>
 
-                            @if(session('status'))
-                                <div class="alert alert-success py-2">{{ session('status') }}</div>
-                            @endif
+        <h1 class="q3-auth-title">Sign in to your account</h1>
+        <p class="q3-auth-sub">Welcome back. Enter your credentials to continue.</p>
 
-                            <div class="form-group">
-                                <label class="col-form-label">Email Address</label>
-                                <input class="form-control @error('email') is-invalid @enderror"
-                                       type="email" name="email" value="{{ old('email') }}"
-                                       placeholder="you@example.com" required autofocus>
-                            </div>
+        @if($errors->any())
+            <div class="alert alert-danger py-2">{{ $errors->first() }}</div>
+        @endif
 
-                            <div class="form-group">
-                                <label class="col-form-label">Password
-                                    <span class="float-end">
-                                        <a href="#" class="link">Forgot password?</a>
-                                    </span>
-                                </label>
-                                <div class="form-input position-relative">
-                                    <input class="form-control" type="password" name="password"
-                                           placeholder="········" required>
-                                    <div class="show-hide"><span class="show"></span></div>
-                                </div>
-                            </div>
+        @if(session('status'))
+            <div class="alert alert-success py-2">{{ session('status') }}</div>
+        @endif
 
-                            <div class="form-group mb-0">
-                                <div class="checkbox p-0">
-                                    <input id="remember" type="checkbox" name="remember">
-                                    <label class="text-muted" for="remember">Remember me</label>
-                                </div>
-                                <button class="btn btn-primary btn-block w-100 mt-3" type="submit">Sign In</button>
-                            </div>
+        <form method="POST" action="{{ route('login.post') }}">
+            @csrf
 
-                            <p class="mt-4 mb-0 text-center">
-                                Don't have an account?
-                                <a class="ms-2" href="{{ route('register') }}">Create account</a>
-                            </p>
-                        </form>
-                    </div>
-                </div>
+            <div class="mb-3">
+                <label class="form-label" for="email">Email Address</label>
+                <input class="form-control @error('email') is-invalid @enderror"
+                       id="email" type="email" name="email" value="{{ old('email') }}"
+                       placeholder="you@example.com" required autofocus autocomplete="email">
             </div>
+
+            <div class="mb-3">
+                <label class="form-label d-flex justify-content-between align-items-center" for="password">
+                    <span>Password</span>
+                    <a href="#" class="link">Forgot password?</a>
+                </label>
+                <input class="form-control" id="password" type="password" name="password"
+                       placeholder="••••••••" required autocomplete="current-password">
+            </div>
+
+            <div class="form-check mb-4">
+                <input class="form-check-input" id="remember" type="checkbox" name="remember">
+                <label class="form-check-label" for="remember">Remember me</label>
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit">Sign In</button>
+        </form>
+
+        <div class="q3-auth-footer">
+            @if(\App\Support\Registration::openToPublic())
+                Don't have an account?
+                <a class="ms-1" href="{{ route('register') }}">Create account</a>
+            @else
+                {{-- No "create account" link while the platform is invitation
+                     only: the route is closed, and offering it would send
+                     people to a page that can only turn them away. --}}
+                Accounts are created by invitation from an existing partner.
+            @endif
         </div>
     </div>
 </div>

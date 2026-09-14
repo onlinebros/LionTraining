@@ -7,7 +7,9 @@ use App\Models\CommissionPayout;
 use App\Models\TrainingCategory;
 use App\Models\TrainingContentBlock;
 use App\Models\TrainingLesson;
+use App\Models\User;
 use App\Services\CommissionService;
+use App\Services\Genealogy\GenealogyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,20 +17,53 @@ use Illuminate\Support\Facades\Storage;
 
 class MemberController extends Controller
 {
-    public function dashboard()
+    public function dashboard(GenealogyService $genealogy)
     {
-        $user = auth()->user()->load(['sponsors', 'sponsees', 'role']);
-        return view('member.dashboard', compact('user'));
+        $user = auth()->user()->load(['role']);
+
+        $stats = [
+            'directs'   => $genealogy->directs($user)->count(),
+            'team'      => $genealogy->teamSize($user),
+            'depth'     => $genealogy->depthOf($user->placement_path),
+            'by_level'  => $genealogy->teamCountsByLevel($user),
+            'sponsor'   => $user->sponsor,
+        ];
+
+        return view('member.dashboard', compact('user', 'stats'));
     }
 
-    public function network(Request $request)
+    /**
+     * The genealogy tree — the screen the pre-launch phase exists to make good.
+     *
+     * `view_from` re-roots the tree at any partner in the viewer's own downline,
+     * which is how a large team stays navigable past the render depth. It is
+     * checked against the viewer's subtree, never trusted: without that check
+     * any id in the URL would expose the whole company's genealogy.
+     */
+    public function network(Request $request, GenealogyService $genealogy)
     {
-        $user = auth()->user()->load([
-            'sponsors.role',
-            'sponsees.role',
+        $user = auth()->user()->load('role');
+        $root = $user;
+
+        if ($viewFrom = $request->integer('view_from')) {
+            $candidate = User::find($viewFrom);
+
+            if ($candidate && $genealogy->descendants($user)->where('users.id', $candidate->id)->exists()) {
+                $root = $candidate;
+            }
+        }
+
+        return view('member.network', [
+            'user'     => $user,
+            'root'     => $root,
+            'tree'     => $genealogy->subtree($root),
+            'upline'   => $genealogy->upline($user),
+            'byLevel'  => $genealogy->teamCountsByLevel($user),
+            'directs'  => $genealogy->directs($user)->count(),
+            'teamSize' => $genealogy->teamSize($user),
+            'depth'    => $genealogy->depthOf($user->placement_path),
+            'isReRooted' => $root->id !== $user->id,
         ]);
-        $tab = $request->get('tab', 'members');
-        return view('member.network', compact('user', 'tab'));
     }
 
     public function trainingIndex()
@@ -86,7 +121,7 @@ class MemberController extends Controller
                 ->with('error', 'You need ' . ($needed?->display_name ?? 'a higher membership') . ' to access this lesson.');
         }
 
-        $blocks    = $lesson->contentBlocks;
+        $blocks    = $lesson->contentBlocks()->with('videoAsset')->get();
         $breadcrumb = $lesson->category->breadcrumb();
 
         $siblings = $lesson->category->lessons()->where('is_published', true)->with('requiredRole')->get();
@@ -107,22 +142,42 @@ class MemberController extends Controller
             abort(403, 'Access denied.');
         }
 
-        if (!$block->file_path || !Storage::disk('public')->exists($block->file_path)) {
+        if (!$block->file_path) {
             abort(404);
         }
 
-        return Storage::disk('public')->download($block->file_path, $block->file_name ?: 'download');
+        $fileName = $block->file_name ?: basename($block->file_path);
+
+        // Kartra files live on the private local disk; fall back to public disk for uploads
+        if (Storage::disk('local')->exists($block->file_path)) {
+            return Storage::disk('local')->download($block->file_path, $fileName);
+        }
+
+        if (Storage::disk('public')->exists($block->file_path)) {
+            return Storage::disk('public')->download($block->file_path, $fileName);
+        }
+
+        abort(404);
     }
 
     public function referral()
     {
-        $user = auth()->user()->load(['sponsees.role']);
+        $user = auth()->user()->load('role');
+        $genealogy = app(GenealogyService::class);
+
+        // Counted off the genealogy, not the legacy pivot. Sponsorship is
+        // immediate and permanent now, so a "pending" count would sit at zero
+        // forever; total team is the number that actually moves during
+        // pre-launch.
         $stats = [
-            'total_invited' => $user->sponsees->count(),
-            'active'        => $user->sponsees->where('pivot.status', 'active')->count(),
-            'pending'       => $user->sponsees->where('pivot.status', 'pending')->count(),
+            'total_invited' => $genealogy->directs($user)->count(),
+            'active'        => $genealogy->directs($user)->where('is_active', true)->count(),
+            'team'          => $genealogy->teamSize($user),
         ];
-        return view('member.referral', compact('user', 'stats'));
+
+        $recruits = $user->recruits()->with('role')->latest('id')->get();
+
+        return view('member.referral', compact('user', 'stats', 'recruits'));
     }
 
     public function profile()

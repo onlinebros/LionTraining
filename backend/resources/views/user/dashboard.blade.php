@@ -9,10 +9,10 @@
         {{-- Welcome card --}}
         <div class="col-12">
             <div class="card o-hidden">
-                <div class="card-body" style="background: linear-gradient(135deg, #7366ff 0%, #563dd9 100%); color: #fff; border-radius: 8px;">
+                <div class="card-body" class="q3-welcome" style="border-radius: var(--q3-radius);">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h4 class="mb-1" style="color:#fff;">Welcome back, {{ auth()->user()->name }}!</h4>
+                            <h4 class="mb-1">Welcome back, {{ auth()->user()->name }}!</h4>
                             <p class="mb-2" style="opacity:.85;">{{ auth()->user()->email }}</p>
                             <small style="opacity:.7;">
                                 Referral link:
@@ -39,7 +39,7 @@
                 <div class="card-body">
                     @forelse(auth()->user()->sponsors as $sponsor)
                         <div class="d-flex align-items-center mb-3">
-                            <div style="width:38px;height:38px;border-radius:50%;background:#7366ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">
+                            <div class="q3-avatar" style="width:38px;height:38px;flex-shrink:0;">
                                 {{ strtoupper(substr($sponsor->name, 0, 1)) }}
                             </div>
                             <div class="ms-3 flex-grow-1">
@@ -70,7 +70,7 @@
                 <div class="card-body">
                     @forelse(auth()->user()->sponsees as $sponsee)
                         <div class="d-flex align-items-center mb-3">
-                            <div style="width:38px;height:38px;border-radius:50%;background:#54ba4a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">
+                            <div class="q3-avatar" style="width:38px;height:38px;flex-shrink:0;">
                                 {{ strtoupper(substr($sponsee->name, 0, 1)) }}
                             </div>
                             <div class="ms-3 flex-grow-1">

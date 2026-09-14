@@ -1,0 +1,46 @@
+<!--meta {"title": "Shipping & Delivery", "description": "How {{ site.brand }} memberships are delivered online, and how partner products are sold and shipped by partner companies such as {{ vendor.legal_name }}.", "nav": ""}-->
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Policy</span>
+    <h1>Shipping &amp; Delivery</h1>
+    <p class="lede">Membership is delivered online. Physical partner products are sold, charged and shipped by the companies that make them.</p>
+    <p class="updated">Last updated {{ policies.updated_display }}</p>
+  </div>
+</section>
+
+<div class="wrap narrow prose">
+  <section id="membership">
+    <h2>Membership: digital delivery</h2>
+    <ul>
+      <li>The {{ membership.name }} is a digital service. Nothing is shipped, and there are no shipping charges.</li>
+      <li>Access starts as soon as your account is created. You sign in with the email address and password you chose.</li>
+      <li>You use {{ course.name }} and the back office online at {{ site.app_url }}, in any modern web browser.</li>
+      <li>If you can't sign in or a lesson won't play, let us know through our <a href="contact">contact form</a>.</li>
+    </ul>
+  </section>
+
+  <section id="partner-products">
+    <h2>Partner products: sold and shipped by the partner company</h2>
+    <p>When you order a partner product through a partner's product page, you buy it directly from the partner company, on its own checkout. The partner company charges your card, ships your order, and handles returns and warranty. {{ business.legal_name }} does not take payment for, stock or ship these products.</p>
+
+    <h3>{{ vendor.product }}, from {{ vendor.legal_name }}</h3>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><th scope="row">Seller and shipper</th><td>{{ vendor.legal_name }} (<a href="{{ attr:vendor.website }}" rel="noopener">{{ vendor.website }}</a>)</td></tr>
+          <tr><th scope="row">On your statement</th><td>Charged by {{ vendor.legal_name }}, appearing as {{ vendor.statement_descriptor }}</td></tr>
+          <tr><th scope="row">Delivery address</th><td>Your order ships to the delivery address you enter on {{ vendor.name }}'s checkout.</td></tr>
+          <tr><th scope="row">Shipping method</th><td>Standard ground shipping. Delivery time depends on your location.</td></tr>
+          <tr><th scope="row">Shipping cost</th><td>Calculated from your delivery address on {{ vendor.name }}'s checkout and shown before you pay. {{ vendor.name }} charges sales tax where it applies.</td></tr>
+          <tr><th scope="row">Large orders</th><td>Orders of more than {{ products.freight_threshold_units }} units ship by freight. The freight cost is quoted and confirmed with you before shipping.</td></tr>
+          <tr><th scope="row">Tracking</th><td>Emailed to you by {{ vendor.name }} when the order ships.</td></tr>
+          <tr><th scope="row">Installation</th><td>Shipping covers delivery of the equipment only. In-duct systems are installed into existing heating and cooling ductwork, and installation is arranged separately. Ask your partner or {{ vendor.name }} about it before you order.</td></tr>
+          <tr><th scope="row">Questions about an order</th><td><a href="{{ tel:vendor.phone }}">{{ vendor.phone }}</a> · <a href="{{ attr:vendor.contact_url }}" rel="noopener">{{ vendor.name }} contact page</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Damaged, missing or late orders</h3>
+    <p>Contact {{ vendor.legal_name }} as soon as you notice a problem, and keep the packaging. If you don't get a response, you can also let us know through our <a href="contact">contact form</a>. See also <a href="refunds#partner-products">partner-product refunds</a>.</p>
+  </section>
+</div>

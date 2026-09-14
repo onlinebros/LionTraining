@@ -1,2 +1,2 @@
-# LionTraining
-LionTraining project
+# Quantum Life
+Quantum Life project

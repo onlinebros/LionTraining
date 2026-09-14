@@ -1,0 +1,172 @@
+<!--meta {"title": "Terms of Service", "description": "The terms for {{ site.brand }} memberships, {{ course.name }}, the member platform, the Partner Program and this website, provided by {{ business.legal_name }}.", "nav": ""}-->
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Policy</span>
+    <h1>Terms of Service</h1>
+    <p class="lede">The agreement between you and {{ business.legal_name }} when you use our website, membership and member platform.</p>
+    <p class="updated">Last updated {{ policies.updated_display }}</p>
+  </div>
+</section>
+
+<div class="wrap narrow prose">
+  <nav class="toc" aria-labelledby="toc-title">
+    <h2 id="toc-title">Contents</h2>
+    <ol>
+      <li><a href="terms#agreement">This agreement</a></li>
+      <li><a href="terms#eligibility">Eligibility</a></li>
+      <li><a href="terms#accounts">Your account</a></li>
+      <li><a href="terms#billing">Membership, billing and renewal</a></li>
+      <li><a href="terms#prelaunch">Joining before launch</a></li>
+      <li><a href="terms#trials">Free trials</a></li>
+      <li><a href="terms#cancellation">Cancellation and refunds</a></li>
+      <li><a href="terms#price-changes">Price and service changes</a></li>
+      <li><a href="terms#content">Using the course</a></li>
+      <li><a href="terms#partner-program">The Partner Program</a></li>
+      <li><a href="terms#partner-products">Partner products</a></li>
+      <li><a href="terms#acceptable-use">Acceptable use</a></li>
+      <li><a href="terms#ip">Intellectual property</a></li>
+      <li><a href="terms#third-party">Stripe and other services</a></li>
+      <li><a href="terms#disclaimers">Disclaimers</a></li>
+      <li><a href="terms#liability">Limitation of liability</a></li>
+      <li><a href="terms#indemnity">Indemnity</a></li>
+      <li><a href="terms#termination">Suspension and termination</a></li>
+      <li><a href="terms#disputes">Disputes and governing law</a></li>
+      <li><a href="terms#changes">Changes to these Terms</a></li>
+      <li><a href="terms#general">General</a></li>
+    </ol>
+  </nav>
+
+  <section id="agreement">
+    <h2>1. This agreement</h2>
+    <p>These Terms of Service ("Terms") are an agreement between you and {{ business.legal_name }}, {{ business.entity_description }} ("{{ site.brand_short }}", "we" or "us"). They apply to {{ site.url }}, our member platform at {{ site.app_url }}, partner product pages, {{ course.name }} and the {{ membership.name }}.</p>
+    <p>By creating an account or using our services, you agree to these Terms and to the policies they refer to: our <a href="privacy">Privacy Policy</a>, <a href="refunds">Refund &amp; Cancellation Policy</a>, <a href="partners">Partner Program</a> page and Compensation Plan, and <a href="earnings-disclaimer">Earnings Disclaimer</a>. If you do not agree, do not use our services.</p>
+  </section>
+
+  <section id="eligibility">
+    <h2>2. Eligibility</h2>
+    <ul>
+      <li>You must be at least {{ policies.min_age }} years old, able to enter a binding contract, and live in {{ business.service_region }}. Our services are not offered anywhere else.</li>
+      <li>You may not use our services if US law prohibits it, including if you are subject to US sanctions.</li>
+      <li>Membership is by invitation, through a referral link from an existing partner. Each person may hold one membership.</li>
+      <li>We may decline any application.</li>
+    </ul>
+  </section>
+
+  <section id="accounts">
+    <h2>3. Your account</h2>
+    <p>Give us accurate information and keep it up to date. Keep your password private and do not share your account. You are responsible for what happens under your account. Tell us straight away if you think someone else has used it.</p>
+  </section>
+
+  <section id="billing">
+    <h2>4. Membership, billing and renewal</h2>
+    <ul>
+      <li><strong>Price.</strong> The {{ membership.name }} costs {{ membership.price_display }} {{ membership.interval_phrase }}, plus any sales tax that applies. The price is shown before you confirm.</li>
+      <li><strong>Automatic renewal.</strong> Your membership renews automatically every {{ membership.interval_noun }} at the price then in effect, until you cancel. By joining, you authorize us and our payment processor, Stripe, to charge your card on file for each renewal. We email a receipt for every charge, and your next billing date is always shown in Billing.</li>
+      <li><strong>Payment method.</strong> Keep a valid card on file. If a payment fails, we retry the card and your access continues for {{ policies.payment_grace_days }} days. After that, access pauses until payment succeeds or you cancel.</li>
+      <li><strong>Statement.</strong> Charges appear on your card statement as {{ membership.statement_descriptor }}.</li>
+    </ul>
+  </section>
+
+  <section id="prelaunch">
+    <h2>5. Joining before launch</h2>
+    <p>If you join before our official launch, your card is saved with Stripe but not charged before launch. We will email you {{ membership.prelaunch_notice_days }} days before launch with the launch date. Your {{ membership.trial_days }}-day free trial starts on launch day. The membership fee is first charged when that trial ends, then every {{ membership.interval_noun }} until you cancel. You can cancel at any time before the first charge and pay nothing. Once made, charges are not refundable. We do not guarantee a launch date. If we do not launch, your card is never charged.</p>
+  </section>
+
+  <section id="trials">
+    <h2>6. Free trials</h2>
+    <p>New memberships start with a {{ membership.trial_days }}-day free trial. The trial end date is shown before you confirm, and we email you {{ membership.trial_reminder_days }} days before it ends. You can cancel at any time before that date and you are not charged. If you don't cancel, the membership fee is charged when the trial ends, and every {{ membership.interval_noun }} after that until you cancel. Each person may have one free trial.</p>
+  </section>
+
+  <section id="cancellation">
+    <h2>7. Cancellation and refunds</h2>
+    <p>You can cancel at any time, online in Billing or by sending a request through our <a href="contact">contact form</a>. Cancelling stops future charges, and you keep access until the end of the {{ membership.interval_noun }} you paid for.</p>
+    <p><strong>Membership charges are not refundable.</strong> This covers the first charge when your free trial ends, every renewal charge, and the unused part of any billing period. The only exceptions are duplicate or mistaken charges and the cases in section 18, as set out in our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>
+  </section>
+
+  <section id="price-changes">
+    <h2>8. Price and service changes</h2>
+    <p>We may change the membership price. A new price applies only after we have emailed you at least 30 days in advance, so you can cancel before it applies. We may also update the course, features and tools.</p>
+  </section>
+
+  <section id="content">
+    <h2>9. Using the course</h2>
+    <p>While your membership is active, we give you a personal, non-exclusive, non-transferable license to stream {{ course.name }} and use member materials for your own learning. You may not download, record, copy, share, resell or publicly show course content, or let anyone else use your account to watch it.</p>
+    <p>The course is for education only. It is not financial, legal, tax, medical or other professional advice, and we don't guarantee any particular result from it.</p>
+  </section>
+
+  <section id="partner-program">
+    <h2>10. The Partner Program</h2>
+    <ul>
+      <li>Members may earn commissions under the Compensation Plan and the rules on our <a href="partners">Partner Program</a> page, which form part of these Terms.</li>
+      <li>Partners are independent contractors. Nothing in these Terms makes you our employee, agent, franchisee or joint venturer. You are responsible for your own taxes and expenses.</li>
+      <li>You must follow the <a href="partners#conduct">Rules for partners</a>. In particular, you must make no income claims and no product claims beyond the manufacturer's, and you must disclose that you may earn a commission.</li>
+      <li>We may withhold, cancel or reverse commissions that arise from refunds, chargebacks, fraud, errors or a breach of these Terms.</li>
+      <li>Earnings are not guaranteed. See our <a href="earnings-disclaimer">Earnings Disclaimer</a>.</li>
+    </ul>
+  </section>
+
+  <section id="partner-products">
+    <h2>11. Partner products</h2>
+    <p>Partner products are sold by their manufacturers, under the manufacturer's own terms, on the manufacturer's checkout. {{ business.legal_name }} is not the seller. We are not responsible for a manufacturer's products, pricing, delivery, returns or warranty, and product information on partner pages is supplied by the manufacturer. If you have a problem with an order, contact the manufacturer.</p>
+  </section>
+
+  <section id="acceptable-use">
+    <h2>12. Acceptable use</h2>
+    <p>You must not:</p>
+    <ul>
+      <li>break the law or help anyone else break it</li>
+      <li>mislead anyone about {{ site.brand }}, its costs, or what people earn</li>
+      <li>send spam or unwanted messages, or store contacts in your back office without a lawful reason</li>
+      <li>upload anything unlawful, infringing, harmful or abusive</li>
+      <li>try to get around security, access other people's accounts, scrape our services, or disrupt them</li>
+      <li>copy, reverse engineer or resell any part of our services</li>
+    </ul>
+  </section>
+
+  <section id="ip">
+    <h2>13. Intellectual property</h2>
+    <p>{{ course.name }}, our website, member platform, and the {{ site.brand }} and {{ site.brand_short }} names and logos belong to us or our licensors. These Terms give you no rights to them beyond the limited license in section 9. If you send us feedback, we may use it without any obligation to you.</p>
+  </section>
+
+  <section id="third-party">
+    <h2>14. Stripe and other services</h2>
+    <p>Payments are processed by Stripe. Payment processing services for partners who receive commission payouts are provided by Stripe and are subject to the <a href="https://stripe.com/connect-account/legal" rel="noopener">Stripe Connected Account Agreement</a>, which includes the Stripe Terms of Service (together, the "Stripe Services Agreement"). By receiving payouts, you agree to be bound by the Stripe Services Agreement, as Stripe may modify it from time to time. As a condition of payouts, you agree to give us accurate and complete information about you and your business, and you authorize us to share it, and transaction information related to your payouts, with Stripe.</p>
+    <p>Our services also rely on other providers, such as video hosting. We are not responsible for services we do not control.</p>
+  </section>
+
+  <section id="disclaimers">
+    <h2>15. Disclaimers</h2>
+    <p>To the fullest extent the law allows, our services are provided "as is" and "as available". We make no warranties beyond those stated in these Terms, including implied warranties of merchantability, fitness for a particular purpose and non-infringement. We don't promise that the services will be uninterrupted or error-free.</p>
+  </section>
+
+  <section id="liability">
+    <h2>16. Limitation of liability</h2>
+    <p>To the fullest extent the law allows, we are not liable for indirect, incidental, special, consequential or punitive damages, or for lost profits, lost earnings or lost data. Our total liability for any claim relating to our services is limited to the greater of the amount you paid us in the 12 months before the claim or $100 USD. Some states don't allow these limits, so they may not all apply to you.</p>
+  </section>
+
+  <section id="indemnity">
+    <h2>17. Indemnity</h2>
+    <p>You agree to cover our reasonable losses and costs, including legal fees, from claims by others that arise from your breach of these Terms, your activities as a partner, or content you add to our services.</p>
+  </section>
+
+  <section id="termination">
+    <h2>18. Suspension and termination</h2>
+    <p>You can end your membership at any time by cancelling. We may suspend or end your membership for non-payment, fraud, a breach of these Terms, or where the law requires. If we end your membership without cause, we refund the unused part of your current billing period. If we end it because you breached these Terms, no refund is due, and unpaid commissions are treated as the Compensation Plan describes. Sections that by their nature should survive, including 13 and 15 to 19, survive the end of your membership.</p>
+  </section>
+
+  <section id="disputes">
+    <h2>19. Disputes and governing law</h2>
+    <p>If you have a concern, please <a href="contact">contact us</a> first. Most problems can be solved quickly, and we will try in good faith to resolve any dispute informally within 30 days. These Terms are governed by the laws of the State of {{ business.governing_law_state }}, without regard to its conflict-of-laws rules. Any claim that is not resolved informally may be brought in the state or federal courts located in {{ business.governing_law_state }}, or in small claims court where you live if it qualifies. Nothing in these Terms limits consumer rights that cannot be waived under the law where you live.</p>
+  </section>
+
+  <section id="changes">
+    <h2>20. Changes to these Terms</h2>
+    <p>We may update these Terms. For material changes, we email members at least 30 days before the changes take effect. If you keep using our services after that date, you accept the updated Terms. If you don't agree, you can cancel before they take effect.</p>
+  </section>
+
+  <section id="general">
+    <h2>21. General</h2>
+    <p>These Terms, and the policies they refer to, are the entire agreement between you and us about our services. If any part is found unenforceable, the rest still applies. Our not enforcing a term is not a waiver of it. You may not transfer your membership or these Terms. We may transfer them to a successor to our business. We are not responsible for delays caused by events beyond our reasonable control. We may give you notices by email to the address on your account. Legal notices to us must be sent by mail to the address below.</p>
+    <p>{{ business.legal_name }}, {{ business.address_line1 }}, {{ business.address_line2 }} · Support: <a href="contact">contact form</a></p>
+  </section>
+</div>

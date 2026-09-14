@@ -19,8 +19,8 @@
             <div class="card">
                 <div class="card-body text-center py-4">
                     <div class="mb-3">
-                        <span style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--bs-{{ $colors[$role->name] ?? 'primary' }}-bg-subtle,#f0eeff);">
-                            <i data-feather="{{ $icons[$role->name] ?? 'award' }}" style="width:24px;height:24px;color:var(--bs-{{ $colors[$role->name] ?? 'primary' }});"></i>
+                        <span class="q3-stat-icon q3-stat-icon--gold mx-auto" style="width:56px;height:56px;border-radius:50%;">
+                            <i data-feather="{{ $icons[$role->name] ?? 'award' }}" style="width:24px;height:24px;"></i>
                         </span>
                     </div>
                     <h5 class="mb-1">{{ $role->display_name }}</h5>

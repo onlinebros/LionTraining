@@ -79,12 +79,7 @@
                 @foreach($ticket->replies as $reply)
                     @php $isOwn = $reply->user_id === auth()->id(); @endphp
                     <div class="d-flex gap-3 mb-4">
-                        <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
-                                    background:{{ $isOwn ? 'var(--theme-default)' : '#54ba4a' }};
-                                    color:#fff;display:flex;align-items:center;justify-content:center;
-                                    font-weight:700;font-size:.85rem;">
-                            {{ strtoupper(substr($reply->user->name ?? '?', 0, 1)) }}
-                        </div>
+                        <div class="q3-avatar">{{ strtoupper(substr($reply->user->name ?? '?', 0, 1)) }}</div>
                         <div class="flex-grow-1">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <span class="fw-semibold small">{{ $reply->user->name ?? 'Unknown' }}</span>
@@ -93,7 +88,7 @@
                                 @endif
                                 <span class="f-light" style="font-size:.75rem;">{{ $reply->created_at->diffForHumans() }}</span>
                             </div>
-                            <div class="p-3 rounded" style="background:{{ $isOwn ? '#f8f9fa' : '#f0fff4' }};border:1px solid {{ $isOwn ? '#e9ecef' : '#c6f6d5' }};">
+                            <div class="p-3 rounded" style="background:{{ $isOwn ? 'var(--q3-surface-2)' : 'var(--q3-success-tint)' }};border:1px solid {{ $isOwn ? 'var(--q3-border)' : 'rgba(62,158,110,.28)' }};">
                                 {!! nl2br(e($reply->body)) !!}
                             </div>
                         </div>

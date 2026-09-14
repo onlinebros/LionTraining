@@ -4,6 +4,7 @@ use Laravel\Sanctum\Sanctum;
 
 return [
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', implode(',', [
+        'q3.onlinebros.com',
         'lion.onlinebros.com',
         'localhost',
         'localhost:3000',

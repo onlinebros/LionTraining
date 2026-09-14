@@ -9,9 +9,9 @@
 
 @push('styles')
 <style>
-    .status-badge-new          { background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; }
-    .status-badge-acknowledged { background: #fffbeb; color: #d69e2e; border: 1px solid #fefcbf; }
-    .status-badge-resolved     { background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5; }
+    .status-badge-new          { background: var(--q3-danger-tint);  color: #d1766e; border: 1px solid rgba(180,72,63,.32); }
+    .status-badge-acknowledged { background: var(--q3-warning-tint); color: #dcb262; border: 1px solid rgba(201,154,62,.3); }
+    .status-badge-resolved     { background: var(--q3-success-tint); color: #6ec49b; border: 1px solid rgba(62,158,110,.28); }
     .error-message             { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 @endpush
@@ -73,7 +73,7 @@
         <div class="card-body p-0">
             @if($logs->isEmpty())
                 <div class="text-center py-5">
-                    <i data-feather="check-circle" style="width:48px;height:48px;color:#38a169;"></i>
+                    <i data-feather="check-circle" style="width:48px;height:48px;color:var(--q3-success);"></i>
                     <p class="mt-3 f-light">No errors in this category.</p>
                 </div>
             @else

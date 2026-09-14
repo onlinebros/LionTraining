@@ -1,0 +1,19 @@
+# Queue worker for app.q3.life. Stripe webhooks are stored on receipt but only
+# processed while this runs. Installed as /etc/systemd/system/q3-queue.service.
+# deploy.sh restarts it so the worker loads the new release's code.
+
+[Unit]
+Description=app.q3.life queue worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/app.q3.life/current/backend
+ExecStart=/usr/bin/php artisan queue:work database --sleep=3 --tries=3 --max-time=3600 --memory=256
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

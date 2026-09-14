@@ -6,62 +6,76 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
+/**
+ * Session-cookie based auth for the SPA.
+ *
+ * No bearer tokens are issued. Auth lives in an httpOnly server-side
+ * session bound to the cookie set by Laravel's session middleware (active
+ * because Sanctum's EnsureFrontendRequestsAreStateful is prepended to the
+ * api middleware group for requests from a stateful domain).
+ */
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|string',
+            'remember' => 'sometimes|boolean',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        if (! Auth::guard('web')->attempt(
+            $request->only('email', 'password'),
+            $request->boolean('remember')
+        )) {
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed'),
+            ])->status(401);
         }
 
-        $user = $request->user();
+        $user = Auth::guard('web')->user();
 
-        if (!$user->is_active) {
-            Auth::logout();
+        if (! $user->is_active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
             return response()->json(['message' => 'Account is inactive'], 403);
         }
 
-        $token = $user->createToken('lion-auth')->plainTextToken;
+        // Rotate the session ID to defeat session fixation.
+        $request->session()->regenerate();
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
+        return response()->json(['user' => $user]);
     }
 
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => $request->password,
         ]);
 
-        $token = $user->createToken('lion-auth')->plainTextToken;
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+        return response()->json(['user' => $user], 201);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Logged out successfully']);
     }

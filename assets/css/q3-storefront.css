@@ -1,0 +1,969 @@
+/* ==========================================================================
+   Q3 — Public storefront layer
+   --------------------------------------------------------------------------
+   The customer-facing pages a partner shares: vendor product pages, the
+   checkout handoff, and the post-purchase thank-you.
+
+   Loaded AFTER q3-theme.css and consumes its tokens — there is no palette in
+   this file. Change a colour in q3-theme.css §1, not here.
+
+   Scoped to `.q3-storefront` on <body> so it can never leak into the back
+   office, which has its own treatment of the same tokens.
+
+   These pages are seen by prospects who have never heard of us, on a phone,
+   once. So: no heavy gradients, no glow for its own sake, one serif heading,
+   and gold spent only where it means something.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. Storefront-local tokens
+
+   The handful of values this layer needs that the back office has no use for.
+   Declared here rather than in q3-theme.css §1 so the shared palette stays the
+   back office's, and derived from its tokens wherever one exists — nothing in
+   this file is a loose hex.
+   ========================================================================== */
+
+.q3-storefront {
+    /* One step between the page ground and a card, for the enquiry band. */
+    --q3-sf-raise:       color-mix(in srgb, var(--q3-surface) 34%, var(--q3-bg));
+
+    /* Readable text on the state tints. The state tokens are fills, not inks:
+       --q3-danger on --q3-danger-tint fails contrast, so these lift them. */
+    --q3-sf-danger-ink:  color-mix(in srgb, var(--q3-danger) 45%, var(--q3-text));
+    --q3-sf-danger-edge: color-mix(in srgb, var(--q3-danger) 40%, transparent);
+    --q3-sf-warn-ink:    color-mix(in srgb, var(--q3-warning) 42%, var(--q3-text));
+    --q3-sf-warn-edge:   color-mix(in srgb, var(--q3-warning) 34%, transparent);
+
+    /* Gold lifted one notch, for the primary CTA hover only. */
+    --q3-sf-gold-lift:   color-mix(in srgb, var(--q3-gold-high) 76%, #FFF);
+}
+
+/* color-mix landed in every current browser, but a 2022-era phone saved to a
+   home screen may not have it. These fallbacks keep the page dark rather than
+   transparent-defaulting to white. */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+    .q3-storefront {
+        --q3-sf-raise:       #0E0E10;
+        --q3-sf-danger-ink:  #E8A9A2;
+        --q3-sf-danger-edge: rgba(180, 72, 63, 0.4);
+        --q3-sf-warn-ink:    #DCC085;
+        --q3-sf-warn-edge:   rgba(201, 154, 62, 0.34);
+        --q3-sf-gold-lift:   #EED184;
+    }
+}
+
+/* ==========================================================================
+   2. Page shell
+   ========================================================================== */
+
+body.q3-storefront {
+    background: var(--q3-bg);
+    color: var(--q3-text-body);
+    font-family: var(--q3-font);
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+}
+
+.q3-storefront .q3-sf-wrap {
+    margin: 0 auto;
+    max-width: 1140px;
+    padding: 0 24px;
+    width: 100%;
+}
+
+.q3-storefront a { color: var(--q3-gold-soft); text-decoration: none; transition: color var(--q3-transition); }
+.q3-storefront a:hover { color: var(--q3-gold-high); }
+
+/*
+ * Note: Cuba's style.css colours p/li/dd/dt directly, which defeats every
+ * inherited colour set on a container. The guard for that lives in
+ * q3-theme.css §3 and covers this shell as well as the back office and the
+ * auth screens — one rule rather than three that can drift apart.
+ */
+
+/* Every section is separated by a hairline rather than a colour change, which
+   keeps the page reading as one dark surface instead of banded stripes. */
+.q3-storefront .q3-sf-section {
+    border-top: 1px solid var(--q3-border);
+    padding: 68px 0;
+}
+.q3-storefront .q3-sf-section:first-of-type { border-top: 0; }
+
+/* Marginally lifted panel for the section that needs to feel like a workspace
+   (the enquiry). Charcoal, not another gradient. */
+.q3-storefront .q3-sf-section--raised { background: var(--q3-sf-raise); }
+
+.q3-storefront .q3-sf-h2 {
+    color: var(--q3-text);
+    font-size: 1.55rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0 0 10px;
+}
+.q3-storefront .q3-sf-lede {
+    color: var(--q3-text-muted);
+    font-size: 0.98rem;
+    line-height: 1.7;
+    margin: 0 0 32px;
+    max-width: 720px;
+}
+
+/* Small uppercase label above a heading. */
+.q3-storefront .q3-sf-eyebrow {
+    color: var(--q3-gold-soft);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   3. Brand bar — the Q3 mark, with room to breathe
+   ========================================================================== */
+
+.q3-storefront .q3-sf-brandbar {
+    background: var(--q3-black);
+    border-bottom: 1px solid var(--q3-border-gold-soft);
+}
+.q3-storefront .q3-sf-brandbar .q3-sf-wrap {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    justify-content: space-between;
+    padding-block: 20px;
+}
+
+/* Proportions come from the file; only a bound is set, never both dimensions. */
+.q3-storefront .q3-sf-logo {
+    display: block;
+    height: auto;
+    max-height: 52px;
+    max-width: 150px;
+    object-fit: contain;
+    width: auto;
+}
+
+.q3-storefront .q3-sf-presenter {
+    color: var(--q3-text-muted);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    text-align: right;
+}
+.q3-storefront .q3-sf-presenter strong { color: var(--q3-text); font-weight: 600; }
+
+/* Restrained credential pill — thin gold edge, no gold fill. */
+.q3-storefront .q3-sf-pill {
+    border: 1px solid var(--q3-border-gold);
+    border-radius: 999px;
+    color: var(--q3-gold-soft);
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    margin-top: 6px;
+    padding: 4px 13px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   4. Hero
+   ========================================================================== */
+
+.q3-storefront .q3-sf-hero {
+    background:
+        radial-gradient(900px 520px at 18% -20%, rgba(var(--q3-gold-rgb), 0.09) 0%, transparent 60%),
+        var(--q3-black);
+    border-bottom: 1px solid var(--q3-border);
+    padding: 76px 0 68px;
+}
+
+/* The one place a serif is allowed. Never menus, never dashboard content. */
+.q3-storefront .q3-sf-hero h1 {
+    color: var(--q3-text);
+    font-family: var(--q3-font-display);
+    font-size: clamp(2.2rem, 5vw, 3.35rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.08;
+    margin: 0 0 18px;
+    max-width: 15ch;
+}
+
+.q3-storefront .q3-sf-hero .q3-sf-tagline {
+    color: var(--q3-text-muted);
+    font-size: 1.08rem;
+    line-height: 1.65;
+    margin: 0 0 34px;
+    max-width: 56ch;
+}
+
+/* ---- Hero layout --------------------------------------------------------
+   Copy left, product right.
+
+   The source images are 1080px squares. Sized by width they take the full
+   column — around 520px tall on a desktop and most of a phone screen — so the
+   reader scrolls past a picture to reach the words. Everything below is
+   therefore bounded by HEIGHT, with width following, and the sizes are chosen
+   so the headline, the tagline and the first call to action all sit above the
+   fold on a small phone.                                                     */
+.q3-storefront .q3-sf-hero-grid {
+    align-items: center;
+    display: grid;
+    gap: 32px;
+    grid-template-columns: 1fr;
+}
+@media (min-width: 992px) {
+    .q3-storefront .q3-sf-hero-grid { gap: 56px; grid-template-columns: 1.2fr 0.8fr; }
+}
+
+/* The vendor's product shots have transparent backgrounds and a vivid cyan
+   body. Floated straight on the page that chroma fights the gold, so each sits
+   on a dark plate with a faint gold pool beneath it — the product reads as
+   lit in a case rather than cut out and pasted on. The image itself is
+   untouched: no filter, no recolour, no crop. */
+.q3-storefront .q3-sf-hero-media {
+    align-items: center;
+    background:
+        radial-gradient(58% 48% at 50% 62%, rgba(var(--q3-gold-rgb), 0.10) 0%, transparent 70%),
+        var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-lg);
+    display: flex;
+    justify-content: center;
+    padding: 22px;
+}
+
+/* Height-bounded, width auto — the plate stays a consistent band whatever the
+   aspect ratio of a future vendor's photograph. */
+.q3-storefront .q3-sf-hero-media img {
+    display: block;
+    height: auto;
+    max-height: 280px;
+    max-width: 100%;
+    width: auto;
+}
+
+/* ---- Hero metrics -------------------------------------------------------
+   Only the lead figure is gold. Making all four gold would spend the accent
+   on nothing and leave the reader no idea which number matters.            */
+.q3-storefront .q3-sf-stats {
+    border-top: 1px solid var(--q3-border);
+    display: grid;
+    gap: 28px 40px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin-top: 52px;
+    padding-top: 32px;
+}
+.q3-storefront .q3-sf-stat-value {
+    color: var(--q3-text);
+    font-size: 1.85rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+.q3-storefront .q3-sf-stat-value--gold { color: var(--q3-gold-high); }
+.q3-storefront .q3-sf-stat-label {
+    color: var(--q3-text-muted);
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+    line-height: 1.5;
+    margin-top: 9px;
+}
+
+/* ==========================================================================
+   5. Buttons
+   ========================================================================== */
+
+.q3-storefront .q3-sf-btn {
+    border-radius: var(--q3-radius-sm);
+    cursor: pointer;
+    display: inline-block;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 13px 30px;
+    text-align: center;
+    transition: background var(--q3-transition), box-shadow var(--q3-transition),
+                border-color var(--q3-transition), color var(--q3-transition);
+}
+
+/* Primary — gold fill, black text. The only gold block on the page. */
+.q3-storefront .q3-sf-btn--gold {
+    background: linear-gradient(180deg, var(--q3-gold-high) 0%, var(--q3-gold-soft) 100%);
+    border: 1px solid var(--q3-gold-soft);
+    color: var(--q3-gold-ink);
+}
+.q3-storefront .q3-sf-btn--gold:hover {
+    background: linear-gradient(180deg, var(--q3-sf-gold-lift) 0%, var(--q3-gold) 100%);
+    box-shadow: var(--q3-gold-glow);
+    color: var(--q3-gold-ink);
+}
+
+/* Secondary — dark with a thin gold edge. */
+.q3-storefront .q3-sf-btn--ghost {
+    background: transparent;
+    border: 1px solid var(--q3-border-gold);
+    color: var(--q3-gold-soft);
+}
+.q3-storefront .q3-sf-btn--ghost:hover {
+    background: var(--q3-gold-tint);
+    border-color: var(--q3-gold-soft);
+    color: var(--q3-gold-high);
+}
+
+.q3-storefront .q3-sf-btn--block { display: block; width: 100%; }
+
+/* ==========================================================================
+   6. Cards
+   ========================================================================== */
+
+.q3-storefront .q3-sf-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.q3-storefront .q3-sf-card {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    padding: 24px 26px;
+}
+
+/* Faint gold edge — reserved for the one card that carries the offer. */
+.q3-storefront .q3-sf-card--accent { border-color: var(--q3-border-gold-soft); }
+
+.q3-storefront .q3-sf-card p { color: var(--q3-text-body); font-size: 0.94rem; line-height: 1.65; margin: 0; }
+
+/* Benefit card: hairline gold rule instead of a coloured icon chip. Cartoonish
+   icons were explicitly out, and a rule reads as engraved rather than applied. */
+.q3-storefront .q3-sf-benefit { border-left: 2px solid var(--q3-gold-deep); }
+.q3-storefront .q3-sf-benefit .q3-sf-benefit-n {
+    color: var(--q3-gold-soft);
+    display: block;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.14em;
+    margin-bottom: 10px;
+}
+
+/* ---- Component gallery --------------------------------------------------
+   The three boxes that actually arrive. Same dark-plate treatment as the hero
+   so the vendor's cyan sits inside our palette instead of on top of it.
+
+   Three across at every width, scaling with the viewport rather than dropping
+   to a column or lying on its side. `repeat(3, 1fr)` holds the row; every
+   dimension inside is a clamp(), so the cards shrink smoothly from desktop to
+   a 320px phone instead of stepping at a breakpoint.
+
+   A fixed count rather than auto-fit because the row is a set — the three
+   boxes that arrive together — and reading it as one line is the point. A
+   product configured with a different number of images gets that number
+   across, via the nth-child rules at the end of this block.                  */
+.q3-storefront .q3-sf-gallery {
+    display: grid;
+    gap: clamp(8px, 1.2vw, 16px);
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Two or four images should not be squeezed into a three-track row. */
+.q3-storefront .q3-sf-gallery > :first-child:nth-last-child(1) { grid-column: span 3; }
+.q3-storefront .q3-sf-gallery > :first-child:nth-last-child(2),
+.q3-storefront .q3-sf-gallery > :first-child:nth-last-child(2) ~ * { grid-column: span 3; }
+@media (min-width: 576px) {
+    .q3-storefront .q3-sf-gallery > :first-child:nth-last-child(2),
+    .q3-storefront .q3-sf-gallery > :first-child:nth-last-child(2) ~ * { grid-column: span 1; }
+    .q3-storefront .q3-sf-gallery:has(> :first-child:nth-last-child(2)) { grid-template-columns: repeat(2, 1fr); }
+    .q3-storefront .q3-sf-gallery:has(> :first-child:nth-last-child(4)) { grid-template-columns: repeat(4, 1fr); }
+}
+
+.q3-storefront .q3-sf-shot {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: border-color var(--q3-transition);
+}
+.q3-storefront .q3-sf-shot:hover { border-color: var(--q3-border-gold); }
+
+/* A band whose height tracks the viewport, not the column width. aspect-ratio
+   would tie the two together and make the frames grow on wide screens exactly
+   where there was already plenty to look at. */
+.q3-storefront .q3-sf-shot-frame {
+    align-items: center;
+    background:
+        radial-gradient(56% 50% at 50% 60%, rgba(var(--q3-gold-rgb), 0.09) 0%, transparent 72%),
+        var(--q3-surface-2);
+    border-bottom: 1px solid var(--q3-border);
+    display: flex;
+    height: clamp(88px, 15vw, 164px);
+    justify-content: center;
+    padding: clamp(8px, 1.4vw, 16px);
+}
+/* `contain`, never `cover` — cropping a manufacturer's product shot to fill a
+   frame is exactly the distortion the brand guidance rules out. */
+.q3-storefront .q3-sf-shot-frame img {
+    display: block;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    width: auto;
+}
+
+.q3-storefront .q3-sf-shot-body {
+    flex: 1;
+    padding: clamp(10px, 1.4vw, 16px) clamp(11px, 1.5vw, 18px) clamp(12px, 1.6vw, 18px);
+}
+.q3-storefront .q3-sf-shot-caption {
+    color: var(--q3-text);
+    font-size: clamp(0.79rem, 1.5vw, 0.92rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.q3-storefront .q3-sf-shot-note {
+    color: var(--q3-text-body);
+    font-size: clamp(0.74rem, 1.25vw, 0.83rem);
+    line-height: 1.55;
+    margin: 6px 0 0;
+}
+
+/* Below this the cards are about a third of a small phone wide, and the note
+   would set eight lines deep at four words a line. The caption stays — the row
+   becomes a labelled visual index — and the same detail is in the
+   Specifications table further down, so nothing is only here. */
+@media (max-width: 519.98px) {
+    .q3-storefront .q3-sf-shot-note { display: none; }
+    .q3-storefront .q3-sf-shot-body { text-align: center; }
+}
+
+/* ==========================================================================
+   7. Specification tables
+   ========================================================================== */
+
+.q3-storefront .q3-sf-specs {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.q3-storefront .q3-sf-spec-block {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    overflow: hidden;
+}
+.q3-storefront .q3-sf-spec-block h3 {
+    background: var(--q3-surface-2);
+    border-bottom: 1px solid var(--q3-border);
+    color: var(--q3-gold-soft);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    margin: 0;
+    padding: 14px 24px;
+    text-transform: uppercase;
+}
+.q3-storefront .q3-sf-spec-block dl { margin: 0; padding: 8px 24px 16px; }
+
+.q3-storefront .q3-sf-spec-row {
+    align-items: baseline;
+    border-bottom: 1px solid var(--q3-border);
+    display: flex;
+    font-size: 0.9rem;
+    gap: 20px;
+    justify-content: space-between;
+    padding: 12px 0;
+}
+.q3-storefront .q3-sf-spec-row:last-child { border-bottom: 0; }
+.q3-storefront .q3-sf-spec-row dt { color: var(--q3-text-body); font-weight: 400; margin: 0; }
+.q3-storefront .q3-sf-spec-row dd { color: var(--q3-text); font-weight: 550; margin: 0; text-align: right; }
+
+/* ==========================================================================
+   8. Chips
+   ========================================================================== */
+
+.q3-storefront .q3-sf-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+.q3-storefront .q3-sf-chip {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: 999px;
+    color: var(--q3-text-body);
+    font-size: 0.85rem;
+    padding: 8px 17px;
+    transition: border-color var(--q3-transition), color var(--q3-transition);
+}
+.q3-storefront .q3-sf-chip:hover { border-color: var(--q3-border-gold); color: var(--q3-text-body); }
+
+/* ==========================================================================
+   9. Enquiry form — charcoal fills, gold focus ring, never a white box
+   ========================================================================== */
+
+.q3-storefront .q3-sf-formshell {
+    display: grid;
+    gap: 32px;
+    grid-template-columns: 1fr;
+}
+@media (min-width: 992px) {
+    .q3-storefront .q3-sf-formshell { align-items: start; grid-template-columns: 1fr 1.2fr; }
+}
+
+.q3-storefront .q3-sf-form {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-lg);
+    padding: 32px 34px;
+}
+
+.q3-storefront .q3-sf-field { margin-bottom: 17px; }
+.q3-storefront .q3-sf-field label {
+    color: var(--q3-text-muted);
+    display: block;
+    font-size: 0.79rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    margin-bottom: 7px;
+}
+.q3-storefront .q3-sf-field .q3-sf-opt { color: var(--q3-text-muted); font-weight: 400; }
+
+.q3-storefront .q3-sf-field input,
+.q3-storefront .q3-sf-field select,
+.q3-storefront .q3-sf-field textarea {
+    background-color: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-strong);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text);
+    font-family: inherit;
+    font-size: 0.94rem;
+    padding: 11px 14px;
+    transition: border-color var(--q3-transition), box-shadow var(--q3-transition);
+    width: 100%;
+}
+.q3-storefront .q3-sf-field input::placeholder,
+.q3-storefront .q3-sf-field textarea::placeholder { color: var(--q3-text-muted); }
+
+.q3-storefront .q3-sf-field input:focus,
+.q3-storefront .q3-sf-field select:focus,
+.q3-storefront .q3-sf-field textarea:focus {
+    border-color: var(--q3-gold-soft);
+    box-shadow: 0 0 0 3px var(--q3-gold-ring);
+    outline: none;
+}
+.q3-storefront .q3-sf-field input.is-invalid,
+.q3-storefront .q3-sf-field select.is-invalid { border-color: var(--q3-danger); }
+
+/* The native picker renders black-on-black in some browsers without this. */
+.q3-storefront .q3-sf-field select option { background: var(--q3-surface-2); color: var(--q3-text); }
+
+.q3-storefront .q3-sf-err { color: var(--q3-danger); font-size: 0.78rem; margin-top: 5px; }
+
+.q3-storefront .q3-sf-row { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 575.98px) { .q3-storefront .q3-sf-row { grid-template-columns: 1fr; } }
+
+/* ---- Sizing helper and quantity ----------------------------------------
+   Quantity stopped being a form field the moment each unit carried $6,000 and
+   a sizing rule. It gets its own block, its own arithmetic, and a stepper big
+   enough to use on a phone.                                                  */
+.q3-storefront .q3-sf-sizing {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+    padding: 20px 22px;
+}
+.q3-storefront .q3-sf-sizing-help {
+    color: var(--q3-text-body);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 0 0 16px;
+}
+
+/* The recommendation. Gold because it is the number we are asking them to
+   accept; muted would make it look like a footnote. */
+.q3-storefront .q3-sf-suggest {
+    align-items: baseline;
+    border-top: 1px solid var(--q3-border);
+    color: var(--q3-text-body);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.87rem;
+    gap: 8px;
+    line-height: 1.6;
+    margin-top: 16px;
+    padding-top: 16px;
+}
+.q3-storefront .q3-sf-suggest strong { color: var(--q3-gold-high); font-weight: 600; }
+.q3-storefront .q3-sf-suggest-note { color: var(--q3-text-muted); font-size: 0.79rem; width: 100%; }
+
+/* Stepper — 44px targets, the minimum that is comfortable on a phone. */
+.q3-storefront .q3-sf-qty { align-items: center; display: flex; gap: 10px; }
+.q3-storefront .q3-sf-qty button {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-strong);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text);
+    cursor: pointer;
+    font-size: 1.15rem;
+    height: 44px;
+    line-height: 1;
+    transition: border-color var(--q3-transition), color var(--q3-transition);
+    width: 44px;
+}
+.q3-storefront .q3-sf-qty button:hover:not(:disabled) { border-color: var(--q3-gold-soft); color: var(--q3-gold-high); }
+.q3-storefront .q3-sf-qty button:disabled { color: var(--q3-text-muted); cursor: not-allowed; opacity: 0.5; }
+.q3-storefront .q3-sf-qty input {
+    -moz-appearance: textfield;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    height: 44px;
+    text-align: center;
+    width: 82px;
+}
+.q3-storefront .q3-sf-qty input::-webkit-outer-spin-button,
+.q3-storefront .q3-sf-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.q3-storefront .q3-sf-qty-unit { color: var(--q3-text-muted); font-size: 0.87rem; }
+
+/* Running goods total. Explicitly not the final figure — shipping and tax are
+   not known until there is an address, and implying otherwise is how a
+   checkout loses trust at the last step. */
+.q3-storefront .q3-sf-running {
+    border-top: 1px solid var(--q3-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 16px;
+}
+.q3-storefront .q3-sf-running-label { color: var(--q3-text-muted); font-size: 0.85rem; }
+.q3-storefront .q3-sf-running-value {
+    color: var(--q3-text);
+    font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+.q3-storefront .q3-sf-running-note { color: var(--q3-text-muted); font-size: 0.78rem; width: 100%; }
+
+/* Past the parcel threshold this is a freight order and a person has to quote
+   it, so the form says so rather than letting them submit into a dead end. */
+.q3-storefront .q3-sf-freight {
+    background: var(--q3-warning-tint);
+    border: 1px solid var(--q3-sf-warn-edge);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-sf-warn-ink);
+    font-size: 0.84rem;
+    line-height: 1.6;
+    margin-top: 14px;
+    padding: 12px 16px;
+}
+
+/* Test-mode banner. Deliberately the loudest thing on the checkout: a real
+   customer reaching a sandbox form and believing they have bought something is
+   worse than any amount of visual noise. */
+.q3-storefront .q3-sf-testbadge {
+    background: var(--q3-warning-tint);
+    border: 1px solid var(--q3-sf-warn-edge);
+    border-left: 3px solid var(--q3-gold);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-sf-warn-ink);
+    font-size: 0.83rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+}
+.q3-storefront .q3-sf-testbadge code {
+    background: var(--q3-surface);
+    border-radius: 4px;
+    color: var(--q3-gold-high);
+    padding: 1px 6px;
+}
+
+/* Stripe mounts its own iframe here; it needs room, not styling. */
+.q3-storefront #q3-payment-element { margin-top: 4px; min-height: 200px; }
+
+.q3-storefront .q3-sf-legend {
+    border-top: 1px solid var(--q3-border);
+    color: var(--q3-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    margin: 28px 0 16px;
+    padding-top: 20px;
+    text-transform: uppercase;
+}
+
+.q3-storefront .q3-sf-formnote {
+    color: var(--q3-text-body);
+    font-size: 0.79rem;
+    line-height: 1.65;
+    margin: 16px 0 0;
+}
+
+.q3-storefront .q3-sf-alert {
+    background: var(--q3-danger-tint);
+    border: 1px solid var(--q3-sf-danger-edge);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-sf-danger-ink);
+    font-size: 0.87rem;
+    margin-bottom: 18px;
+    padding: 12px 16px;
+}
+
+/* Off-screen, not display:none — some bots skip anything explicitly hidden. */
+.q3-storefront .q3-sf-hp {
+    height: 1px;
+    left: -9999px;
+    overflow: hidden;
+    position: absolute;
+    width: 1px;
+}
+
+/* ==========================================================================
+   10. Partner card
+   ========================================================================== */
+
+.q3-storefront .q3-sf-partner {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    padding: 26px 28px;
+}
+.q3-storefront .q3-sf-partner .q3-sf-avatar {
+    align-items: center;
+    background: var(--q3-gold-tint-2);
+    border: 1px solid var(--q3-border-gold);
+    border-radius: 50%;
+    color: var(--q3-gold-high);
+    display: flex;
+    font-size: 1.15rem;
+    font-weight: 600;
+    height: 54px;
+    justify-content: center;
+    margin-bottom: 18px;
+    width: 54px;
+}
+.q3-storefront .q3-sf-partner .q3-sf-pname { color: var(--q3-text); font-size: 1.05rem; font-weight: 600; }
+.q3-storefront .q3-sf-partner .q3-sf-prole { color: var(--q3-text-muted); font-size: 0.83rem; margin-bottom: 20px; }
+.q3-storefront .q3-sf-partner ul {
+    border-top: 1px solid var(--q3-border);
+    color: var(--q3-text-body);
+    font-size: 0.88rem;
+    line-height: 1.7;
+    list-style: none;
+    margin: 0;
+    padding: 18px 0 0;
+}
+.q3-storefront .q3-sf-partner ul li { padding-left: 18px; position: relative; }
+.q3-storefront .q3-sf-partner ul li + li { margin-top: 10px; }
+.q3-storefront .q3-sf-partner ul li::before {
+    color: var(--q3-gold-soft);
+    content: "—";
+    left: 0;
+    position: absolute;
+}
+
+/* Price block — the figure in gold, the qualification muted beneath it. */
+.q3-storefront .q3-sf-price { margin-top: 18px; }
+.q3-storefront .q3-sf-price .q3-sf-price-fig {
+    color: var(--q3-gold-high);
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+.q3-storefront .q3-sf-price .q3-sf-price-note {
+    color: var(--q3-text-muted);
+    display: block;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    margin-top: 8px;
+}
+
+/* ==========================================================================
+   11. Disclosure footer
+   ========================================================================== */
+
+.q3-storefront .q3-sf-footer {
+    background: var(--q3-black);
+    border-top: 1px solid var(--q3-border);
+    color: var(--q3-text-body);
+    font-size: 0.81rem;
+    line-height: 1.75;
+    padding: 40px 0 48px;
+}
+.q3-storefront .q3-sf-footer strong { color: var(--q3-text); font-weight: 600; }
+.q3-storefront .q3-sf-footer p { margin: 0 0 12px; max-width: 88ch; }
+.q3-storefront .q3-sf-footer p:last-child { margin-bottom: 0; }
+.q3-storefront .q3-sf-footer .q3-sf-footer-logo {
+    height: auto;
+    margin-bottom: 22px;
+    max-height: 34px;
+    max-width: 96px;
+    opacity: 0.5;
+    width: auto;
+}
+
+/* ==========================================================================
+   12. Interstitials — checkout handoff and thank-you
+   ========================================================================== */
+
+.q3-storefront .q3-sf-centre {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.q3-storefront .q3-sf-panel {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-lg);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    max-width: 520px;
+    padding: 44px 40px 36px;
+    text-align: center;
+    width: 100%;
+}
+.q3-storefront .q3-sf-panel .q3-sf-panel-logo {
+    display: block;
+    height: auto;
+    margin: 0 auto 30px;
+    max-height: 62px;
+    max-width: 132px;
+    object-fit: contain;
+    width: auto;
+}
+.q3-storefront .q3-sf-panel h1 {
+    color: var(--q3-text);
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+}
+.q3-storefront .q3-sf-panel p { color: var(--q3-text-body); font-size: 0.92rem; line-height: 1.7; margin: 0 0 20px; }
+
+/* The reference the customer quotes if anything goes wrong. */
+.q3-storefront .q3-sf-ref {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-gold-high);
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 0.96rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    margin-bottom: 24px;
+    padding: 11px 22px;
+}
+
+.q3-storefront .q3-sf-spin {
+    animation: q3-sf-rot 900ms linear infinite;
+    border: 2px solid var(--q3-surface-3);
+    border-radius: 50%;
+    border-top-color: var(--q3-gold);
+    height: 42px;
+    margin: 0 auto 24px;
+    width: 42px;
+}
+@keyframes q3-sf-rot { to { transform: rotate(360deg); } }
+
+.q3-storefront .q3-sf-mark {
+    align-items: center;
+    background: var(--q3-gold-tint-2);
+    border: 1px solid var(--q3-border-gold);
+    border-radius: 50%;
+    color: var(--q3-gold-high);
+    display: flex;
+    font-size: 1.45rem;
+    height: 56px;
+    justify-content: center;
+    margin: 0 auto 24px;
+    width: 56px;
+}
+
+.q3-storefront .q3-sf-steps {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    margin-top: 8px;
+    padding: 20px 24px;
+    text-align: left;
+}
+.q3-storefront .q3-sf-steps h2 {
+    color: var(--q3-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    margin: 0 0 14px;
+    text-transform: uppercase;
+}
+.q3-storefront .q3-sf-steps ol {
+    color: var(--q3-text-body);
+    font-size: 0.88rem;
+    line-height: 1.75;
+    margin: 0;
+    padding-left: 20px;
+}
+.q3-storefront .q3-sf-steps ol li::marker { color: var(--q3-gold-soft); }
+
+.q3-storefront .q3-sf-note { color: var(--q3-text-muted); font-size: 0.78rem; line-height: 1.65; margin-top: 24px; }
+
+.q3-storefront .q3-sf-warn {
+    background: var(--q3-warning-tint);
+    border: 1px solid var(--q3-sf-warn-edge);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-sf-warn-ink);
+    font-size: 0.86rem;
+    line-height: 1.6;
+    padding: 16px 18px;
+    text-align: left;
+}
+
+/* ==========================================================================
+   13. Responsive — these pages are mostly read on a phone
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+    .q3-storefront .q3-sf-wrap { padding: 0 18px; }
+    .q3-storefront .q3-sf-hero { padding: 48px 0 44px; }
+    .q3-storefront .q3-sf-section { padding: 46px 0; }
+    .q3-storefront .q3-sf-form { padding: 26px 22px; }
+    .q3-storefront .q3-sf-stats { gap: 24px; margin-top: 36px; padding-top: 26px; }
+    .q3-storefront .q3-sf-stat-value { font-size: 1.55rem; }
+
+    /* The hero shot becomes a band under the call to action, not a wall in
+       front of the headline. Copy leads on a phone; the DOM is already in that
+       order, so nothing needs reordering to achieve it. */
+    .q3-storefront .q3-sf-hero-media { padding: 14px; }
+    .q3-storefront .q3-sf-hero-media img { max-height: 168px; }
+
+    /* Stack the brand bar so the mark keeps its breathing room. */
+    .q3-storefront .q3-sf-brandbar .q3-sf-wrap { gap: 12px; justify-content: flex-start; }
+    .q3-storefront .q3-sf-presenter { text-align: left; }
+
+    .q3-storefront .q3-sf-panel { padding: 34px 24px 28px; }
+    .q3-storefront .q3-sf-centre { min-height: auto; padding: 32px 16px; }
+}
+
+/* Saved to a phone home screen, respect the notch. */
+@supports (padding: max(0px)) {
+    .q3-storefront .q3-sf-brandbar .q3-sf-wrap {
+        padding-left: max(24px, env(safe-area-inset-left));
+        padding-right: max(24px, env(safe-area-inset-right));
+    }
+    .q3-storefront .q3-sf-footer { padding-bottom: max(48px, env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .q3-storefront .q3-sf-spin { animation: none; }
+    .q3-storefront * { transition-duration: 0.01ms !important; }
+}

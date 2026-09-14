@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\KartraFile;
 use App\Models\KartraImport;
 use App\Models\TrainingCategory;
 use App\Models\TrainingLesson;
+use App\Services\KartraContentService;
 use App\Services\KartraImportService;
 use Illuminate\Http\Request;
 
@@ -19,12 +21,15 @@ class KartraImportController extends Controller
             ->paginate(25);
 
         $stats = [
-            'total'       => KartraImport::count(),
-            'discovered'  => KartraImport::where('status', 'discovered')->count(),
-            'downloaded'  => KartraImport::where('status', 'downloaded')->count(),
-            'mapped'      => KartraImport::where('status', 'mapped')->count(),
-            'failed'      => KartraImport::where('status', 'failed')->count(),
-            'videos'      => KartraImport::whereNotNull('kartra_video_url')->count(),
+            'total'          => KartraImport::count(),
+            'discovered'     => KartraImport::where('status', 'discovered')->count(),
+            'downloaded'     => KartraImport::where('status', 'downloaded')->count(),
+            'mapped'         => KartraImport::where('status', 'mapped')->count(),
+            'failed'         => KartraImport::where('status', 'failed')->count(),
+            'videos'         => KartraImport::whereNotNull('kartra_video_url')->count(),
+            'with_content'   => KartraImport::whereNotNull('page_content')->count(),
+            'files_total'    => KartraFile::count(),
+            'files_downloaded' => KartraFile::where('status', 'downloaded')->count(),
         ];
 
         return view('admin.kartra.index', compact('topLevel', 'stats'));
@@ -32,11 +37,29 @@ class KartraImportController extends Controller
 
     public function show(KartraImport $kartraImport)
     {
-        $kartraImport->load('children.children', 'videoAsset', 'localCategory', 'localLesson', 'localContentBlock', 'parent');
+        $kartraImport->load('children.children', 'videoAsset', 'localCategory', 'localLesson', 'localContentBlock', 'parent', 'files');
         $categories = TrainingCategory::orderBy('name')->get();
         $lessons    = TrainingLesson::with('category')->orderBy('title')->get();
 
         return view('admin.kartra.show', compact('kartraImport', 'categories', 'lessons'));
+    }
+
+    public function downloadFiles(Request $request)
+    {
+        $service = new KartraContentService(
+            'https://besafe.kartra.com/portal/Lion',
+            'john@ihub.global',
+            'peZMDgQs'
+        );
+
+        $result = $service->downloadPendingFiles();
+
+        $msg = "Downloaded {$result['count']} file(s).";
+        if (!empty($result['errors'])) {
+            $msg .= ' ' . count($result['errors']) . ' error(s) — check logs.';
+        }
+
+        return back()->with('success', $msg);
     }
 
     public function map(Request $request, KartraImport $kartraImport)

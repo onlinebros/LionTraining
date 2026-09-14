@@ -1,0 +1,93 @@
+{
+  "_about": "Every business fact printed on q3.life. A value starting with TODO: is unfilled: preview builds highlight it, live builds refuse to run until it is set. _confirm lists values that are filled from app config or drafted, but have not been confirmed by the business.",
+
+  "_confirm": [
+    "Course description for Vision of the Heart Training was drafted from the brand premise in memory-bank/marketing-inputs.md. Replace it with the real summary",
+    "Membership price $49.99 USD per month (owner, 2026-09-14). The app still bills $199.00 per year (STRIPE_PRICE_AMOUNT=19900, STRIPE_PRICE_INTERVAL=year) and needs a new monthly Stripe price before launch",
+    "The app's names still say Quantum Life or The Quantum Solutions (STRIPE_PRODUCT_NAME, admin site_name, PWA title). The owner chose Quantum 3 Solution on 2026-09-14",
+    "Statement descriptor Q3SOLUTION is set in the Stripe dashboard (owner: 'Q3Solution is fine for now', 2026-09-14)",
+    "7-day access grace period after a failed payment (STRIPE_GRACE_DAYS)",
+    "Stripe Billing customer emails switched on: a trial-ending reminder 7 days before a trial ends, receipts for every charge, failed-payment emails and Smart Retries",
+    "Pre-launch members (owner, 2026-09-14): the email 14 days before launch is actually sent (not built yet), and on launch day billing:apply-prelaunch-end starts each pre-launch member's 30-day trial from the official launch date, so the first charge is launch + 30 days",
+    "The app's signup and Billing pages show the trial end date, and state that charges after the trial are non-refundable, next to the confirm button",
+    "Refund exceptions kept alongside the no-refund policy: duplicate or mistaken charges, and a refund of unused time if we end a membership without cause (Terms section 18)",
+    "30 days' email notice before a price change, a Compensation Plan change, or a material Terms change",
+    "The Partner Program page is deliberately general while the Compensation Plan is developed during pre-launch (owner, 2026-09-14). It does not say which sales pay commission. Publish the plan there, with 30 days' notice, before it takes effect. If the plan pays commissions on membership fees, tell Stripe: multi-level commissions are on its prohibited list",
+    "Membership limited to adults resident in the United States",
+    "No analytics or advertising cookies on q3.life or app.q3.life",
+    "Support is by contact form only, with no public email or phone (owner decision, 2026-09-14). Stripe's website checklist asks for contact methods besides a form",
+    "The contact form posts to {app_url}/api/support/requests. On production, app.q3.life must be deployed, with CORS allowing q3.life, before the form works",
+    "Replies to website requests are not emailed automatically (no mail provider configured). Staff reply from their own mailbox",
+    "Cloudflare Turnstile protects the contact form. Create a widget for q3.life, www.q3.life and q3.onlinebros.com, put its site key in support.turnstile_site_key, and set TURNSTILE_SECRET_KEY (plus TURNSTILE_ALLOWED_HOSTNAMES) in the app's .env. Dev currently uses Cloudflare's always-pass test keys, which give no real protection",
+    "PlasmaGuard LLC is named as the seller of partner products at the owner's direction (2026-09-14). Written permission for product names and photos is still open (vendor-referral-framework.md item 9). Its phone, address and page links were copied from plasmaguard.com on 2026-09-14",
+    "PlasmaGuard's card statement descriptor is assumed to read PLASMAGUARD (owner: 'probably', 2026-09-14). Confirm with PlasmaGuard",
+    "PlasmaGuard publishes no refund, return, shipping or warranty policy on plasmaguard.com (its Terms and Conditions page checked 2026-09-14). Ask them to publish one, since q3.life sends customers to them for refunds",
+    "Partner products: orders over 8 units ship by freight with a quote first (config/vendors.php freight_threshold_units)",
+    "Accepted cards: Visa, Mastercard, American Express, Discover"
+  ],
+
+  "site": {
+    "url": "https://q3.life",
+    "brand": "Quantum 3 Solution",
+    "brand_short": "Q3",
+    "app_url": "https://app.q3.life"
+  },
+
+  "business": {
+    "legal_name": "Quantum 3 Solution LLC",
+    "entity_description": "a Delaware limited liability company",
+    "address_line1": "1038 Peterson Place",
+    "address_line2": "Wilmington, NC 28411",
+    "country": "United States",
+    "service_region": "the United States",
+    "governing_law_state": "Delaware"
+  },
+
+  "contact": {
+    "hours": "Monday to Friday, 10 a.m. to 5 p.m. Eastern Time"
+  },
+
+  "support": {
+    "endpoint_path": "/api/support/requests",
+    "turnstile_site_key": "TODO: Cloudflare Turnstile site key (Cloudflare dashboard > Turnstile > Add widget, hostnames q3.life, www.q3.life, q3.onlinebros.com)"
+  },
+
+  "membership": {
+    "name": "Q3 Partner Membership",
+    "amount_cents": 4999,
+    "currency": "usd",
+    "interval": "month",
+    "trial_days": 30,
+    "trial_reminder_days": 7,
+    "prelaunch_notice_days": 14,
+    "statement_descriptor": "Q3SOLUTION"
+  },
+
+  "course": {
+    "name": "Vision of the Heart Training",
+    "summary": "A video course in heart-centered leadership: getting clear on the vision you hold for your life, and learning to lead your work, relationships and choices from it."
+  },
+
+  "policies": {
+    "updated": "2026-09-14",
+    "payment_grace_days": 7,
+    "refund_processing": "5 to 10 business days",
+    "min_age": 18
+  },
+
+  "vendor": {
+    "name": "PlasmaGuard",
+    "legal_name": "PlasmaGuard LLC",
+    "product": "PlasmaGuard PRO In-Duct System",
+    "website": "https://plasmaguard.com",
+    "terms_url": "https://plasmaguard.com/terms-and-conditions/",
+    "contact_url": "https://plasmaguard.com/contact-us/",
+    "phone": "734-661-4520",
+    "address": "600 S. Wagner Rd., Suite 300 B, Ann Arbor, Michigan 48103",
+    "statement_descriptor": "PLASMAGUARD"
+  },
+
+  "products": {
+    "freight_threshold_units": 8
+  }
+}

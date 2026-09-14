@@ -1,0 +1,1407 @@
+/* ==========================================================================
+   Q3 — Premium black & gold back-office theme
+   --------------------------------------------------------------------------
+   Loaded last, after:
+     style.css  →  color-N.css  →  responsive.css  →  custom.css
+     →  q3-palette-map.css (generated)  →  q3-theme.css (this file)
+
+   q3-palette-map.css mechanically re-maps the Cuba template's hardcoded dark
+   palette onto the tokens below, so every stock component lands in the right
+   ballpark. This file then does the deliberate design work: sidebar, logo,
+   cards, buttons, tables, forms, stats, auth screens and mobile.
+
+   Everything is driven by the tokens in the :root block — change a colour
+   there, not in the rules underneath.
+
+   Cuba ships very long, high-specificity selectors for the sidebar
+   (`.simplebar-content > li .sidebar-link.active` is 12 classes deep). Rather
+   than mirroring those chains, the sidebar and top-nav sections below use
+   scoped `!important`. That is intentional and confined to those sections.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. Design tokens
+   ========================================================================== */
+
+:root {
+    /* ---- Surfaces: black → charcoal, darkest at the sidebar --------------- */
+    --q3-black:            #050505;   /* deepest — sidebar top, drawer        */
+    --q3-sidebar:          #070708;   /* sidebar panel                        */
+    --q3-bg:               #0B0B0C;   /* page background                      */
+    --q3-surface:          #141416;   /* cards, panels, modals                */
+    --q3-surface-2:        #1A1A1D;   /* inset panels, table heads, inputs    */
+    --q3-surface-3:        #202024;   /* hover fills, chips                   */
+
+    /* ---- Text ------------------------------------------------------------ */
+    --q3-text:             #F5F1E8;   /* primary / headings                   */
+    --q3-text-body:        #D8D4CC;   /* body copy                            */
+    --q3-text-muted:       #A9A6A0;   /* labels, secondary                    */
+    --q3-text-dim:         #6E6B66;   /* placeholders, disabled               */
+
+    /* ---- Gold ------------------------------------------------------------ */
+    --q3-gold:             #D4AF37;   /* primary accent                       */
+    --q3-gold-soft:        #C69B3C;   /* softer premium gold — borders, fills */
+    --q3-gold-high:        #E4C66A;   /* highlight — hover, active text       */
+    --q3-gold-deep:        #8A6D22;   /* pressed / deep edge                  */
+    --q3-gold-ink:         #0B0B0C;   /* text sitting on a gold fill          */
+
+    /* Gold at low alpha — tints, glows and rings. */
+    --q3-gold-rgb:         212, 175, 55;
+    --q3-gold-tint:        rgba(212, 175, 55, 0.08);
+    --q3-gold-tint-2:      rgba(212, 175, 55, 0.14);
+    --q3-gold-ring:        rgba(212, 175, 55, 0.22);
+    --q3-gold-glow:        0 0 0 1px rgba(212, 175, 55, 0.28), 0 6px 22px rgba(212, 175, 55, 0.14);
+
+    /* ---- Borders --------------------------------------------------------- */
+    --q3-border:           rgba(255, 255, 255, 0.07);   /* default hairline   */
+    --q3-border-strong:    rgba(255, 255, 255, 0.12);
+    --q3-border-gold:      rgba(212, 175, 55, 0.20);    /* accented edge      */
+    --q3-border-gold-soft: rgba(212, 175, 55, 0.11);
+
+    /* ---- States — restrained, never neon --------------------------------- */
+    --q3-success:          #3E9E6E;
+    --q3-success-tint:     rgba(62, 158, 110, 0.14);
+    --q3-danger:           #B4483F;
+    --q3-danger-tint:      rgba(180, 72, 63, 0.16);
+    --q3-warning:          #C99A3E;
+    --q3-warning-tint:     rgba(201, 154, 62, 0.15);
+    --q3-info:             #7C8A93;
+    --q3-info-tint:        rgba(124, 138, 147, 0.16);
+
+    /* ---- Charts: gold, champagne, muted metals. No rainbows. ------------- */
+    --q3-chart-1:          #D4AF37;
+    --q3-chart-2:          #E4C66A;
+    --q3-chart-3:          #8A6D22;
+    --q3-chart-4:          #A9A6A0;
+    --q3-chart-5:          #5F5C57;
+    --q3-chart-6:          #3E9E6E;
+    --q3-chart-grid:       rgba(255, 255, 255, 0.06);
+
+    /* ---- Shape & motion -------------------------------------------------- */
+    --q3-radius-sm:        8px;
+    --q3-radius:           12px;      /* cards — 10–14px band                 */
+    --q3-radius-lg:        16px;
+    --q3-shadow:           0 1px 2px rgba(0, 0, 0, 0.45);
+    --q3-shadow-lift:      0 10px 30px rgba(0, 0, 0, 0.55);
+    --q3-ease:             cubic-bezier(0.4, 0, 0.2, 1);
+    --q3-transition:       200ms var(--q3-ease);
+
+    /* ---- Type ------------------------------------------------------------ */
+    --q3-font: "Inter", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+    --q3-font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+}
+
+/* ==========================================================================
+   2. Bridge — point Cuba's own variables at the Q3 tokens
+   Anything in the template that reads --theme-default, --white, --light-bg …
+   follows the Q3 palette without a per-component override.
+   ========================================================================== */
+
+:root,
+.dark-only,
+body.dark-only {
+    --theme-default:          var(--q3-gold);
+    --theme-secondary:        var(--q3-gold-soft);
+    --rgb-primary:            var(--q3-gold);
+    --primary-70:             rgba(212, 175, 55, 0.7);
+    --warning-70:             rgba(201, 154, 62, 0.7);
+    --success-70:             rgba(62, 158, 110, 0.7);
+
+    --white:                  var(--q3-surface);
+    --light-bg:               var(--q3-bg);
+    --light2:                 var(--q3-surface-2);
+    --light-slate:            var(--q3-surface-2);
+    --light-background:       var(--q3-surface);
+    --light-shade-primary:    var(--q3-gold-tint);
+    --light-datatable-odd:    var(--q3-surface-2);
+    --recent-chart-bg:        var(--q3-surface);
+    --recent-box-bg:          var(--q3-surface-2);
+    --recent-border:          var(--q3-border);
+    --course-light-btn:       var(--q3-surface-2);
+    --course-bg:              var(--q3-surface-2);
+    --view-grid-bg:           var(--q3-surface-2);
+    --view-border-marker:     var(--q3-border-gold);
+
+    --body-font-color:        var(--q3-text-body);
+    --f-lighter:              var(--q3-text-muted);
+    --lighter-gray:           var(--q3-text-dim);
+    --sidebar-border:         var(--q3-border);
+    --chart-border:           var(--q3-chart-grid);
+    --chart-text-color:       var(--q3-text-muted);
+    --chart-dashed-border:    var(--q3-chart-grid);
+    --chart-progress-light:   var(--q3-surface-3);
+    --product-shadow:         0 1px 0 var(--q3-border);
+
+    --bs-heading-color:       var(--q3-text);
+    --bs-body-color:          var(--q3-text-body);
+    --bs-border-color:        var(--q3-border);
+    --bs-emphasis-color-rgb:  var(--q3-surface-2);
+    --bs-table-bg:            transparent;
+    --bs-link-color:          var(--q3-gold);
+    --bs-link-hover-color:    var(--q3-gold-high);
+}
+
+/* ==========================================================================
+   3. Base & typography
+   ========================================================================== */
+
+body.q3-theme,
+body.q3-theme.dark-only {
+    background-color: var(--q3-bg);
+    color: var(--q3-text-body);
+    font-family: var(--q3-font);
+    font-size: 14px;
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.q3-theme h1, .q3-theme h2, .q3-theme h3,
+.q3-theme h4, .q3-theme h5, .q3-theme h6,
+.q3-theme .h1, .q3-theme .h2, .q3-theme .h3,
+.q3-theme .h4, .q3-theme .h5, .q3-theme .h6 {
+    font-family: var(--q3-font);
+    color: var(--q3-text);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Refined serif — reserved for occasional major headings (auth headline,
+   welcome banner). Never used for menus or dashboard content. */
+.q3-display {
+    font-family: var(--q3-font-display);
+    font-weight: 600;
+    letter-spacing: 0.005em;
+}
+
+.q3-theme a { color: var(--q3-gold); text-decoration: none; transition: color var(--q3-transition); }
+.q3-theme a:hover { color: var(--q3-gold-high); }
+
+.q3-theme .text-muted,
+.q3-theme .f-light,
+.q3-theme small.text-muted { color: var(--q3-text-muted) !important; }
+
+/* --------------------------------------------------------------------------
+   Re-assert inheritance on text elements the template colours directly.
+
+   Cuba's style.css carries this, near the top:
+
+       dl, dl dd, dl dt, dl li, ol, ol dd, ol dt, ol li,
+       p, p dd, p dt, p li, ul, ul dd, ul dt, ul li { color: #404040 }
+
+   It sets a colour DIRECTLY on every p, li, dd and dt. A direct declaration
+   always beats an inherited one however specific the inherited rule is, so
+   none of the theme colours above ever reach those elements — they render at
+   #404040, which on our darkest surface is about 1.67:1. Painted, but not
+   readable. It was found on the customer order-confirmation steps and the
+   partner-card bullets, and it applies to every unstyled paragraph and list
+   item in the product.
+
+   `inherit` hands each element back to whatever its container says, so setting
+   a colour on a container behaves the way it looks like it should. Anything
+   that wants a different colour still states it and still outranks this —
+   including the .text-muted rule above, which carries !important.
+
+   Scoped to all three shells because each is a separate <body> class: the back
+   office (.q3-theme), the auth screens (.q3-auth) and the public storefront
+   (.q3-storefront). This file loads on all of them, and after style.css.
+   -------------------------------------------------------------------------- */
+.q3-theme p,   .q3-theme li,   .q3-theme dd,   .q3-theme dt,
+.q3-auth p,    .q3-auth li,    .q3-auth dd,    .q3-auth dt,
+.q3-storefront p, .q3-storefront li, .q3-storefront dd, .q3-storefront dt { color: inherit; }
+
+.q3-theme code,
+.q3-theme kbd {
+    background: var(--q3-surface-2);
+    color: var(--q3-gold-high);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-sm);
+}
+
+.q3-theme hr,
+.q3-theme .dropdown-divider { border-color: var(--q3-border); opacity: 1; }
+
+.q3-theme .border,
+.q3-theme .border-top,
+.q3-theme .border-bottom,
+.q3-theme .border-start,
+.q3-theme .border-end { border-color: var(--q3-border) !important; }
+
+.q3-theme ::selection { background: var(--q3-gold-ring); color: var(--q3-text); }
+
+/* Scrollbars — thin, dark, gold on hover. */
+.q3-theme ::-webkit-scrollbar { width: 8px; height: 8px; }
+.q3-theme ::-webkit-scrollbar-track { background: var(--q3-bg); }
+.q3-theme ::-webkit-scrollbar-thumb {
+    background: var(--q3-surface-3);
+    border-radius: 8px;
+}
+.q3-theme ::-webkit-scrollbar-thumb:hover { background: var(--q3-gold-deep); }
+.q3-theme { scrollbar-color: var(--q3-surface-3) var(--q3-bg); scrollbar-width: thin; }
+
+/* Page loader — the stock one flashes white. */
+.q3-theme .loader-wrapper { background-color: var(--q3-black); }
+.q3-theme .loader-index span { background: var(--q3-gold); }
+
+/* ==========================================================================
+   4. Layout shell — page body, header, breadcrumb, footer
+   ========================================================================== */
+
+.q3-theme .page-wrapper .page-body-wrapper,
+.q3-theme .page-wrapper .page-body-wrapper .page-body {
+    background-color: var(--q3-bg);
+}
+
+.q3-theme .page-wrapper .page-body-wrapper .page-body { padding-top: 24px; }
+
+/* --- Top navigation ----------------------------------------------------- */
+.q3-theme .page-wrapper .page-header .header-wrapper {
+    background-color: var(--q3-black);
+    border-bottom: 1px solid var(--q3-border-gold-soft);
+    padding: 12px 24px;
+}
+
+.q3-theme .page-wrapper .page-header,
+.q3-theme .page-wrapper .page-header .header-logo-wrapper { background-color: transparent; }
+
+.q3-theme .page-header .header-wrapper .nav-right ul li svg {
+    stroke: var(--q3-text-muted);
+    transition: stroke var(--q3-transition);
+}
+.q3-theme .page-header .header-wrapper .nav-right ul li:hover svg { stroke: var(--q3-gold); }
+
+/* Marquee strip next to the logo — muted, gold brand word. */
+.q3-theme .page-header .header-wrapper .left-header .notification-slider h6 { color: var(--q3-text-muted); }
+.q3-theme .page-header .header-wrapper .left-header .notification-slider .font-primary { color: var(--q3-gold); }
+
+/* Profile block */
+.q3-theme .page-header .header-wrapper .nav-right .profile-nav .profile-media span { color: var(--q3-text); font-weight: 600; }
+.q3-theme .page-header .header-wrapper .nav-right .profile-nav .profile-media p { color: var(--q3-text-muted); }
+.q3-theme .profile-dropdown,
+.q3-theme .onhover-show-div {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+    box-shadow: var(--q3-shadow-lift);
+}
+.q3-theme .profile-dropdown li { border-top-color: var(--q3-border); }
+.q3-theme .profile-dropdown li a { color: var(--q3-text-body); }
+.q3-theme .profile-dropdown li a:hover,
+.q3-theme .profile-dropdown li a:hover svg { color: var(--q3-gold-high) !important; stroke: var(--q3-gold-high); }
+
+/* Avatar chip — gold ring rather than a solid purple disc. Unscoped so the
+   auth screens (body.q3-auth) can use it too. */
+.q3-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--q3-gold-tint-2);
+    border: 1px solid var(--q3-border-gold);
+    color: var(--q3-gold-high);
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+}
+.q3-avatar-sm { width: 30px; height: 30px; font-size: 0.78rem; }
+.q3-avatar-lg { width: 48px; height: 48px; font-size: 1.1rem; }
+
+/* --- Page title & breadcrumb --------------------------------------------
+   Cuba gives the title bar its own panel and a drop shadow. The Q3 layout
+   floats the title straight on the page ground with a hairline under it.
+   Selector matches Cuba's own `body.dark-only .page-wrapper …` depth. */
+body.q3-theme .page-wrapper .page-body-wrapper .page-title {
+    background-color: transparent;
+    border-bottom: 1px solid var(--q3-border);
+    box-shadow: none;
+    margin-bottom: 24px;
+}
+.q3-theme .page-title { padding-top: 26px; padding-bottom: 18px; }
+.q3-theme .page-title h3 {
+    color: var(--q3-text);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
+.q3-theme .page-title .breadcrumb { background: transparent; }
+.q3-theme .page-title .breadcrumb-item,
+.q3-theme .page-title .breadcrumb-item a { color: var(--q3-text-muted); }
+.q3-theme .page-title .breadcrumb-item.active { color: var(--q3-gold-soft); }
+.q3-theme .page-title .breadcrumb-item + .breadcrumb-item::before { color: var(--q3-text-dim); }
+.q3-theme .page-title .breadcrumb-item svg { stroke: var(--q3-gold-soft); }
+
+/* --- Footer -------------------------------------------------------------- */
+body.q3-theme .page-wrapper .page-body-wrapper .footer,
+.q3-theme .footer {
+    background-color: var(--q3-black);
+    border-top: 1px solid var(--q3-border);
+    box-shadow: none;
+}
+.q3-theme .footer p { color: var(--q3-text-dim); font-size: 0.8rem; }
+
+/* --- Scroll-to-top ------------------------------------------------------- */
+.q3-theme .tap-top {
+    background: var(--q3-gold);
+    color: var(--q3-gold-ink);
+    border: none;
+}
+.q3-theme .tap-top svg { stroke: var(--q3-gold-ink); }
+
+/* ==========================================================================
+   5. Sidebar — the signature element
+   Deep black panel, Q3 logo with breathing room, gold hairline on the right.
+   Scoped !important: see the note at the top of this file.
+   ========================================================================== */
+
+.q3-theme .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper,
+.q3-theme .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper > div,
+.q3-theme .page-wrapper .page-body-wrapper .sidebar-wrapper {
+    background-color: var(--q3-sidebar) !important;
+    border-right: 1px solid var(--q3-border-gold-soft) !important;
+    box-shadow: none !important;
+}
+
+/* --- Logo block ---------------------------------------------------------- */
+.q3-theme .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .logo-wrapper {
+    background: var(--q3-black) !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--q3-border-gold-soft) !important;
+    padding: 26px 20px 24px !important;
+    text-align: center;
+}
+
+.q3-theme .sidebar-wrapper .logo-wrapper > a {
+    display: block;
+    line-height: 0;
+}
+
+/* The Q3 mark is transparent PNG — it sits straight on the black panel.
+   Height-constrained so its proportions are never distorted. */
+.q3-theme .sidebar-wrapper .logo-wrapper .q3-logo {
+    display: inline-block;
+    width: auto;
+    max-width: 152px;
+    height: auto;
+    max-height: 58px;
+    object-fit: contain;
+}
+
+.q3-theme .sidebar-wrapper .logo-icon-wrapper { background: var(--q3-black) !important; }
+.q3-theme .sidebar-wrapper .logo-icon-wrapper .q3-logo-icon { max-height: 34px; width: auto; }
+
+.q3-theme .sidebar-wrapper .logo-wrapper .back-btn,
+.q3-theme .sidebar-wrapper .logo-wrapper .toggle-sidebar { color: var(--q3-text-muted); }
+.q3-theme .sidebar-wrapper .logo-wrapper .toggle-sidebar svg,
+.q3-theme .sidebar-wrapper .logo-wrapper .toggle-sidebar i { stroke: var(--q3-gold-soft); color: var(--q3-gold-soft); }
+
+/* --- Section headings ---------------------------------------------------- */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li.sidebar-main-title { padding: 26px 0 8px 22px !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li.sidebar-main-title h6 {
+    color: var(--q3-gold-soft) !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+    opacity: 0.85;
+}
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li.sidebar-main-title::before {
+    background: var(--q3-border) !important;
+}
+
+/* --- Menu items ---------------------------------------------------------- */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links > li,
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links .simplebar-content > li { margin-bottom: 2px; }
+
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link {
+    padding: 12px 20px !important;
+    margin: 0 10px !important;
+    border-radius: var(--q3-radius-sm) !important;
+    border-left: 2px solid transparent !important;
+    background-color: transparent !important;
+    transition: background-color var(--q3-transition),
+                color var(--q3-transition),
+                border-color var(--q3-transition) !important;
+}
+
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a span {
+    color: var(--q3-text-body) !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
+}
+
+/* Icons: muted grey at rest, soft gold on hover/active. */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a svg.stroke-icon {
+    stroke: var(--q3-text-dim) !important;
+    fill: none !important;
+    transition: stroke var(--q3-transition) !important;
+}
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a svg.fill-icon {
+    fill: var(--q3-text-dim) !important;
+    stroke: none !important;
+    transition: fill var(--q3-transition) !important;
+}
+
+/* Hover — a whisper of gold, never a block of it. */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link:hover {
+    background-color: var(--q3-gold-tint) !important;
+}
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link:hover span { color: var(--q3-gold-high) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link:hover svg.stroke-icon { stroke: var(--q3-gold-soft) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link:hover svg.fill-icon { fill: var(--q3-gold-soft) !important; }
+
+/* Active — dark gold-tinted fill, gold left border, soft glow. */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link.active {
+    background: linear-gradient(90deg,
+                rgba(var(--q3-gold-rgb), 0.16) 0%,
+                rgba(var(--q3-gold-rgb), 0.04) 100%) !important;
+    border-left: 2px solid var(--q3-gold) !important;
+    box-shadow: inset 0 0 0 1px var(--q3-border-gold-soft) !important;
+    margin-bottom: 0 !important;
+}
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link.active span { color: var(--q3-gold-high) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link.active svg.stroke-icon { stroke: var(--q3-gold) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.sidebar-link.active svg.fill-icon { fill: var(--q3-gold) !important; }
+
+/* Cuba's right-edge active marker — off; the left border carries it. */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-link::after { display: none !important; }
+
+/* Collapse chevron */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a .according-menu i { color: var(--q3-text-dim) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li a.active .according-menu i { color: var(--q3-gold) !important; }
+
+/* --- Submenus ------------------------------------------------------------ */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-submenu li a {
+    color: var(--q3-text-muted) !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    transition: color var(--q3-transition) !important;
+}
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-submenu li a:hover { color: var(--q3-gold-high) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-submenu li a.active { color: var(--q3-gold) !important; font-weight: 500 !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-submenu li a::before { background: var(--q3-gold) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-submenu li a::after { border-top-color: var(--q3-border-strong) !important; }
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links li .sidebar-submenu::before { background: var(--q3-border-strong) !important; }
+
+/* --- Pin affordance & sidebar badges ------------------------------------- */
+.q3-theme .sidebar-wrapper .sidebar-list .fa-thumbtack { color: var(--q3-text-dim) !important; }
+.q3-theme .sidebar-wrapper .sidebar-list.pined .fa-thumbtack { color: var(--q3-gold) !important; }
+.q3-theme .sidebar-wrapper .sidebar-links li .badge { font-family: var(--q3-font) !important; }
+
+/* --- Mobile back bar ----------------------------------------------------- */
+.q3-theme .sidebar-wrapper .sidebar-main .sidebar-links .back-btn .mobile-back {
+    background: var(--q3-black);
+    border-bottom: 1px solid var(--q3-border-gold-soft) !important;
+    color: var(--q3-gold-soft) !important;
+    letter-spacing: 0.1em;
+}
+
+/* ==========================================================================
+   6. Cards & panels
+   ========================================================================== */
+
+.q3-theme .card {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    box-shadow: none;
+}
+
+.q3-theme .card .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--q3-border);
+    padding: 20px 24px;
+}
+.q3-theme .card .card-header h5,
+.q3-theme .card .card-header h6 { color: var(--q3-text); font-weight: 600; }
+.q3-theme .card .card-header > span { color: var(--q3-text-muted); }
+
+.q3-theme .card .card-body { padding: 24px; color: var(--q3-text-body); }
+.q3-theme .card .card-footer {
+    background-color: transparent;
+    border-top: 1px solid var(--q3-border);
+    padding: 16px 24px;
+}
+
+/* Featured card — faint gold edge for the one thing that matters on a page. */
+.q3-theme .q3-card-featured {
+    border-color: var(--q3-border-gold);
+    background:
+        linear-gradient(180deg, rgba(var(--q3-gold-rgb), 0.05) 0%, transparent 42%),
+        var(--q3-surface);
+}
+
+/* Inset panel — for sub-sections inside a card. */
+.q3-theme .q3-panel {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-sm);
+    padding: 16px 18px;
+}
+
+/* ==========================================================================
+   7. Dashboard statistics
+   The number carries the weight; the label stays quiet. Gold is spent on the
+   one or two metrics that matter, via .q3-stat-value--gold.
+   ========================================================================== */
+
+.q3-theme .q3-stat {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.q3-theme .q3-stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--q3-radius-sm);
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    color: var(--q3-text-muted);
+}
+.q3-theme .q3-stat-icon svg { width: 20px; height: 20px; stroke: currentColor; }
+
+/* Accented icon tile — reserved for headline metrics. */
+.q3-theme .q3-stat-icon--gold {
+    background: var(--q3-gold-tint-2);
+    border-color: var(--q3-border-gold);
+    color: var(--q3-gold);
+}
+.q3-theme .q3-stat-icon--success { background: var(--q3-success-tint); border-color: transparent; color: var(--q3-success); }
+.q3-theme .q3-stat-icon--muted   { background: var(--q3-surface-3);   border-color: transparent; color: var(--q3-text-muted); }
+
+.q3-theme .q3-stat-value {
+    color: var(--q3-text);
+    font-size: 1.5rem;
+    font-weight: 650;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+.q3-theme .q3-stat-value--gold { color: var(--q3-gold-high); }
+
+.q3-theme .q3-stat-label {
+    color: var(--q3-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* Understated welcome strip — not a hero banner. */
+.q3-theme .q3-welcome {
+    background:
+        linear-gradient(100deg, rgba(var(--q3-gold-rgb), 0.07) 0%, transparent 55%),
+        var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+}
+.q3-theme .q3-welcome .card-body { padding: 22px 24px; }
+.q3-theme .q3-welcome .q3-welcome-name { color: var(--q3-text); font-size: 1.25rem; font-weight: 600; letter-spacing: -0.015em; }
+.q3-theme .q3-welcome .q3-welcome-sub  { color: var(--q3-text-muted); font-size: 0.85rem; }
+
+/* Hairline rule used to separate metrics inside a strip. */
+.q3-theme .q3-divider-v { border-left: 1px solid var(--q3-border); }
+
+/* ==========================================================================
+   8. Buttons
+   ========================================================================== */
+
+.q3-theme .btn {
+    border-radius: var(--q3-radius-sm);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: background var(--q3-transition), border-color var(--q3-transition),
+                color var(--q3-transition), box-shadow var(--q3-transition);
+}
+.q3-theme .btn:focus-visible { box-shadow: 0 0 0 3px var(--q3-gold-ring); outline: none; }
+
+/* Primary CTA — gold fill, black text. */
+.q3-theme .btn-primary,
+.q3-theme .btn-primary:not(:disabled):not(.disabled) {
+    background: linear-gradient(180deg, var(--q3-gold-high) 0%, var(--q3-gold-soft) 100%);
+    border: 1px solid var(--q3-gold-soft);
+    color: var(--q3-gold-ink);
+    font-weight: 600;
+}
+.q3-theme .btn-primary:hover,
+.q3-theme .btn-primary:focus,
+.q3-theme .btn-primary:active,
+.q3-theme .btn-primary:not(:disabled):not(.disabled):active,
+.q3-theme .btn-primary.active {
+    background: linear-gradient(180deg, #EED184 0%, var(--q3-gold) 100%);
+    border-color: var(--q3-gold-high);
+    color: var(--q3-gold-ink);
+    box-shadow: var(--q3-gold-glow);
+}
+.q3-theme .btn-primary:disabled,
+.q3-theme .btn-primary.disabled { background: var(--q3-gold-deep); border-color: var(--q3-gold-deep); color: rgba(11, 11, 12, 0.55); opacity: 1; }
+
+/* Secondary — dark with a thin gold border.
+   Cuba declares `.btn-secondary { background-color: … !important }`, so the
+   fills here have to be !important to land. Scoped to this block. */
+.q3-theme .btn-secondary,
+.q3-theme .btn-secondary.disabled,
+.q3-theme .btn-secondary:disabled,
+.q3-theme .btn-light,
+.q3-theme .btn-outline-primary,
+.q3-theme .btn-outline-secondary {
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--q3-border-gold) !important;
+    color: var(--q3-gold-soft);
+}
+.q3-theme .btn-secondary:hover,
+.q3-theme .btn-light:hover,
+.q3-theme .btn-outline-primary:hover,
+.q3-theme .btn-outline-secondary:hover,
+.q3-theme .btn-secondary:focus,
+.q3-theme .btn-secondary:active,
+.q3-theme .btn-secondary:not([disabled]):not(.disabled).active,
+.q3-theme .btn-secondary:not([disabled]):not(.disabled):active,
+.q3-theme .btn-outline-primary:focus,
+.q3-theme .btn-outline-primary:active,
+.q3-theme .btn-outline-primary.active {
+    background-color: var(--q3-gold-tint) !important;
+    border-color: var(--q3-gold) !important;
+    color: var(--q3-gold-high) !important;
+}
+.q3-theme .btn-secondary.disabled,
+.q3-theme .btn-secondary:disabled { color: var(--q3-text-dim); opacity: 1; }
+
+/* Quiet tertiary — no border until hovered. */
+.q3-theme .btn-link,
+.q3-theme .btn-transparent {
+    background: transparent;
+    border-color: transparent;
+    color: var(--q3-text-muted);
+}
+.q3-theme .btn-link:hover { color: var(--q3-gold-high); }
+
+/* State buttons — restrained fills. */
+.q3-theme .btn-success { background: var(--q3-success); border-color: var(--q3-success); color: #06130D; }
+.q3-theme .btn-success:hover { background: #47b07c; border-color: #47b07c; color: #06130D; }
+.q3-theme .btn-danger  { background: var(--q3-danger);  border-color: var(--q3-danger);  color: #FFF4F3; }
+.q3-theme .btn-danger:hover { background: #c2544a; border-color: #c2544a; }
+.q3-theme .btn-warning { background: var(--q3-warning); border-color: var(--q3-warning); color: var(--q3-gold-ink); }
+/* `btn-info` is used across the admin tables for the neutral "View" action.
+   A solid slate slab reads heavy next to the gold, so it becomes a quiet dark
+   button with a neutral edge — gold stays reserved for the primary action. */
+.q3-theme .btn-info {
+    background: var(--q3-surface-3);
+    border-color: var(--q3-border-strong);
+    color: var(--q3-text-body);
+}
+.q3-theme .btn-info:hover,
+.q3-theme .btn-info:focus {
+    background: var(--q3-gold-tint);
+    border-color: var(--q3-border-gold);
+    color: var(--q3-gold-high);
+}
+
+.q3-theme .btn-outline-danger  { background: transparent; border: 1px solid rgba(180, 72, 63, 0.5);  color: #cf6a61; }
+.q3-theme .btn-outline-danger:hover  { background: var(--q3-danger-tint);  border-color: var(--q3-danger);  color: #e08b83; }
+.q3-theme .btn-outline-success { background: transparent; border: 1px solid rgba(62, 158, 110, 0.5); color: #55b489; }
+.q3-theme .btn-outline-success:hover { background: var(--q3-success-tint); border-color: var(--q3-success); color: #6ec49b; }
+
+.q3-theme .btn-close {
+    filter: none;
+    opacity: 0.6;
+    /* off-white glyph rather than Bootstrap's black default */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23F5F1E8'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e");
+}
+.q3-theme .btn-close:hover { opacity: 1; }
+
+/* ==========================================================================
+   9. Forms & inputs — charcoal fills, gold focus ring, never white boxes
+   ========================================================================== */
+
+.q3-theme .form-control,
+.q3-theme .form-select,
+.q3-theme .input-group-text,
+.q3-theme textarea.form-control,
+.q3-theme .select2-container--default .select2-selection--single,
+.q3-theme .select2-container--default .select2-selection--multiple,
+.q3-theme .dataTables_wrapper input[type="search"],
+.q3-theme .dataTables_wrapper select {
+    background-color: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-strong);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text);
+    transition: border-color var(--q3-transition), box-shadow var(--q3-transition);
+}
+
+.q3-theme .form-control::placeholder,
+.q3-theme textarea.form-control::placeholder { color: var(--q3-text-dim); }
+
+.q3-theme .form-control:focus,
+.q3-theme .form-select:focus,
+.q3-theme textarea.form-control:focus {
+    background-color: var(--q3-surface-2);
+    border-color: var(--q3-gold-soft);
+    box-shadow: 0 0 0 3px var(--q3-gold-ring);
+    color: var(--q3-text);
+    outline: none;
+}
+
+.q3-theme .form-control:disabled,
+.q3-theme .form-control[readonly] { background-color: var(--q3-surface); color: var(--q3-text-dim); }
+
+.q3-theme .form-select {
+    /* champagne chevron instead of the dark default */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23C69B3C' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+.q3-theme .form-select option { background-color: var(--q3-surface); color: var(--q3-text); }
+
+.q3-theme .form-label,
+.q3-theme .col-form-label,
+.q3-theme label {
+    color: var(--q3-text-muted);
+    font-weight: 500;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+}
+
+.q3-theme .form-text,
+.q3-theme .form-control-plaintext { color: var(--q3-text-muted); }
+
+.q3-theme .input-group-text { color: var(--q3-text-muted); }
+
+.q3-theme .is-invalid,
+.q3-theme .form-control.is-invalid,
+.q3-theme .form-select.is-invalid { border-color: var(--q3-danger); }
+.q3-theme .invalid-feedback { color: #d1766e; }
+
+/* Checkboxes, radios, switches */
+.q3-theme .form-check-input {
+    background-color: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-strong);
+}
+.q3-theme .form-check-input:checked {
+    background-color: var(--q3-gold);
+    border-color: var(--q3-gold);
+}
+.q3-theme .form-check-input:focus { box-shadow: 0 0 0 3px var(--q3-gold-ring); border-color: var(--q3-gold-soft); }
+.q3-theme .form-check-label { color: var(--q3-text-body); }
+
+.q3-theme .switch .switch-state { background-color: var(--q3-surface-3); }
+.q3-theme .switch input:checked + .switch-state { background-color: var(--q3-gold); }
+
+/* Search field in the header */
+.q3-theme .Typeahead .Typeahead-input,
+.q3-theme .form-control-plaintext.Typeahead-input { color: var(--q3-text); }
+.q3-theme .Typeahead-menu {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+}
+
+/* Rich-text / upload widgets used by the training + CRM screens */
+.q3-theme .ql-toolbar.ql-snow,
+.q3-theme .ql-container.ql-snow { border-color: var(--q3-border-strong); background: var(--q3-surface-2); }
+.q3-theme .ql-snow .ql-stroke { stroke: var(--q3-text-muted); }
+.q3-theme .ql-snow .ql-fill { fill: var(--q3-text-muted); }
+.q3-theme .ql-editor { color: var(--q3-text-body); }
+.q3-theme .ql-editor.ql-blank::before { color: var(--q3-text-dim); }
+.q3-theme .dropzone,
+.q3-theme .filepond--panel-root {
+    background: var(--q3-surface-2);
+    border: 1px dashed var(--q3-border-gold);
+    color: var(--q3-text-muted);
+}
+
+/* Summernote ships a light skin from CDN (admin lesson editor). Bring its
+   chrome onto the Q3 surfaces so the editor doesn't punch a white hole in
+   the page. */
+.q3-theme .note-editor.note-frame,
+.q3-theme .note-editor.note-airframe {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-strong);
+    border-radius: var(--q3-radius-sm);
+}
+.q3-theme .note-toolbar,
+.q3-theme .note-statusbar {
+    background: var(--q3-surface) !important;
+    border-color: var(--q3-border) !important;
+}
+.q3-theme .note-editable {
+    background: var(--q3-surface-2) !important;
+    color: var(--q3-text-body) !important;
+}
+.q3-theme .note-btn,
+.q3-theme .note-toolbar .btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--q3-text-muted);
+}
+.q3-theme .note-btn:hover,
+.q3-theme .note-btn.active {
+    background: var(--q3-gold-tint);
+    border-color: var(--q3-border-gold);
+    color: var(--q3-gold-high);
+}
+.q3-theme .note-dropdown-menu {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    color: var(--q3-text-body);
+}
+.q3-theme .note-modal-content {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    color: var(--q3-text-body);
+}
+.q3-theme .note-placeholder { color: var(--q3-text-dim); }
+
+/* ==========================================================================
+   10. Tables
+   ========================================================================== */
+
+.q3-theme .table {
+    color: var(--q3-text-body);
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--q3-text-body);
+    border-color: var(--q3-border);
+}
+
+/* Bootstrap's contextual row classes (.table-light, .table-active, …) assume a
+   light row and set near-black text. Several views put .table-light on <thead>,
+   which on the Q3 surfaces renders the headers invisible. Neutralise the
+   variants and let the header treatment below own the colour. */
+body.q3-theme .table > :not(caption) > * > *,
+body.q3-theme .table .table-light,
+body.q3-theme .table .table-light > *,
+body.q3-theme .table .table-active,
+body.q3-theme .table .table-active > * {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--q3-text-body);
+    --bs-table-accent-bg: transparent;
+}
+/* Cuba paints `.table-light td` with an !important near-white fill. */
+body.q3-theme .table-light td,
+body.q3-theme .table-light th { background-color: transparent !important; }
+
+/* !important: Cuba's own header rule is eight classes deep
+   (`body.dark-only .page-wrapper … .card:not(.email-body) .table .table-light th`),
+   and mirroring that chain here would be worse to maintain. */
+.q3-theme .table > thead > tr > th,
+.q3-theme .table thead th {
+    background-color: transparent;
+    border-bottom: 1px solid var(--q3-border-strong);
+    color: var(--q3-gold-soft) !important;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    white-space: nowrap;
+}
+
+.q3-theme .table > tbody > tr > td,
+.q3-theme .table tbody td {
+    border-bottom: 1px solid var(--q3-border);
+    border-top: 0;
+    color: var(--q3-text-body);
+    padding: 12px 14px;
+    vertical-align: middle;
+}
+
+.q3-theme .table > tbody > tr:last-child > td { border-bottom: 0; }
+
+.q3-theme .table-hover > tbody > tr:hover > td,
+.q3-theme .table-hover > tbody > tr:hover {
+    background-color: var(--q3-surface-2);
+    --bs-table-accent-bg: var(--q3-surface-2);
+    color: var(--q3-text);
+}
+
+.q3-theme .table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(255, 255, 255, 0.02);
+    color: var(--q3-text-body);
+}
+
+.q3-theme .table-bordered,
+.q3-theme .table-bordered > :not(caption) > * > * { border-color: var(--q3-border); }
+
+.q3-theme .table .fw-bold,
+.q3-theme .table strong { color: var(--q3-text); }
+
+/* Numeric columns read better aligned and tabular. */
+.q3-theme .table .q3-num { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* DataTables chrome */
+.q3-theme .dataTables_wrapper .dataTables_info,
+.q3-theme .dataTables_wrapper .dataTables_length,
+.q3-theme .dataTables_wrapper .dataTables_filter { color: var(--q3-text-muted); }
+.q3-theme .dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: transparent;
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text-muted) !important;
+}
+.q3-theme .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.q3-theme .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--q3-gold-tint) !important;
+    border-color: var(--q3-gold) !important;
+    color: var(--q3-gold-high) !important;
+}
+
+/* Bootstrap/Laravel pagination */
+.q3-theme .pagination .page-link {
+    background: transparent;
+    border: 1px solid var(--q3-border);
+    color: var(--q3-text-muted);
+}
+.q3-theme .pagination .page-link:hover { background: var(--q3-gold-tint); border-color: var(--q3-border-gold); color: var(--q3-gold-high); }
+.q3-theme .pagination .page-item.active .page-link {
+    background: var(--q3-gold-tint-2);
+    border-color: var(--q3-gold);
+    color: var(--q3-gold-high);
+}
+.q3-theme .pagination .page-item.disabled .page-link { background: transparent; border-color: var(--q3-border); color: var(--q3-text-dim); }
+
+/* ==========================================================================
+   11. Badges, status pills, alerts
+   ========================================================================== */
+
+.q3-theme .badge {
+    border-radius: 999px;
+    font-family: var(--q3-font);
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    padding: 0.4em 0.8em;
+}
+
+.q3-theme .badge.bg-primary,
+.q3-theme .badge-primary { background-color: var(--q3-gold) !important; color: var(--q3-gold-ink) !important; }
+.q3-theme .badge.bg-success,   .q3-theme .badge-success   { background-color: var(--q3-success) !important; color: #06130D !important; }
+.q3-theme .badge.bg-danger,    .q3-theme .badge-danger    { background-color: var(--q3-danger)  !important; color: #FFF4F3 !important; }
+.q3-theme .badge.bg-warning,   .q3-theme .badge-warning   { background-color: var(--q3-warning) !important; color: var(--q3-gold-ink) !important; }
+.q3-theme .badge.bg-info,      .q3-theme .badge-info      { background-color: var(--q3-info)    !important; color: #0B0F11 !important; }
+.q3-theme .badge.bg-secondary, .q3-theme .badge-secondary { background-color: var(--q3-surface-3) !important; color: var(--q3-text-body) !important; }
+
+/* Tinted status pills — override the light pastels from custom.css. */
+.q3-theme .badge-light-primary   { background-color: var(--q3-gold-tint-2) !important; color: var(--q3-gold-high) !important; border: 1px solid var(--q3-border-gold-soft); }
+.q3-theme .badge-light-success   { background-color: var(--q3-success-tint) !important; color: #6ec49b !important; border: 1px solid rgba(62, 158, 110, 0.28); }
+.q3-theme .badge-light-danger    { background-color: var(--q3-danger-tint)  !important; color: #d1766e !important; border: 1px solid rgba(180, 72, 63, 0.32); }
+.q3-theme .badge-light-warning   { background-color: var(--q3-warning-tint) !important; color: #dcb262 !important; border: 1px solid rgba(201, 154, 62, 0.3); }
+.q3-theme .badge-light-info      { background-color: var(--q3-info-tint)    !important; color: #a2adb4 !important; border: 1px solid rgba(124, 138, 147, 0.3); }
+.q3-theme .badge-light-secondary { background-color: var(--q3-surface-3)    !important; color: var(--q3-text-muted) !important; border: 1px solid var(--q3-border); }
+
+.q3-theme .alert {
+    background-color: var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    border-left: 3px solid var(--q3-text-dim);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text-body);
+}
+.q3-theme .alert-success { border-left-color: var(--q3-success); background-color: var(--q3-success-tint); color: #8fd0b0; }
+.q3-theme .alert-danger  { border-left-color: var(--q3-danger);  background-color: var(--q3-danger-tint);  color: #dd9d96; }
+.q3-theme .alert-warning { border-left-color: var(--q3-warning); background-color: var(--q3-warning-tint); color: #e0bd77; }
+.q3-theme .alert-info    { border-left-color: var(--q3-info);    background-color: var(--q3-info-tint);    color: #b0bac0; }
+/* !important: Cuba declares `body.dark-only .alert-light` with a near-white
+   fill marked important. */
+.q3-theme .alert-light,
+.q3-theme .alert-secondary {
+    border-left-color: var(--q3-gold-soft);
+    background-color: var(--q3-surface-2) !important;
+    color: var(--q3-text-muted);
+}
+.q3-theme .alert .btn-close { filter: none; }
+
+/* Toasts / notifications */
+.q3-theme .toast {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+    color: var(--q3-text-body);
+    box-shadow: var(--q3-shadow-lift);
+}
+.q3-theme .toast-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--q3-border);
+    color: var(--q3-text);
+}
+
+/* ==========================================================================
+   12. Overlays — modals, dropdowns, popovers, tooltips
+   ========================================================================== */
+
+.q3-theme .modal-content {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-lg);
+    box-shadow: var(--q3-shadow-lift);
+    color: var(--q3-text-body);
+}
+.q3-theme .modal-header {
+    border-bottom: 1px solid var(--q3-border);
+    padding: 20px 24px;
+}
+.q3-theme .modal-title { color: var(--q3-text); font-weight: 600; }
+.q3-theme .modal-body { padding: 24px; }
+.q3-theme .modal-footer {
+    background-color: transparent;
+    border-top: 1px solid var(--q3-border);
+    padding: 16px 24px;
+}
+.q3-theme .modal-backdrop,
+.modal-backdrop { background-color: #000; }
+.q3-theme .modal-backdrop.show,
+.modal-backdrop.show { opacity: 0.72; }
+
+.q3-theme .dropdown-menu {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+    box-shadow: var(--q3-shadow-lift);
+    padding: 6px;
+}
+.q3-theme .dropdown-item {
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text-body);
+}
+.q3-theme .dropdown-item:hover,
+.q3-theme .dropdown-item:focus { background-color: var(--q3-gold-tint); color: var(--q3-gold-high); }
+.q3-theme .dropdown-item.active { background-color: var(--q3-gold-tint-2); color: var(--q3-gold-high); }
+
+.q3-theme .popover {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+}
+.q3-theme .popover .popover-header { background-color: var(--q3-surface-2); color: var(--q3-text); border-bottom-color: var(--q3-border); }
+.q3-theme .popover .popover-body { color: var(--q3-text-body); }
+
+.q3-theme .tooltip .tooltip-inner {
+    background-color: var(--q3-black);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text);
+}
+
+/* ==========================================================================
+   13. Tabs, accordions, lists, progress
+   ========================================================================== */
+
+.q3-theme .nav-tabs { border-bottom: 1px solid var(--q3-border); }
+.q3-theme .nav-tabs .nav-link {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--q3-text-muted);
+    font-weight: 500;
+}
+.q3-theme .nav-tabs .nav-link:hover { color: var(--q3-gold-high); }
+.q3-theme .nav-tabs .nav-link.active {
+    background: transparent;
+    border-bottom-color: var(--q3-gold);
+    color: var(--q3-gold-high);
+}
+.q3-theme .nav-pills .nav-link { color: var(--q3-text-muted); border-radius: var(--q3-radius-sm); }
+.q3-theme .nav-pills .nav-link.active { background-color: var(--q3-gold-tint-2); color: var(--q3-gold-high); }
+
+.q3-theme .accordion-item {
+    background-color: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+}
+.q3-theme .accordion-button {
+    background-color: transparent;
+    color: var(--q3-text);
+    box-shadow: none;
+}
+.q3-theme .accordion-button:not(.collapsed) { background-color: var(--q3-gold-tint); color: var(--q3-gold-high); }
+.q3-theme .accordion-body { color: var(--q3-text-body); }
+
+.q3-theme .list-group-item {
+    background-color: transparent;
+    border-color: var(--q3-border);
+    color: var(--q3-text-body);
+}
+.q3-theme .list-group-item.active {
+    background-color: var(--q3-gold-tint-2) !important;
+    border-color: var(--q3-border-gold);
+    color: var(--q3-gold-high);
+}
+
+.q3-theme .progress { background-color: var(--q3-surface-3); border-radius: 999px; height: 6px; }
+.q3-theme .progress-bar { background-color: var(--q3-gold); }
+.q3-theme .progress-bar.bg-success { background-color: var(--q3-success) !important; }
+.q3-theme .progress-bar.bg-danger  { background-color: var(--q3-danger) !important; }
+.q3-theme .progress-bar.bg-warning { background-color: var(--q3-warning) !important; }
+
+/* Background / text utility classes used across the views */
+.q3-theme .bg-primary   { background-color: var(--q3-gold) !important;    color: var(--q3-gold-ink) !important; }
+.q3-theme .bg-secondary { background-color: var(--q3-surface-3) !important; }
+.q3-theme .bg-success   { background-color: var(--q3-success) !important; }
+.q3-theme .bg-danger    { background-color: var(--q3-danger) !important; }
+.q3-theme .bg-warning   { background-color: var(--q3-warning) !important; color: var(--q3-gold-ink) !important; }
+.q3-theme .bg-info      { background-color: var(--q3-info) !important; }
+.q3-theme .bg-light     { background-color: var(--q3-surface-2) !important; color: var(--q3-text-body) !important; }
+.q3-theme .bg-white     { background-color: var(--q3-surface) !important; }
+.q3-theme .bg-dark      { background-color: var(--q3-black) !important; }
+
+.q3-theme .text-primary { color: var(--q3-gold) !important; }
+.q3-theme .text-success { color: #6ec49b !important; }
+.q3-theme .text-danger  { color: #d1766e !important; }
+.q3-theme .text-warning { color: #dcb262 !important; }
+.q3-theme .text-info    { color: #a2adb4 !important; }
+.q3-theme .text-dark,
+.q3-theme .text-body    { color: var(--q3-text-body) !important; }
+.q3-theme .text-white   { color: var(--q3-text) !important; }
+.q3-theme .font-primary { color: var(--q3-gold) !important; }
+
+/* ==========================================================================
+   14. Charts — gold, champagne and muted metals only
+   ========================================================================== */
+
+.q3-theme .apexcharts-canvas text,
+.q3-theme .apexcharts-text tspan { fill: var(--q3-text-muted); font-family: var(--q3-font) !important; }
+.q3-theme .apexcharts-gridline { stroke: var(--q3-chart-grid); }
+.q3-theme .apexcharts-legend-text { color: var(--q3-text-muted) !important; }
+.q3-theme .apexcharts-tooltip,
+.q3-theme .apexcharts-tooltip.apexcharts-theme-light {
+    background: var(--q3-surface) !important;
+    border: 1px solid var(--q3-border-gold-soft) !important;
+    color: var(--q3-text) !important;
+    box-shadow: var(--q3-shadow-lift) !important;
+}
+.q3-theme .apexcharts-tooltip-title {
+    background: var(--q3-surface-2) !important;
+    border-bottom: 1px solid var(--q3-border) !important;
+    color: var(--q3-text-muted) !important;
+}
+.q3-theme .ct-label { fill: var(--q3-text-muted); color: var(--q3-text-muted); }
+.q3-theme .ct-grid { stroke: var(--q3-chart-grid); }
+.q3-theme .ct-series-a .ct-line, .q3-theme .ct-series-a .ct-bar { stroke: var(--q3-chart-1); }
+.q3-theme .ct-series-b .ct-line, .q3-theme .ct-series-b .ct-bar { stroke: var(--q3-chart-2); }
+.q3-theme .ct-series-c .ct-line, .q3-theme .ct-series-c .ct-bar { stroke: var(--q3-chart-4); }
+
+/* ==========================================================================
+   15. Authentication — login, register, referral, password screens
+   ========================================================================== */
+
+body.q3-auth {
+    background:
+        radial-gradient(1100px 620px at 50% -12%, rgba(var(--q3-gold-rgb), 0.10) 0%, transparent 62%),
+        var(--q3-bg);
+    color: var(--q3-text-body);
+    font-family: var(--q3-font);
+    min-height: 100vh;
+}
+
+.q3-auth .q3-auth-shell {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.q3-auth .q3-auth-card {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-lg);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    max-width: 440px;
+    padding: 40px 36px 32px;
+    width: 100%;
+}
+.q3-auth .q3-auth-card--wide { max-width: 560px; }
+
+.q3-auth .q3-auth-logo {
+    display: block;
+    margin: 0 auto 28px;
+    max-width: 168px;
+    height: auto;
+    max-height: 74px;
+    object-fit: contain;
+}
+
+.q3-auth .q3-auth-title {
+    color: var(--q3-text);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+    text-align: center;
+}
+.q3-auth .q3-auth-sub {
+    color: var(--q3-text-muted);
+    font-size: 0.88rem;
+    margin-bottom: 26px;
+    text-align: center;
+}
+
+.q3-auth .q3-auth-footer {
+    border-top: 1px solid var(--q3-border);
+    color: var(--q3-text-muted);
+    font-size: 0.85rem;
+    margin-top: 26px;
+    padding-top: 20px;
+    text-align: center;
+}
+
+/* A single hairline rule with a word in the middle. */
+.q3-auth .q3-auth-rule {
+    align-items: center;
+    color: var(--q3-text-dim);
+    display: flex;
+    font-size: 0.72rem;
+    gap: 12px;
+    letter-spacing: 0.14em;
+    margin: 22px 0;
+    text-transform: uppercase;
+}
+.q3-auth .q3-auth-rule::before,
+.q3-auth .q3-auth-rule::after {
+    background: var(--q3-border);
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+
+.q3-auth .show-hide span { color: var(--q3-gold-soft); }
+
+/* The auth pages reuse the shared form/button rules; opt them in. */
+body.q3-auth .form-control,
+body.q3-auth .form-select {
+    background-color: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-strong);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text);
+    padding: 11px 14px;
+}
+body.q3-auth .form-control::placeholder { color: var(--q3-text-dim); }
+body.q3-auth .form-control:focus {
+    background-color: var(--q3-surface-2);
+    border-color: var(--q3-gold-soft);
+    box-shadow: 0 0 0 3px var(--q3-gold-ring);
+    color: var(--q3-text);
+}
+body.q3-auth .form-label,
+body.q3-auth .col-form-label { color: var(--q3-text-muted); font-size: 0.82rem; font-weight: 500; }
+body.q3-auth .btn-primary {
+    background: linear-gradient(180deg, var(--q3-gold-high) 0%, var(--q3-gold-soft) 100%);
+    border: 1px solid var(--q3-gold-soft);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-gold-ink);
+    font-weight: 600;
+    padding: 11px 18px;
+}
+body.q3-auth .btn-primary:hover {
+    background: linear-gradient(180deg, #EED184 0%, var(--q3-gold) 100%);
+    box-shadow: var(--q3-gold-glow);
+    color: var(--q3-gold-ink);
+}
+body.q3-auth .alert { border-radius: var(--q3-radius-sm); }
+body.q3-auth a { color: var(--q3-gold-soft); }
+body.q3-auth a:hover { color: var(--q3-gold-high); }
+
+/* ==========================================================================
+   16. Utilities
+   ========================================================================== */
+
+.q3-theme .q3-gold        { color: var(--q3-gold) !important; }
+.q3-theme .q3-gold-high   { color: var(--q3-gold-high) !important; }
+.q3-theme .q3-muted       { color: var(--q3-text-muted) !important; }
+.q3-theme .q3-dim         { color: var(--q3-text-dim) !important; }
+.q3-theme .q3-surface     { background-color: var(--q3-surface) !important; }
+.q3-theme .q3-surface-2   { background-color: var(--q3-surface-2) !important; }
+.q3-theme .q3-tint-gold   { background-color: var(--q3-gold-tint) !important; }
+.q3-theme .q3-border-gold { border-color: var(--q3-border-gold) !important; }
+.q3-theme .q3-hairline    { border-color: var(--q3-border) !important; }
+
+/* Monospaced referral links, wallet addresses, ticket ids. */
+.q3-mono {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-gold-high);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    word-break: break-all;
+}
+
+/* ==========================================================================
+   17. Responsive — the mobile experience should read as a native app
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+    /* Retain the Q3 mark in the top bar once the sidebar collapses. */
+    .q3-theme .page-wrapper.compact-wrapper .page-header .header-wrapper .logo-wrapper {
+        display: block !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    .q3-theme .page-header .header-wrapper .logo-wrapper .q3-logo {
+        max-height: 32px;
+        max-width: 96px;
+        width: auto;
+    }
+    /* Breathing room between the mark and the drawer toggle. */
+    .q3-theme .page-wrapper .page-header .header-wrapper .header-logo-wrapper {
+        align-items: center;
+        display: flex;
+        gap: 14px;
+    }
+    .q3-theme .page-wrapper .page-header .header-wrapper .toggle-sidebar {
+        border-left: 1px solid var(--q3-border);
+        margin-left: 0;
+        padding-left: 14px;
+    }
+    .q3-theme .page-wrapper .page-header .header-wrapper { padding: 10px 16px; }
+    .q3-theme .page-wrapper .page-body-wrapper .page-body { padding-left: 12px; padding-right: 12px; }
+    .q3-theme .card .card-body { padding: 18px; }
+    .q3-theme .card .card-header { padding: 16px 18px; }
+    .q3-theme .page-title { padding-top: 18px; padding-bottom: 14px; }
+
+    /* Drawer */
+    .q3-theme .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links {
+        background-color: var(--q3-sidebar);
+    }
+
+    /* Tables scroll inside their card rather than pushing the page sideways. */
+    .q3-theme .table-responsive { -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 575.98px) {
+    .q3-theme .q3-stat-value { font-size: 1.3rem; }
+    .q3-theme .modal-body { padding: 18px; }
+    .q3-theme .modal-header,
+    .q3-theme .modal-footer { padding: 14px 18px; }
+    .q3-auth .q3-auth-card { padding: 30px 22px 24px; }
+}
+
+/* Honour the device notch when saved to a phone home screen. */
+@supports (padding: max(0px)) {
+    .q3-theme .page-wrapper .page-header .header-wrapper {
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+        padding-top: max(12px, env(safe-area-inset-top));
+    }
+    .q3-theme .footer { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .q3-theme *,
+    .q3-theme *::before,
+    .q3-theme *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -2,15 +2,14 @@
     <div>
         <div class="logo-wrapper">
             <a href="{{ route('admin.dashboard') }}">
-                <img class="img-fluid for-light" src="{{ asset('assets/images/logo/logo.png') }}" alt="Lion Training">
-                <img class="img-fluid for-dark" src="{{ asset('assets/images/logo/logo_dark.png') }}" alt="Lion Training">
+                <img class="q3-logo" src="{{ \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png') }}" alt="Quantum Life">
             </a>
             <div class="back-btn"><i class="fa-solid fa-angle-left"></i></div>
             <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
         </div>
         <div class="logo-icon-wrapper">
             <a href="{{ route('admin.dashboard') }}">
-                <img class="img-fluid" src="{{ asset('assets/images/logo/logo-icon.png') }}" alt="">
+                <img class="q3-logo-icon" src="{{ \App\Support\Asset::v('assets/images/logo/q3-app-icon-192.png') }}" alt="Quantum Life">
             </a>
         </div>
         <nav class="sidebar-main">
@@ -19,7 +18,7 @@
                 <ul class="sidebar-links" id="simple-bar">
                     <li class="back-btn">
                         <a href="{{ route('admin.dashboard') }}">
-                            <img class="img-fluid" src="{{ asset('assets/images/logo/logo-icon.png') }}" alt="">
+                            <img class="q3-logo-icon" src="{{ \App\Support\Asset::v('assets/images/logo/q3-app-icon-192.png') }}" alt="Quantum Life">
                         </a>
                         <div class="mobile-back text-end">
                             <span>Back</span><i class="fa-solid fa-angle-right ps-2" aria-hidden="true"></i>
@@ -42,6 +41,18 @@
                             <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-home') }}"></use></svg>
                             <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-home') }}"></use></svg>
                             <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    {{-- Member area — admins land on the admin dashboard and
+                         otherwise have no way across to the partner-facing
+                         product, which is most of what there is to look at. --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav" href="{{ route('member.dashboard') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-social') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-social') }}"></use></svg>
+                            <span>Member Area</span>
                         </a>
                     </li>
 
@@ -122,6 +133,38 @@
                                    class="{{ request()->routeIs('admin.video-assets.*') ? 'active' : '' }}">All Videos</a></li>
                             <li><a href="{{ route('admin.kartra.index') }}"
                                    class="{{ request()->routeIs('admin.kartra.*') ? 'active' : '' }}">Kartra Import</a></li>
+                        </ul>
+                    </li>
+
+                    {{-- Billing oversight (C3) --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.billing.*') ? 'active' : '' }}" href="#">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-charts') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-charts') }}"></use></svg>
+                            <span>Billing</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{{ route('admin.billing.subscriptions') }}"
+                                   class="{{ request()->routeIs('admin.billing.subscriptions') ? 'active' : '' }}">Subscriptions</a></li>
+                            <li><a href="{{ route('admin.billing.webhooks') }}"
+                                   class="{{ request()->routeIs('admin.billing.webhooks') ? 'active' : '' }}">Webhooks</a></li>
+                        </ul>
+                    </li>
+
+                    {{-- Vendor referrals --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.vendor-leads.*') ? 'active' : '' }}" href="#">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-ecommerce') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-ecommerce') }}"></use></svg>
+                            <span>Vendor Orders</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{{ route('admin.vendor-leads.index') }}"
+                                   class="{{ request()->routeIs('admin.vendor-leads.index') ? 'active' : '' }}">All Orders</a></li>
+                            <li><a href="{{ route('admin.vendor-leads.reconciliation') }}"
+                                   class="{{ request()->routeIs('admin.vendor-leads.reconciliation') ? 'active' : '' }}">Reconciliation</a></li>
                         </ul>
                     </li>
 

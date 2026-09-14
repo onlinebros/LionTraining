@@ -1,0 +1,24 @@
+{
+    "preset": "laravel",
+    "//note": "Lint scope is intentionally narrow at the start of the project: it covers new, taxonomy-related code and infra. The existing app/Models, app/Http, app/Services, etc. carry pre-existing style debt that is out of scope for the CI-bootstrap commit and will be cleaned up in a dedicated style pass before being added here.",
+    "notPath": [
+        "app/Console",
+        "app/Http",
+        "app/Models",
+        "app/Providers",
+        "app/Services",
+        "bootstrap",
+        "config",
+        "database",
+        "routes",
+        "tests/Feature",
+        "tests/Unit/ExampleTest.php"
+    ],
+    "exclude": [
+        "vendor",
+        "storage",
+        "bootstrap/cache",
+        "node_modules",
+        "public"
+    ]
+}

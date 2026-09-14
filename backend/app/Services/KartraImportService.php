@@ -87,7 +87,7 @@ class KartraImportService
         foreach ($items as $i => $item) {
             $import = KartraImport::create([
                 'kartra_type'        => $item['type'] ?? 'lesson',
-                'kartra_id'          => $item['id'] ?? null,
+                'kartra_id'          => $item['id'] ?? $item['kartra_post_id'] ?? null,
                 'kartra_title'       => $item['title'] ?? 'Untitled',
                 'kartra_description' => $item['description'] ?? null,
                 'kartra_url'         => $item['url'] ?? null,

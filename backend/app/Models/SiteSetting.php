@@ -15,7 +15,7 @@ class SiteSetting extends Model
         'logo_light'    => null,
         'logo_dark'     => null,
         'logo_icon'     => null,
-        'site_name'     => 'Lion Training',
+        'site_name'     => 'Quantum Life',
     ];
 
     public static function get(string $key, mixed $default = null): mixed

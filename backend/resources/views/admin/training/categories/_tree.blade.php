@@ -3,7 +3,7 @@
      style="padding-left: {{ $depth * 28 + 8 }}px;">
 
     @if($depth > 0)
-        <i data-feather="corner-down-right" style="width:14px;height:14px;color:#aaa;flex-shrink:0;"></i>
+        <i data-feather="corner-down-right" style="width:14px;height:14px;color:var(--q3-text-dim);flex-shrink:0;"></i>
     @else
         <i data-feather="folder" style="width:16px;height:16px;color:var(--theme-default);flex-shrink:0;"></i>
     @endif

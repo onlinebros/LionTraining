@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    # The whole app is included so PHPStan can flag any call site that
+    # constructs a generated taxonomy event without all its required fields —
+    # that is the "compile-time error to emit an event missing required
+    # fields like placement_id or affiliate_id" gate that this initial CI is
+    # built around.
+    level: 5
+    paths:
+        - app
+        - tests/Static
+    excludePaths:
+        # Generated taxonomy classes are deterministic and validated by the
+        # codegen-drift gate; their internal shape does not need PHPStan
+        # rules applied to them.
+        - app/Events/Taxonomy/*.php

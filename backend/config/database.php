@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -88,9 +88,11 @@ return [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
+            // The PG 18 cluster runs on 5433 — 5432 is the older 16 cluster that
+            // still serves other applications on this host.
+            'port' => env('DB_PORT', '5433'),
+            'database' => env('DB_DATABASE', 'quantumlife_db'),
+            'username' => env('DB_USERNAME', 'quantumlife'),
             'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',

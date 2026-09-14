@@ -9,9 +9,9 @@
 
 @push('styles')
 <style>
-    .priority-high    { color: #e53e3e; }
-    .priority-normal  { color: #d69e2e; }
-    .priority-low     { color: #718096; }
+    .priority-high    { color: var(--q3-danger); }
+    .priority-normal  { color: var(--q3-warning); }
+    .priority-low     { color: var(--q3-text-muted); }
 </style>
 @endpush
 
@@ -71,7 +71,7 @@
         <div class="card-body p-0">
             @if($tickets->isEmpty())
                 <div class="text-center py-5">
-                    <i data-feather="check-circle" style="width:48px;height:48px;color:#38a169;"></i>
+                    <i data-feather="check-circle" style="width:48px;height:48px;color:var(--q3-success);"></i>
                     <p class="mt-3 f-light">No tickets in this category.</p>
                 </div>
             @else
@@ -81,7 +81,7 @@
                             <tr>
                                 <th>Ticket #</th>
                                 <th>Subject</th>
-                                <th>Member</th>
+                                <th>Requester</th>
                                 <th>Category</th>
                                 <th>Priority</th>
                                 <th>Status</th>
@@ -97,8 +97,13 @@
                                     <span class="text-truncate d-block">{{ $ticket->subject }}</span>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold small">{{ $ticket->user->name ?? '—' }}</div>
-                                    <div class="f-light" style="font-size:.75rem;">{{ $ticket->user->email ?? '' }}</div>
+                                    <div class="fw-semibold small">
+                                        {{ $ticket->requesterDisplayName() }}
+                                        @if($ticket->isFromWebsite())
+                                            <span class="badge badge-light-info ms-1" style="font-size:.65rem;" title="Submitted through the website contact form — no account">Website</span>
+                                        @endif
+                                    </div>
+                                    <div class="f-light" style="font-size:.75rem;">{{ $ticket->requesterDisplayEmail() ?? '' }}</div>
                                 </td>
                                 <td><span class="badge badge-light-secondary">{{ \App\Models\SupportTicket::CATEGORIES[$ticket->category] ?? ucfirst($ticket->category) }}</span></td>
                                 <td>

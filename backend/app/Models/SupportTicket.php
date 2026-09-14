@@ -18,6 +18,9 @@ class SupportTicket extends Model
         'source_url',
         'assigned_to',
         'closed_at',
+        'channel',
+        'requester_name',
+        'requester_email',
     ];
 
     protected function casts(): array
@@ -57,6 +60,55 @@ class SupportTicket extends Model
         return $this->hasMany(SupportTicketReply::class, 'ticket_id')->orderBy('created_at');
     }
 
+    // ── Channel / requester ───────────────────────────────────────────────────
+    //
+    // Website tickets come from the public contact form: no user, and the
+    // requester's typed name/email are stored on the ticket. Member tickets
+    // fall back to the linked user.
+
+    public function isFromWebsite(): bool
+    {
+        return $this->channel === self::CHANNEL_WEBSITE;
+    }
+
+    public function requesterDisplayName(): string
+    {
+        return $this->requester_name ?: ($this->user?->name ?? '—');
+    }
+
+    public function requesterDisplayEmail(): ?string
+    {
+        return $this->requester_email ?: $this->user?->email;
+    }
+
+    /** mailto: link to the requester, subject prefilled with the ticket number. */
+    public function requesterMailtoUrl(): ?string
+    {
+        $email = $this->requesterDisplayEmail();
+
+        if (blank($email)) {
+            return null;
+        }
+
+        $to = implode('@', array_map('rawurlencode', explode('@', $email)));
+
+        return 'mailto:'.$to.'?subject='.rawurlencode("Re: [{$this->ticket_number}] {$this->subject}");
+    }
+
+    /**
+     * A member whose account email matches what a website requester typed.
+     * UNVERIFIED — anyone can type any address — so it is a hint for staff,
+     * never a reason to link the ticket to that account.
+     */
+    public function unverifiedMemberMatch(): ?User
+    {
+        if (! $this->isFromWebsite() || blank($this->requester_email)) {
+            return null;
+        }
+
+        return User::whereRaw('lower(email) = ?', [mb_strtolower($this->requester_email)])->first();
+    }
+
     public function isOpen(): bool    { return $this->status === 'open'; }
     public function isInProgress(): bool { return $this->status === 'in_progress'; }
     public function isClosed(): bool  { return $this->status === 'closed'; }
@@ -86,6 +138,26 @@ class SupportTicket extends Model
         'billing'   => 'Billing',
         'training'  => 'Training',
         'other'     => 'Other',
+        'account'          => 'Account access',
+        'partner_program'  => 'Partner Program',
+        'partner_products' => 'Partner products',
+        'privacy'          => 'Privacy request',
+    ];
+
+    public const CHANNEL_MEMBER = 'member';
+
+    public const CHANNEL_WEBSITE = 'website';
+
+    /** Topics the public website contact form may send. Each is a CATEGORIES key. */
+    public const WEBSITE_TOPICS = [
+        'general',
+        'billing',
+        'account',
+        'technical',
+        'partner_program',
+        'partner_products',
+        'privacy',
+        'other',
     ];
 
     public const PRIORITIES = [

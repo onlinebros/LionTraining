@@ -20,10 +20,15 @@ use App\Http\Controllers\Admin\TrainingContentBlockController;
 use App\Http\Controllers\Admin\TrainingLessonController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VideoAssetController;
+use App\Http\Controllers\Admin\BillingController as AdminBillingController;
+use App\Http\Controllers\MemberBillingController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberCrmController;
 use App\Http\Controllers\MemberSupportController;
 use App\Http\Controllers\UserAuthController;
+use App\Http\Controllers\VendorStorefrontController;
+use App\Http\Controllers\MemberVendorLeadController;
+use App\Http\Controllers\Admin\VendorLeadController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ────────────────────────────────────────────────────────────────────
@@ -33,6 +38,33 @@ Route::get('/', fn() => view('public.home'))->name('home');
 // Referral sign-up (public, no auth required, before guest middleware)
 Route::get('/join/{code}', [UserAuthController::class, 'showReferral'])->name('join');
 Route::post('/join/{code}', [UserAuthController::class, 'registerViaReferral'])->name('join.post');
+
+// ── Vendor storefront (public, member-coded) ──────────────────────────────────
+//
+// The customer-facing page a partner shares to sell a third-party product. No
+// auth: the visitor is the partner's prospect, not a user of this application.
+//
+// The fixed segments come first so /p/handoff/… and /p/thanks/… can never be
+// swallowed by the {code} pattern. The enquiry POST is throttled because it is
+// an unauthenticated write that creates a row and an outbound email address.
+Route::prefix('p')->name('vendor.')->group(function () {
+    Route::get('/handoff/{reference}', [VendorStorefrontController::class, 'handoff'])->name('handoff');
+    Route::get('/thanks/{reference}',  [VendorStorefrontController::class, 'thanks'])->name('thanks');
+
+    // Stage two of a direct order: address, quote, payment. Throttled because
+    // it is an unauthenticated write that triggers a tax API call.
+    Route::get('/order/{reference}',           [VendorStorefrontController::class, 'order'])->name('order');
+    Route::post('/order/{reference}/address',  [VendorStorefrontController::class, 'saveAddress'])
+        ->middleware('throttle:20,1')->name('order.address');
+    Route::post('/order/{reference}/pay',      [VendorStorefrontController::class, 'pay'])
+        ->middleware('throttle:10,1')->name('order.pay');
+    Route::get('/complete/{reference}',        [VendorStorefrontController::class, 'complete'])->name('complete');
+
+    Route::get('/{code}/{vendor}/{product}',  [VendorStorefrontController::class, 'show'])->name('product');
+    Route::post('/{code}/{vendor}/{product}', [VendorStorefrontController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('enquire');
+});
 
 // User auth (guests only)
 Route::middleware('guest')->group(function () {
@@ -46,6 +78,29 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [UserAuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // ── Member area ───────────────────────────────────────────────────────────────
+
+// ── Billing ───────────────────────────────────────────────────────────────────
+//
+// DELIBERATELY OUTSIDE the `subscribed` gate, and declared before the guarded
+// group so it cannot be swept into it by a later edit.
+//
+// RequireActiveSubscription redirects an unsubscribed partner to
+// member.billing.start. If these routes were also gated, that redirect would hit
+// the gate again and bounce forever — the user can never reach the screen that
+// would fix their state. Anything added here must stay ungated for the same
+// reason; if a new billing route genuinely needs the gate, it belongs in the
+// group below instead.
+Route::prefix('member/billing')->name('member.billing.')->middleware('auth')->group(function () {
+    Route::get('/start',        [MemberBillingController::class, 'start'])->name('start');
+    Route::post('/setup-intent', [MemberBillingController::class, 'setupIntent'])->name('setup-intent');
+    Route::post('/confirm',     [MemberBillingController::class, 'confirm'])->name('confirm');
+
+    Route::get('/',             [MemberBillingController::class, 'index'])->name('index');
+    Route::post('/card',        [MemberBillingController::class, 'replaceCard'])->name('card');
+    Route::delete('/card/{paymentMethod}', [MemberBillingController::class, 'removeCard'])->name('card.remove');
+    Route::post('/cancel',      [MemberBillingController::class, 'cancel'])->name('cancel');
+    Route::post('/resume',      [MemberBillingController::class, 'resume'])->name('resume');
+});
 
 Route::prefix('member')->name('member.')->middleware('auth')->group(function () {
     Route::get('/dashboard',         [MemberController::class, 'dashboard'])->name('dashboard');
@@ -74,6 +129,12 @@ Route::prefix('member')->name('member.')->middleware('auth')->group(function () 
         Route::post('/',               [MemberSupportController::class, 'store'])->name('store');
         Route::get('/{ticket}',        [MemberSupportController::class, 'show'])->name('show');
         Route::post('/{ticket}/reply', [MemberSupportController::class, 'reply'])->name('reply');
+    });
+
+    // Vendor product sales — the partner's own leads and share links.
+    Route::prefix('sales')->name('sales.')->group(function () {
+        Route::get('/',            [MemberVendorLeadController::class, 'index'])->name('index');
+        Route::get('/{lead}',      [MemberVendorLeadController::class, 'show'])->name('show');
     });
 
     // CRM workspace
@@ -148,6 +209,34 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{ticket}',                 [SupportTicketController::class, 'show'])->name('show');
             Route::post('/{ticket}/reply',          [SupportTicketController::class, 'reply'])->name('reply');
             Route::patch('/{ticket}/status',        [SupportTicketController::class, 'updateStatus'])->name('status');
+        });
+
+        // Billing oversight (C3)
+        Route::prefix('billing')->name('billing.')->group(function () {
+            Route::get('/subscriptions', [AdminBillingController::class, 'subscriptions'])->name('subscriptions');
+            Route::post('/subscriptions/{subscription}/sync', [AdminBillingController::class, 'sync'])->name('subscriptions.sync');
+            Route::post('/subscriptions/{subscription}/extend-trial', [AdminBillingController::class, 'extendTrial'])->name('subscriptions.extend-trial');
+
+            Route::get('/webhooks', [AdminBillingController::class, 'webhooks'])->name('webhooks');
+            Route::post('/webhooks/{event}/replay', [AdminBillingController::class, 'replay'])->name('webhooks.replay');
+        });
+
+        // Vendor referral oversight — attribution, reconciliation, and the
+        // export that tells the vendor who actually placed each order.
+        Route::prefix('vendor-leads')->name('vendor-leads.')->group(function () {
+            Route::get('/',                  [VendorLeadController::class, 'index'])->name('index');
+            Route::get('/export',            [VendorLeadController::class, 'export'])->name('export');
+
+            // What the vendor owes us. Under the direct-key arrangement nothing
+            // is taken at the point of sale, so this is how the revenue share
+            // actually gets collected.
+            Route::get('/reconciliation',    [VendorLeadController::class, 'reconciliation'])->name('reconciliation');
+            Route::post('/invoice',          [VendorLeadController::class, 'invoice'])->name('invoice');
+            Route::post('/settle',           [VendorLeadController::class, 'settle'])->name('settle');
+            Route::post('/{vendorLead}/fulfil', [VendorLeadController::class, 'fulfil'])->name('fulfil');
+            Route::get('/{vendorLead}',      [VendorLeadController::class, 'show'])->name('show');
+            Route::post('/{vendorLead}/convert', [VendorLeadController::class, 'convert'])->name('convert');
+            Route::post('/{vendorLead}/lost',    [VendorLeadController::class, 'lost'])->name('lost');
         });
 
         // Commission system
@@ -230,6 +319,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{kartraImport}',                   [KartraImportController::class, 'destroy'])->name('destroy');
             Route::post('/download-videos',                    [KartraImportController::class, 'downloadVideos'])->name('download-videos');
             Route::post('/import-json',                        [KartraImportController::class, 'importJson'])->name('import-json');
+            Route::post('/download-files',                     [KartraImportController::class, 'downloadFiles'])->name('download-files');
         });
     });
 });

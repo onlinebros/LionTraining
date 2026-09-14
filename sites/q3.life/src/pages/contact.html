@@ -1,0 +1,222 @@
+<!--meta {"title": "Contact support", "description": "Send {{ business.legal_name }} a support request about membership, billing, cancellation, the Partner Program or privacy. Support hours: {{ contact.hours }}.", "nav": "contact"}-->
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Contact</span>
+    <h1>Contact support</h1>
+    <p class="lede">Send us a request below. Our support team works {{ contact.hours }}.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap contact-layout">
+    <form class="card support-form" id="support-form" action="{{ attr:support.endpoint }}" method="post" novalidate>
+      <h2 class="h3">Send a request</h2>
+
+      <div class="field">
+        <label for="sf-name">Your name</label>
+        <input id="sf-name" name="name" type="text" autocomplete="name" required maxlength="120">
+        <p class="field-error" id="sf-name-error" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="sf-email">Email address</label>
+        <input id="sf-email" name="email" type="email" autocomplete="email" required maxlength="255" aria-describedby="sf-email-hint">
+        <p class="hint" id="sf-email-hint">If we need to reply, we'll use this address. Members, please use the email on your account.</p>
+        <p class="field-error" id="sf-email-error" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="sf-topic">Topic</label>
+        <select id="sf-topic" name="topic" required>
+          <option value="">Choose a topic</option>
+          <option value="general">Membership question</option>
+          <option value="billing">Billing, trial or cancellation</option>
+          <option value="account">Signing in or my account</option>
+          <option value="technical">Course or technical problem</option>
+          <option value="partner_program">Partner Program or commissions</option>
+          <option value="partner_products">Partner product order</option>
+          <option value="privacy">Privacy request</option>
+          <option value="other">Something else</option>
+        </select>
+        <p class="field-error" id="sf-topic-error" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="sf-subject">Subject</label>
+        <input id="sf-subject" name="subject" type="text" required maxlength="200">
+        <p class="field-error" id="sf-subject-error" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="sf-message">How can we help?</label>
+        <textarea id="sf-message" name="message" rows="7" required maxlength="5000" aria-describedby="sf-message-hint"></textarea>
+        <p class="hint" id="sf-message-hint">For billing questions, include the date and amount of the charge. Never include a card number or password.</p>
+        <p class="field-error" id="sf-message-error" hidden></p>
+      </div>
+
+      <div class="hp" aria-hidden="true">
+        <label for="sf-hp">Leave this field empty</label>
+        <input id="sf-hp" name="hp_field" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="field turnstile-field">
+        <div class="cf-turnstile" data-sitekey="{{ attr:support.turnstile_site_key }}" data-action="support-request" data-theme="dark" data-size="flexible"></div>
+        <p class="field-error" id="sf-turnstile-error" hidden></p>
+      </div>
+
+      <p class="small muted">We use what you send only to handle your request. See our <a href="privacy">Privacy Policy</a>.</p>
+      <button class="btn btn-gold" type="submit">Send request</button>
+      <div class="form-status" id="sf-status" role="status" aria-live="polite" tabindex="-1" hidden></div>
+      <noscript><p class="form-status is-error">This form needs JavaScript. Please turn it on, or write to us at the mailing address on this page.</p></noscript>
+    </form>
+
+    <aside class="contact-aside">
+      <article class="card card-gold">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h2 class="h3">Support hours</h2>
+        <p>{{ contact.hours }}</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div>
+        <h2 class="h3">Members</h2>
+        <p>Signed in? Open a ticket from <strong>Support</strong> in your back office, and the whole conversation stays in one place.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <h2 class="h3">Mail</h2>
+        <address>{{ business.legal_name }}<br>{{ business.address_line1 }}<br>{{ business.address_line2 }}<br>{{ business.country }}</address>
+      </article>
+    </aside>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap narrow">
+    <div class="section-head">
+      <span class="eyebrow">Get the right help</span>
+      <h2>Choosing a topic</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">If you need help with</th><th scope="col">Choose</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Your trial, a charge, or cancelling</th><td>"Billing, trial or cancellation". The fastest way to cancel is online in Billing. See also our <a href="refunds">Refund &amp; Cancellation Policy</a>.</td></tr>
+          <tr><th scope="row">Signing in, or changing your account details</th><td>"Signing in or my account"</td></tr>
+          <tr><th scope="row">Commissions, payouts or your referral link</th><td>"Partner Program or commissions". See <a href="partners">Partner Program</a>.</td></tr>
+          <tr><th scope="row">Seeing, correcting or deleting your personal information</th><td>"Privacy request". See our <a href="privacy#rights">Privacy Policy</a>.</td></tr>
+          <tr><th scope="row">A PlasmaGuard order: shipping, returns or warranty</th><td>Contact {{ vendor.legal_name }} directly on <a href="{{ tel:vendor.phone }}">{{ vendor.phone }}</a> or through its <a href="{{ attr:vendor.contact_url }}" rel="noopener">contact page</a>. It sells, charges and ships those products. If it doesn't respond, you can let us know by choosing "Partner product order".</td></tr>
+          <tr><th scope="row">Legal notices</th><td>By mail to the address above.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <p><strong>Don't recognize a charge?</strong> Our charges appear on statements as <strong>{{ membership.statement_descriptor }}</strong>. Please contact us before disputing a charge with your bank. If we charged you by mistake, we refund it in full.</p>
+    </div>
+  </div>
+</section>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+(function () {
+  var form = document.getElementById('support-form');
+  if (!form || !window.fetch || !window.FormData) return;
+  var status = document.getElementById('sf-status');
+  var button = form.querySelector('button[type="submit"]');
+
+  function show(kind, text) {
+    status.className = 'form-status is-' + kind;
+    status.textContent = text;
+    status.hidden = false;
+    status.focus();
+  }
+  function clearErrors() {
+    Array.prototype.forEach.call(form.querySelectorAll('.field-error'), function (el) { el.hidden = true; el.textContent = ''; });
+    Array.prototype.forEach.call(form.querySelectorAll('[aria-invalid]'), function (el) { el.removeAttribute('aria-invalid'); });
+  }
+  function fieldError(name, text) {
+    if (name === 'turnstile_token') {
+      var box = document.getElementById('sf-turnstile-error');
+      box.textContent = text;
+      box.hidden = false;
+      return;
+    }
+    var input = form.elements[name];
+    var el = document.getElementById(input ? input.id + '-error' : '');
+    if (input) input.setAttribute('aria-invalid', 'true');
+    if (el) { el.textContent = text; el.hidden = false; }
+  }
+  // Turnstile tokens are single-use, so every attempt needs a fresh check.
+  function resetChallenge() {
+    if (window.turnstile) {
+      try { window.turnstile.reset(); } catch (e) { /* widget not rendered yet */ }
+    }
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    clearErrors();
+    status.hidden = true;
+
+    if (!form.checkValidity()) {
+      Array.prototype.forEach.call(form.elements, function (el) {
+        if (el.name && el.willValidate && !el.validity.valid) fieldError(el.name, el.validationMessage);
+      });
+      show('error', 'Please check the highlighted fields.');
+      return;
+    }
+
+    var data = {};
+    new FormData(form).forEach(function (value, key) { data[key] = value; });
+    data.turnstile_token = data['cf-turnstile-response'] || '';
+    delete data['cf-turnstile-response'];
+    data.page_url = window.location.href;
+
+    if (!data.turnstile_token) {
+      fieldError('turnstile_token', 'Please wait for the verification check to finish, or complete it if asked.');
+      show('error', 'Please check the highlighted fields.');
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Sending…';
+
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) { return { res: res, body: body }; });
+      })
+      .then(function (r) {
+        if (r.res.ok) {
+          form.reset();
+          show('success', 'Thank you. We have received your request' + (r.body.reference ? ' (reference ' + r.body.reference + ')' : '') + '.');
+          return;
+        }
+        if (r.res.status === 422 && r.body.errors) {
+          Object.keys(r.body.errors).forEach(function (key) { fieldError(key, r.body.errors[key][0]); });
+          show('error', 'Please check the highlighted fields.');
+          return;
+        }
+        if (r.res.status === 429) {
+          show('error', 'Too many requests from your connection. Please wait a few minutes and try again.');
+          return;
+        }
+        if (r.res.status === 503 && r.body.message) {
+          show('error', r.body.message);
+          return;
+        }
+        throw new Error('HTTP ' + r.res.status);
+      })
+      .catch(function () {
+        show('error', 'Your request could not be sent. Please try again later, or write to us at the mailing address on this page.');
+      })
+      .then(function () {
+        resetChallenge();
+        button.disabled = false;
+        button.textContent = 'Send request';
+      });
+  });
+})();
+</script>

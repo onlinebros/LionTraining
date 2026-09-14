@@ -24,7 +24,7 @@
     <div class="col-sm-4">
         <div class="card mb-0">
             <div class="card-body text-center py-4">
-                <div class="fs-2 fw-bold" style="color:#54ba4a;">{{ $stats['active'] }}</div>
+                <div class="fs-2 fw-bold" style="color:var(--q3-success);">{{ $stats['active'] }}</div>
                 <div class="text-muted small mt-1">Active</div>
             </div>
         </div>
@@ -32,8 +32,8 @@
     <div class="col-sm-4">
         <div class="card mb-0">
             <div class="card-body text-center py-4">
-                <div class="fs-2 fw-bold" style="color:#ffb829;">{{ $stats['pending'] }}</div>
-                <div class="text-muted small mt-1">Pending</div>
+                <div class="fs-2 fw-bold" style="color:var(--q3-warning);">{{ number_format($stats['team']) }}</div>
+                <div class="text-muted small mt-1">Total Team</div>
             </div>
         </div>
     </div>
@@ -63,15 +63,15 @@
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap">
-                    <a href="https://wa.me/?text={{ urlencode('Join Lion Training through my referral link: ' . $referralUrl) }}"
+                    <a href="https://wa.me/?text={{ urlencode('Join Quantum Life through my referral link: ' . $referralUrl) }}"
                        target="_blank" class="btn btn-sm btn-outline-success">
                         <i data-feather="message-circle" style="width:13px;height:13px;" class="me-1"></i>WhatsApp
                     </a>
-                    <a href="https://twitter.com/intent/tweet?text={{ urlencode('Join me on Lion Training! ' . $referralUrl) }}"
+                    <a href="https://twitter.com/intent/tweet?text={{ urlencode('Join me on Quantum Life! ' . $referralUrl) }}"
                        target="_blank" class="btn btn-sm btn-outline-info">
                         <i data-feather="twitter" style="width:13px;height:13px;" class="me-1"></i>Twitter / X
                     </a>
-                    <a href="mailto:?subject={{ urlencode('Join Lion Training') }}&body={{ urlencode('I\'d like to invite you to join Lion Training. Use my referral link: ' . $referralUrl) }}"
+                    <a href="mailto:?subject={{ urlencode('Join Quantum Life') }}&body={{ urlencode('I\'d like to invite you to join Quantum Life. Use my referral link: ' . $referralUrl) }}"
                        class="btn btn-sm btn-outline-secondary">
                         <i data-feather="mail" style="width:13px;height:13px;" class="me-1"></i>Email
                     </a>
@@ -87,7 +87,7 @@
                 <h6 class="mb-0 fw-bold">Members Invited</h6>
             </div>
 
-            @if($user->sponsees->isEmpty())
+            @if($recruits->isEmpty())
                 <div class="card-body text-center py-5">
                     <i data-feather="share-2" style="width:48px;height:48px;opacity:.2;" class="mb-3"></i>
                     <h6 class="f-light">No invites sent yet.</h6>
@@ -106,13 +106,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($user->sponsees as $sponsee)
+                            @foreach($recruits as $sponsee)
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div style="width:34px;height:34px;border-radius:50%;background:#54ba4a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:.82rem;">
-                                            {{ strtoupper(substr($sponsee->name, 0, 1)) }}
-                                        </div>
+                                        <div class="q3-avatar q3-avatar-sm">{{ strtoupper(substr($sponsee->name, 0, 1)) }}</div>
                                         <span class="fw-semibold">{{ $sponsee->name }}</span>
                                     </div>
                                 </td>
@@ -125,12 +123,12 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge badge-light-{{ $sponsee->pivot->status === 'active' ? 'success' : 'warning' }}">
-                                        {{ ucfirst($sponsee->pivot->status) }}
+                                    <span class="badge badge-light-{{ $sponsee->is_active ? 'success' : 'secondary' }}">
+                                        {{ $sponsee->is_active ? 'Active' : 'Inactive' }}
                                     </span>
                                 </td>
                                 <td class="text-muted small">
-                                    {{ $sponsee->pivot->created_at ? \Carbon\Carbon::parse($sponsee->pivot->created_at)->format('d M Y') : '—' }}
+                                    {{ ($sponsee->placed_at ?? $sponsee->created_at)?->format('d M Y') ?? '—' }}
                                 </td>
                             </tr>
                             @endforeach

@@ -1,0 +1,433 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$display_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$file_size\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$local_filename\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$local_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$mime_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$original_filename\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Parameter \#1 \$kartraLesson of method App\\Console\\Commands\\KartraSeedTrainingCommand\:\:makeBlocks\(\) expects App\\Models\\KartraImport, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Parameter \#1 \$kartraLesson of method App\\Console\\Commands\\KartraSeedTrainingCommand\:\:makeLesson\(\) expects App\\Models\\KartraImport, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Console/Commands/KartraSeedTrainingCommand.php
+
+		-
+			message: '#^Relation ''earner'' is not found in App\\Models\\CommissionClawback model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionClawbackController.php
+
+		-
+			message: '#^Relation ''initiatedBy'' is not found in App\\Models\\CommissionClawback model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionClawbackController.php
+
+		-
+			message: '#^Relation ''originalLedger'' is not found in App\\Models\\CommissionClawback model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionClawbackController.php
+
+		-
+			message: '#^Property App\\Http\\Controllers\\Admin\\CommissionLedgerController\:\:\$commissionService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionLedgerController.php
+
+		-
+			message: '#^Relation ''commissionPlan'' is not found in App\\Models\\CommissionLedger model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionLedgerController.php
+
+		-
+			message: '#^Relation ''earner'' is not found in App\\Models\\CommissionLedger model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionLedgerController.php
+
+		-
+			message: '#^Relation ''payout'' is not found in App\\Models\\CommissionLedger model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionLedgerController.php
+
+		-
+			message: '#^Relation ''earner'' is not found in App\\Models\\CommissionPayout model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionPayoutController.php
+
+		-
+			message: '#^Relation ''processedBy'' is not found in App\\Models\\CommissionPayout model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CommissionPayoutController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CrmContact\:\:\$tags\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/CrmContactController.php
+
+		-
+			message: '#^Relation ''assignee'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CrmContactController.php
+
+		-
+			message: '#^Relation ''owner'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CrmContactController.php
+
+		-
+			message: '#^Relation ''tags'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/CrmContactController.php
+
+		-
+			message: '#^Relation ''assignee'' is not found in App\\Models\\CrmFollowup model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/CrmDashboardController.php
+
+		-
+			message: '#^Relation ''contact'' is not found in App\\Models\\CrmFollowup model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/CrmDashboardController.php
+
+		-
+			message: '#^Relation ''owner'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/CrmDashboardController.php
+
+		-
+			message: '#^Relation ''tags'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/CrmDashboardController.php
+
+		-
+			message: '#^Relation ''sponsorships'' is not found in App\\Models\\User model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/DashboardController.php
+
+		-
+			message: '#^Relation ''sponsees'' is not found in App\\Models\\User model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/SponsorController.php
+
+		-
+			message: '#^Relation ''sponsor'' is not found in App\\Models\\Sponsorship model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/SponsorController.php
+
+		-
+			message: '#^Relation ''sponsored'' is not found in App\\Models\\Sponsorship model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/SponsorController.php
+
+		-
+			message: '#^Relation ''role'' is not found in App\\Models\\User model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/UserController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$sponsees\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$display_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$level\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:breadcrumb\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:lessons\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:userCanAccess\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Relation ''commissionPlan'' is not found in App\\Models\\CommissionLedger model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>display_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CrmContact\:\:\$tags\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MemberCrmController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CrmFollowup\:\:\$contact\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/MemberCrmController.php
+
+		-
+			message: '#^Relation ''assignee'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/MemberCrmController.php
+
+		-
+			message: '#^Relation ''contact'' is not found in App\\Models\\CrmFollowup model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/MemberCrmController.php
+
+		-
+			message: '#^Relation ''tags'' is not found in App\\Models\\CrmContact model\.$#'
+			identifier: larastan.relationExistence
+			count: 3
+			path: app/Http/Controllers/MemberCrmController.php
+
+		-
+			message: '#^Match arm comparison between ''tiered'' and ''tiered'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 2
+			path: app/Models/CommissionPlan.php
+
+		-
+			message: '#^Offset ''amount'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/CommissionPlan.php
+
+		-
+			message: '#^Offset ''rate'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/CommissionPlan.php
+
+		-
+			message: '#^Offset ''tiers'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/CommissionPlan.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/CrmContact.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/CrmFollowup.php
+
+		-
+			message: '#^Parameter \#1 \$string of function str_pad expects string, \(float\|int\) given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Models/SupportTicket.php
+
+		-
+			message: '#^Unsafe call to private method App\\Models\\SupportTicket\:\:generateTicketNumber\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 1
+			path: app/Models/SupportTicket.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TrainingCategory.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$level\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TrainingCategory.php
+
+		-
+			message: '#^Cannot call method copy\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Models/TrainingCategory.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TrainingLesson.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$release_delay\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TrainingLesson.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$required_role_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TrainingLesson.php
+
+		-
+			message: '#^Cannot call method copy\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Models/TrainingLesson.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CommissionClawback\:\:\$debitLedger\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CommissionClawback\:\:\$originalLedger\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Match arm comparison between ''tiered'' and ''tiered'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Offset ''amount'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Offset ''rate'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Offset ''tiers'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/CommissionService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CrmFollowup\:\:\$contact\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/CrmService.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/CrmService.php
+
+		-
+			message: '#^Call to an undefined method DOMNameSpaceNode\|DOMNode\:\:getAttribute\(\)\.$#'
+			identifier: method.notFound
+			count: 6
+			path: app/Services/KartraImportService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/VimeoUploadService.php

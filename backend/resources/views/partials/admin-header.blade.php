@@ -20,9 +20,10 @@
         {{-- Logo --}}
         <div class="header-logo-wrapper col-auto p-0">
             <div class="logo-wrapper">
+                {{-- Kept in the top bar so the brand survives the mobile
+                     breakpoint where the sidebar collapses to a drawer. --}}
                 <a href="{{ route('admin.dashboard') }}">
-                    <img class="img-fluid for-light" src="{{ asset('assets/images/logo/logo.png') }}" alt="Lion Training">
-                    <img class="img-fluid for-dark" src="{{ asset('assets/images/logo/logo_dark.png') }}" alt="Lion Training">
+                    <img class="q3-logo" src="{{ \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png') }}" alt="Quantum Life">
                 </a>
             </div>
             <div class="toggle-sidebar">
@@ -33,10 +34,9 @@
         {{-- Left Header --}}
         <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
             <div class="notification-slider">
-                <div class="d-flex h-100">
-                    <img src="{{ asset('assets/images/giftools.gif') }}" alt="gif">
+                <div class="d-flex h-100 align-items-center">
                     <h6 class="mb-0 f-w-400">
-                        <span class="font-primary">Lion Training &mdash; </span>
+                        <span class="font-primary">Quantum Life &mdash; </span>
                         <span class="f-light">Back Office Administration Panel</span>
                     </h6>
                 </div>
@@ -65,14 +65,9 @@
                     </span>
                 </li>
 
-                {{-- Dark mode --}}
-                <li>
-                    <div class="mode">
-                        <svg>
-                            <use href="{{ asset('assets/svg/icon-sprite.svg#moon') }}"></use>
-                        </svg>
-                    </div>
-                </li>
+                {{-- The Cuba light/dark switch is deliberately not rendered: the
+                     Q3 theme is dark-only, and toggling it off would strip the
+                     .dark-only class and leave the UI half-styled. --}}
 
                 {{-- Notifications --}}
                 <li class="onhover-dropdown">
@@ -94,8 +89,8 @@
 
                 {{-- Profile --}}
                 <li class="profile-nav onhover-dropdown pe-0 py-0">
-                    <div class="d-flex profile-media">
-                        <img class="b-r-10" src="{{ asset('assets/images/dashboard/profile.png') }}" alt="">
+                    <div class="d-flex profile-media align-items-center gap-2">
+                        <div class="q3-avatar">A</div>
                         <div class="flex-grow-1">
                             <span>Admin</span>
                             <p class="mb-0">Administrator <i class="middle fa-solid fa-angle-down"></i></p>

@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sponsorship;
 use App\Models\User;
+use App\Services\Genealogy\EnrollmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UserAuthController extends Controller
 {
+    public function __construct(private EnrollmentService $enrollment) {}
+
     public function showLogin()
     {
         return view('public.auth.login');
@@ -46,11 +49,25 @@ class UserAuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-        ]);
+        // Account creation and enrollment share one transaction. Creating the
+        // user outside it means a failed placement rolls back the enrollment
+        // but leaves the account standing — able to log in, with no sponsor and
+        // no paths, and carrying the default 'queued' status it was never
+        // actually queued with. That row then looks placeable to
+        // `network:place-queued`, which would silently root it in its own tree.
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
+
+            // No referral link, so no sponsor unless a house account is
+            // configured — see config('genealogy.default_sponsor_id'). Either
+            // way they are enrolled and placed now, so they never exist outside
+            // the tree.
+            return $this->enrollment->enroll($user, null);
+        });
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -74,17 +91,20 @@ class UserAuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-        ]);
+        // Enrolled and placed in one transaction — position is real from the
+        // moment they sign up, which is the whole commercial point of the
+        // pre-launch phase. The account is created inside that same transaction
+        // so a placement failure takes the account with it rather than leaving
+        // a loggable-in row sitting outside the tree.
+        $user = DB::transaction(function () use ($data, $sponsor) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
 
-        Sponsorship::create([
-            'sponsor_id' => $sponsor->id,
-            'sponsored_id' => $user->id,
-            'status' => 'pending',
-        ]);
+            return $this->enrollment->enroll($user, $sponsor);
+        });
 
         Auth::login($user);
         $request->session()->regenerate();

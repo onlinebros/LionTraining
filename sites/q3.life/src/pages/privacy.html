@@ -1,0 +1,152 @@
+<!--meta {"title": "Privacy Policy", "description": "What personal information {{ business.legal_name }} collects, how it is used and shared, who can see it, and your choices.", "nav": ""}-->
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Policy</span>
+    <h1>Privacy Policy</h1>
+    <p class="lede">What we collect, why, who can see it, and how to control it.</p>
+    <p class="updated">Last updated {{ policies.updated_display }}</p>
+  </div>
+</section>
+
+<div class="wrap narrow prose">
+  <nav class="toc" aria-labelledby="toc-title">
+    <h2 id="toc-title">Contents</h2>
+    <ol>
+      <li><a href="privacy#who">Who we are</a></li>
+      <li><a href="privacy#collect">Information we collect</a></li>
+      <li><a href="privacy#use">How we use it</a></li>
+      <li><a href="privacy#visibility">Who can see your information</a></li>
+      <li><a href="privacy#sharing">Service providers and other sharing</a></li>
+      <li><a href="privacy#cookies">Cookies</a></li>
+      <li><a href="privacy#retention">How long we keep it</a></li>
+      <li><a href="privacy#security">Security</a></li>
+      <li><a href="privacy#rights">Your choices and rights</a></li>
+      <li><a href="privacy#children">Children</a></li>
+      <li><a href="privacy#changes">Changes and contact</a></li>
+    </ol>
+  </nav>
+
+  <section id="who">
+    <h2>1. Who we are</h2>
+    <p>This policy explains how {{ business.legal_name }} ("{{ site.brand_short }}", "we" or "us"), {{ business.entity_description }} at {{ business.address_line1 }}, {{ business.address_line2 }}, handles personal information. It covers {{ site.url }}, our member platform at {{ site.app_url }}, our contact form, and partner product pages.</p>
+  </section>
+
+  <section id="collect">
+    <h2>2. Information we collect</h2>
+    <h3>Information you give us</h3>
+    <ul>
+      <li><strong>Account details:</strong> your name, email address, password (stored only as a one-way hash), phone number, mailing address and an optional profile photo.</li>
+      <li><strong>Referral details:</strong> the partner whose referral link you used, and where you sit in the partner organization.</li>
+      <li><strong>Support requests:</strong> when you use our contact form, your name, email address, the topic, your message and the page you sent it from. Members' support tickets are kept with their account.</li>
+      <li><strong>Contacts you add:</strong> members can keep contact records (names, emails, phone numbers, addresses and notes) in their back office. The member who adds a record is responsible for having the right to store it.</li>
+    </ul>
+    <h3>Payment and payout information</h3>
+    <ul>
+      <li>Card payments are handled by Stripe. Your full card number goes directly to Stripe and never reaches our servers. From Stripe we receive the card brand, the last four digits, the expiry date and the billing country, along with your payment and subscription history.</li>
+      <li>To pay commissions, Stripe collects identity, tax and bank details directly from partners. We receive the status of that verification and a record of payouts, not your full bank or tax numbers.</li>
+    </ul>
+    <h3>Information about people who enquire on a product page</h3>
+    <p>When someone asks for a partner product through a partner's product page, we collect their name, email address, phone number, delivery address, the product and the quantity.</p>
+    <h3>Information collected automatically</h3>
+    <ul>
+      <li>Our servers and our network provider, Cloudflare, record IP addresses, browser and device type, pages requested and times, for security and troubleshooting.</li>
+      <li>On pages where you enter a card, Stripe collects device and browsing signals to detect fraud.</li>
+    </ul>
+  </section>
+
+  <section id="use">
+    <h2>3. How we use it</h2>
+    <ul>
+      <li>To provide your membership: creating your account, streaming {{ course.name }} and running the back office.</li>
+      <li>To bill you, correct billing mistakes and prevent payment fraud.</li>
+      <li>To run the Partner Program: placing you in the partner organization, calculating commissions and paying them.</li>
+      <li>To complete partner-product enquiries and to credit the partner who referred the customer.</li>
+      <li>To answer support requests and send service messages, such as receipts, trial reminders, billing notices and changes to our terms.</li>
+      <li>To keep our services secure, enforce our Terms, and meet legal, tax and accounting obligations.</li>
+      <li>To send news about {{ site.brand }}. You can unsubscribe from these emails at any time. Service messages continue while you have an account.</li>
+    </ul>
+  </section>
+
+  <section id="visibility">
+    <h2>4. Who can see your information</h2>
+    <p>The Partner Program means some of your details are visible to other members:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Who</th><th scope="col">What they can see</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">The partner who referred you</th><td>Your name, email address, phone number, join date, level, and how many people are in your team.</td></tr>
+          <tr><th scope="row">Partners higher in your organization</th><td>Your name, join date, level and team size. Not your email or phone number.</td></tr>
+          <tr><th scope="row">People you refer</th><td>Your name and email address, shown as their sponsor.</td></tr>
+          <tr><th scope="row">Partners below you</th><td>Your name, as part of their organization above them.</td></tr>
+          <tr><th scope="row">Our staff</th><td>What they need to answer support requests, manage billing and commissions, and keep the service secure.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>If you enquire about a partner product</strong>, the partner whose page you used can see your enquiry details and keeps them as a contact in their back office. We also share them with the manufacturer so it can complete your order.</p>
+  </section>
+
+  <section id="sharing">
+    <h2>5. Service providers and other sharing</h2>
+    <p>We use these companies to run our services. They process personal information on our behalf:</p>
+    <ul>
+      <li><strong>Stripe:</strong> payments, fraud prevention, partner identity verification and payouts.</li>
+      <li><strong>DigitalOcean:</strong> hosting, database and file storage in the United States.</li>
+      <li><strong>Cloudflare:</strong> website delivery, protection against attacks, and the Turnstile check on our contact form that tells people from automated bots.</li>
+      <li><strong>Vimeo:</strong> hosting and streaming of course videos.</li>
+      <li><strong>Our email delivery provider:</strong> sending account and billing emails.</li>
+    </ul>
+    <p>We also share information:</p>
+    <ul>
+      <li>with partner companies that sell partner products (currently {{ vendor.legal_name }}), for product enquiries as described above</li>
+      <li>with professional advisers such as accountants and lawyers</li>
+      <li>when the law requires it, or to protect the rights and safety of our members and others</li>
+      <li>with a buyer or successor, if our business is sold or reorganized, under a commitment to honor this policy</li>
+    </ul>
+    <p><strong>We do not sell personal information</strong>, and we do not share it for targeted advertising.</p>
+  </section>
+
+  <section id="cookies">
+    <h2>6. Cookies</h2>
+    <p>We use only the cookies needed for our services to work:</p>
+    <ul>
+      <li>a session cookie that keeps you signed in, and a security token that protects forms</li>
+      <li>security cookies set by Cloudflare to filter automated traffic</li>
+      <li>cookies set by Stripe on payment pages, for fraud prevention</li>
+    </ul>
+    <p>We don't use analytics or advertising cookies. Because we don't track you across sites, we don't respond differently to browser "Do Not Track" signals.</p>
+  </section>
+
+  <section id="retention">
+    <h2>7. How long we keep it</h2>
+    <p>We keep account information while your membership is active. When it ends, we delete or anonymize what we no longer need. Billing, commission and payout records are kept as long as tax and accounting law requires, generally up to seven years. Support requests are kept while they are useful for helping you and for our records. Server logs are kept for a short period for security.</p>
+  </section>
+
+  <section id="security">
+    <h2>8. Security</h2>
+    <p>Our website and member platform are served only over encrypted HTTPS connections. Passwords are stored as one-way hashes, access to member data is limited to staff who need it, and card data never touches our servers. No system is perfectly secure. If a breach affects your information, we will tell you as the law requires.</p>
+  </section>
+
+  <section id="rights">
+    <h2>9. Your choices and rights</h2>
+    <p>You can update most account details yourself in your back office. You can also ask us to:</p>
+    <ul>
+      <li>tell you what personal information we hold about you and give you a copy</li>
+      <li>correct information that is wrong</li>
+      <li>delete your information, except what we must keep for legal, tax or fraud-prevention reasons</li>
+      <li>stop sending you marketing emails</li>
+    </ul>
+    <p>Depending on the state you live in, you may have further rights under state privacy law. We honor these requests for all members, wherever they live, and we will not treat you differently for making one.</p>
+    <p>To make a request, use our <a href="contact">contact form</a> and choose "Privacy request", giving the email address on your account. We may need to verify your identity before acting on a request. You can also ask someone to make a request for you if they have your written permission.</p>
+  </section>
+
+  <section id="children">
+    <h2>10. Children</h2>
+    <p>Our services are only for adults aged {{ policies.min_age }} or older. We do not knowingly collect information from children. If you believe a child has given us information, contact us and we will delete it.</p>
+  </section>
+
+  <section id="changes">
+    <h2>11. Changes and contact</h2>
+    <p>If we change this policy, we will update the date at the top. We email members before a material change takes effect.</p>
+    <p>Questions? Use our <a href="contact">contact form</a>, or write to {{ business.legal_name }}, {{ business.address_line1 }}, {{ business.address_line2 }}.</p>
+  </section>
+</div>

@@ -40,4 +40,16 @@ return [
         'privacy'      => env('VIMEO_PRIVACY', 'disable'),
     ],
 
+    // Cloudflare Turnstile — bot check on the public website contact form.
+    // Empty allowed_hostnames skips the hostname check (test keys only).
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        'allowed_hostnames' => array_filter(explode(',', (string) env('TURNSTILE_ALLOWED_HOSTNAMES', ''))),
+    ],
+
+    // Stripe lives in config/stripe.php, not here. It outgrew a services entry
+    // once it carried two webhook secrets, the product and price ids, trial
+    // arithmetic and the card-uniqueness safeguard.
+
 ];

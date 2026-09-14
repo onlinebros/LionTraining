@@ -1,0 +1,80 @@
+<!--meta {"title": "Refund & Cancellation Policy", "description": "How the {{ site.brand }} free trial, cancellation and non-refundable membership charges work, and who handles refunds for partner products.", "nav": ""}-->
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Policy</span>
+    <h1>Refund &amp; Cancellation Policy</h1>
+    <p class="lede">Try membership free, and cancel any time before your trial ends. Once your card has been charged, membership fees are not refundable.</p>
+    <p class="updated">Last updated {{ policies.updated_display }}</p>
+  </div>
+</section>
+
+<div class="wrap narrow prose">
+  <div class="callout">
+    <p><strong>Membership charges are non-refundable.</strong> If you don't want to be charged, cancel before your free trial ends, or before your next billing date. We email you {{ membership.trial_reminder_days }} days before your trial ends, and your next billing date is always shown in Billing.</p>
+  </div>
+
+  <section id="summary">
+    <h2>At a glance</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Situation</th><th scope="col">What happens</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">During your free trial</th><td>Cancel any time before the trial ends and you are never charged. The trial end date is shown before you confirm and in Billing.</td></tr>
+          <tr><th scope="row">When the trial ends</th><td>Your card is charged {{ membership.price_display }}, then {{ membership.price_display }} every {{ membership.interval_noun }} until you cancel. <strong>These charges are not refundable.</strong></td></tr>
+          <tr><th scope="row">Renewals</th><td>Your membership renews every {{ membership.interval_noun }}, and we email a receipt for each charge. <strong>Renewal charges are not refundable.</strong></td></tr>
+          <tr><th scope="row">Joined before launch</th><td>Your card is not charged before our official launch. We email you {{ membership.prelaunch_notice_days }} days before launch, and your {{ membership.trial_days }}-day free trial starts on launch day. Cancel any time before the trial ends and you pay nothing. Once charged, it is not refundable.</td></tr>
+          <tr><th scope="row">Cancelling after a charge</th><td>You keep access until the end of the {{ membership.interval_noun }} you paid for, and you are not charged again. There is no refund for unused time.</td></tr>
+          <tr><th scope="row">Duplicate or mistaken charge</th><td>Always refunded in full, whenever you tell us.</td></tr>
+          <tr><th scope="row">Partner products</th><td>Sold and charged by the partner company, which handles its own refunds and returns. <a href="refunds#partner-products">See below</a>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="cancel">
+    <h2>How to cancel</h2>
+    <ul>
+      <li><strong>Online (fastest):</strong> sign in, open <strong>Billing</strong> and choose to cancel your membership. It takes effect straight away, and the Billing page shows the date your access ends.</li>
+      <li><strong>Through our contact form:</strong> send a request from our <a href="contact">contact form</a>, choosing "Billing, trial or cancellation" and using the email address on your account.</li>
+    </ul>
+    <p>To avoid any charge, cancel before your trial ends. You can cancel on the last day of the trial. After a charge, cancelling stops the next one. If you change your mind before your access ends, you can resume from the same Billing page.</p>
+  </section>
+
+  <section id="mistakes">
+    <h2>Duplicate or mistaken charges</h2>
+    <p>If you were charged twice, charged after you cancelled, or charged in error, send a request through our <a href="contact">contact form</a> and choose "Billing, trial or cancellation". Include the email address on your account and the date and amount of the charge. We refund confirmed mistakes in full to the card that was charged. Your bank usually takes {{ policies.refund_processing }} to show the refund.</p>
+  </section>
+
+  <section id="failed-payments">
+    <h2>Failed payments</h2>
+    <p>If a payment fails, we email you and retry the card. Your access continues for {{ policies.payment_grace_days }} days while you update your card in Billing. If payment still hasn't gone through after that, access pauses until it does or until you cancel.</p>
+  </section>
+
+  <section id="disputes">
+    <h2>Before you dispute a charge</h2>
+    <p>Membership charges appear on card statements as <strong>{{ membership.statement_descriptor }}</strong>. If you don't recognize a charge, or think it is wrong, please contact us through our <a href="contact">contact form</a> before disputing it with your bank.</p>
+  </section>
+
+  <section id="partner-products">
+    <h2>Partner products</h2>
+    <p>Partner products are sold by our partner companies, not by {{ business.legal_name }}. The partner company takes the payment on its own checkout, and it handles refunds, returns, exchanges and warranty claims under its own policies. We cannot issue refunds for partner products.</p>
+    <h3>{{ vendor.legal_name }}</h3>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><th scope="row">Products</th><td>{{ vendor.product }}</td></tr>
+          <tr><th scope="row">Charged by</th><td>{{ vendor.legal_name }}, not {{ business.legal_name }}</td></tr>
+          <tr><th scope="row">On your statement</th><td>{{ vendor.statement_descriptor }}</td></tr>
+          <tr><th scope="row">Their terms</th><td><a href="{{ attr:vendor.terms_url }}" rel="noopener">{{ vendor.name }} Terms and Conditions</a></td></tr>
+          <tr><th scope="row">Contact</th><td><a href="{{ tel:vendor.phone }}">{{ vendor.phone }}</a> · <a href="{{ attr:vendor.contact_url }}" rel="noopener">{{ vendor.name }} contact page</a><br>{{ vendor.address }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>If you can't get an answer from a partner company, you can also let us know through our <a href="contact">contact form</a>.</p>
+  </section>
+
+  <section id="changes">
+    <h2>Changes to this policy</h2>
+    <p>If we change this policy, the new version applies to charges made after the date at the top of this page.</p>
+  </section>
+</div>

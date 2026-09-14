@@ -2,25 +2,25 @@
     <div>
         <div class="logo-wrapper">
             @php
-                $logoLight = $siteSettings['logo_light'] ?? null;
-                $logoDark  = $siteSettings['logo_dark']  ?? null;
-                $siteName  = $siteSettings['site_name']  ?? 'Lion Training';
+                $siteName = $siteSettings['site_name'] ?? 'Quantum Life';
+                // An admin-uploaded logo still wins; otherwise the transparent Q3
+                // mark sits straight on the black panel. Sizing is handled by
+                // .q3-logo in q3-theme.css so proportions are never distorted.
+                $sidebarLogo = ($siteSettings['logo_dark'] ?? null)
+                    ? Storage::url($siteSettings['logo_dark'])
+                    : (($siteSettings['logo_light'] ?? null)
+                        ? Storage::url($siteSettings['logo_light'])
+                        : \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png'));
             @endphp
             <a href="{{ route('member.dashboard') }}">
-                @if($logoLight)
-                    <img class="img-fluid for-light" src="{{ Storage::url($logoLight) }}" alt="{{ $siteName }}">
-                    <img class="img-fluid for-dark"  src="{{ Storage::url($logoDark ?? $logoLight) }}" alt="{{ $siteName }}">
-                @else
-                    <img class="img-fluid for-light" src="{{ asset('assets/images/logo/logo.png') }}" alt="{{ $siteName }}">
-                    <img class="img-fluid for-dark"  src="{{ asset('assets/images/logo/logo_dark.png') }}" alt="{{ $siteName }}">
-                @endif
+                <img class="q3-logo" src="{{ $sidebarLogo }}" alt="{{ $siteName }}">
             </a>
             <div class="back-btn"><i class="fa-solid fa-angle-left"></i></div>
             <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
         </div>
         <div class="logo-icon-wrapper">
             <a href="{{ route('member.dashboard') }}">
-                <img class="img-fluid" src="{{ asset('assets/images/logo/logo-icon.png') }}" alt="">
+                <img class="q3-logo-icon" src="{{ \App\Support\Asset::v('assets/images/logo/q3-app-icon-192.png') }}" alt="{{ $siteName }}">
             </a>
         </div>
         <nav class="sidebar-main">
@@ -29,7 +29,7 @@
                 <ul class="sidebar-links" id="simple-bar">
                     <li class="back-btn">
                         <a href="{{ route('member.dashboard') }}">
-                            <img class="img-fluid" src="{{ asset('assets/images/logo/logo-icon.png') }}" alt="">
+                            <img class="q3-logo-icon" src="{{ \App\Support\Asset::v('assets/images/logo/q3-app-icon-192.png') }}" alt="{{ $siteName }}">
                         </a>
                         <div class="mobile-back text-end">
                             <span>Back</span><i class="fa-solid fa-angle-right ps-2" aria-hidden="true"></i>
@@ -55,14 +55,14 @@
                         </a>
                     </li>
 
-                    {{-- My Network --}}
+                    {{-- My Team --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.network') ? 'active' : '' }}"
                            href="{{ route('member.network') }}">
                             <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-social') }}"></use></svg>
                             <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-social') }}"></use></svg>
-                            <span>My Network</span>
+                            <span>My Team</span>
                         </a>
                     </li>
 
@@ -97,7 +97,25 @@
                         @endif
                     </li>
 
-                    {{-- Commissions --}}
+                    {{-- Product sales — third-party vendor referrals. Deliberately
+                         not behind the pre-launch guard: these are other people's
+                         products on other people's checkouts, so they can be sold
+                         before our own launch. --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('member.sales.*') ? 'active' : '' }}"
+                           href="{{ route('member.sales.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-ecommerce') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-ecommerce') }}"></use></svg>
+                            <span>Product Sales</span>
+                        </a>
+                    </li>
+
+                    {{-- Commissions — hidden while the pre-launch guard has the
+                         section closed. Both this and the middleware read
+                         App\Support\Prelaunch, so a section can never be visible
+                         in the menu while its URLs are shut, or vice versa. --}}
+                    @if (\App\Support\Prelaunch::open('commissions', auth()->user()))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title {{ request()->routeIs('member.commissions.*') ? 'active' : '' }}" href="#">
@@ -114,8 +132,10 @@
                                    class="{{ request()->routeIs('member.commissions.payouts') ? 'active' : '' }}">Payouts</a></li>
                         </ul>
                     </li>
+                    @endif
 
                     {{-- CRM --}}
+                    @if (\App\Support\Prelaunch::open('crm', auth()->user()))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title {{ request()->routeIs('member.crm.*') ? 'active' : '' }}" href="#">
@@ -132,8 +152,23 @@
                                    class="{{ request()->routeIs('member.crm.contacts.create') ? 'active' : '' }}">Add Contact</a></li>
                         </ul>
                     </li>
+                    @endif
 
-                    {{-- Support --}}
+                    {{-- Billing — never behind the pre-launch guard or the
+                         subscription gate. A partner must always be able to
+                         reach the screen that fixes their billing state. --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.billing.*') ? 'active' : '' }}"
+                           href="{{ route('member.billing.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-charts') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-charts') }}"></use></svg>
+                            <span>Billing</span>
+                        </a>
+                    </li>
+
+                    {{-- Support — deliberately never closed. People have the most
+                         questions during the busiest signup period. --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.support.*') ? 'active' : '' }}"

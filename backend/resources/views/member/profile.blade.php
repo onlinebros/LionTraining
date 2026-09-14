@@ -25,18 +25,17 @@
                 <div class="position-relative d-inline-block mb-3">
                     @if($photoUrl)
                         <img src="{{ $photoUrl }}" alt="{{ $user->name }}"
-                             style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--theme-default);">
+                             style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:2px solid var(--q3-border-gold);">
                     @else
-                        <div style="width:84px;height:84px;border-radius:50%;background:var(--theme-default);color:#fff;
-                                    display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;margin:0 auto;">
+                        <div class="q3-avatar" style="width:84px;height:84px;font-size:2rem;margin:0 auto;">
                             {{ strtoupper(substr($user->name, 0, 1)) }}
                         </div>
                     @endif
                     {{-- Camera overlay --}}
                     <label for="photoInput" title="Change photo"
                            style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;
-                                  background:var(--theme-default);color:#fff;display:flex;align-items:center;
-                                  justify-content:center;cursor:pointer;border:2px solid #fff;">
+                                  background:var(--q3-gold);color:var(--q3-gold-ink);display:flex;align-items:center;
+                                  justify-content:center;cursor:pointer;border:2px solid var(--q3-surface);">
                         <i data-feather="camera" style="width:12px;height:12px;pointer-events:none;"></i>
                     </label>
                 </div>
@@ -78,7 +77,7 @@
                 <div class="text-start">
                     <p class="text-muted small mb-1 fw-semibold">Referral Code</p>
                     <div class="d-flex align-items-center gap-2">
-                        <code class="small flex-grow-1" style="background:var(--light-bg,#eef1f6);padding:5px 10px;border-radius:6px;display:block;">
+                        <code class="small flex-grow-1" class="q3-mono" style="display:block;">
                             {{ $user->referral_code }}
                         </code>
                         <button class="btn btn-sm btn-outline-primary py-0"
@@ -112,15 +111,14 @@
                     <input type="file" id="photoInput" name="profile_photo" accept="image/*" class="d-none">
 
                     {{-- Photo preview row --}}
-                    <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background:var(--light-bg,#f8f9fa);">
+                    <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background:var(--q3-surface-2);">
                         <div id="photoPreviewWrap">
                             @if($photoUrl)
                                 <img id="photoPreview" src="{{ $photoUrl }}" alt="Photo"
-                                     style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--theme-default);">
+                                     style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--q3-border-gold);">
                             @else
-                                <div id="photoPreview"
-                                     style="width:64px;height:64px;border-radius:50%;background:var(--theme-default);color:#fff;
-                                            display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;">
+                                <div id="photoPreview" class="q3-avatar"
+                                     style="width:64px;height:64px;font-size:1.5rem;">
                                     {{ strtoupper(substr($user->name, 0, 1)) }}
                                 </div>
                             @endif
@@ -287,7 +285,7 @@ document.getElementById('photoInput').addEventListener('change', function () {
     reader.onload = function (e) {
         const wrap = document.getElementById('photoPreviewWrap');
         wrap.innerHTML = '<img id="photoPreview" src="' + e.target.result + '" alt="Preview" '
-            + 'style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--theme-default);">';
+            + 'style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--q3-border-gold);">';
     };
     reader.readAsDataURL(file);
 

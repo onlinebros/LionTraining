@@ -6,11 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
+
+    // ── Placement state ───────────────────────────────────────────────────────
+    // 'excluded' is for accounts that must never enter the structure at all:
+    // staff, test accounts, the company node.
+    public const PLACEMENT_QUEUED   = 'queued';
+    public const PLACEMENT_PLACED   = 'placed';
+    public const PLACEMENT_EXCLUDED = 'excluded';
 
     protected $fillable = [
         'name',
@@ -20,6 +26,8 @@ class User extends Authenticatable
         'active_start_date',
         'referral_code',
         'role_id',
+        'sponsor_id',
+        'prelaunch_preview',
         'profile_photo',
         'phone',
         'address_line1',
@@ -92,11 +100,107 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'  => 'datetime',
-            'password'           => 'hashed',
-            'is_active'          => 'boolean',
-            'active_start_date'  => 'date',
+            'email_verified_at'   => 'datetime',
+            'password'            => 'hashed',
+            'is_active'           => 'boolean',
+            'active_start_date'   => 'date',
+            'prelaunch_preview'   => 'boolean',
+            'placement_queued_at' => 'datetime',
+            'placed_at'           => 'datetime',
+            'billing_exempt'      => 'boolean',
         ];
+    }
+
+    // ── Genealogy ─────────────────────────────────────────────────────────────
+
+    /** Who enrolled this partner. Permanent once set. */
+    public function sponsor()
+    {
+        return $this->belongsTo(User::class, 'sponsor_id');
+    }
+
+    /** Partners this one personally enrolled. */
+    public function recruits()
+    {
+        return $this->hasMany(User::class, 'sponsor_id');
+    }
+
+    /** Who this partner sits beneath in the paying structure. */
+    public function placementParent()
+    {
+        return $this->belongsTo(User::class, 'placement_parent_id');
+    }
+
+    /** Partners placed directly beneath this one. */
+    public function placementChildren()
+    {
+        return $this->hasMany(User::class, 'placement_parent_id');
+    }
+
+    public function isPlaced(): bool
+    {
+        return $this->placement_status === self::PLACEMENT_PLACED;
+    }
+
+    // ── Billing ───────────────────────────────────────────────────────────────
+    //
+    // provider_customer_id is deliberately absent from $fillable: it is written
+    // only by the billing service, and a mass-assigned customer id would let a
+    // crafted request point one user's account at another's stored cards.
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function paymentMethods()
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    /** The subscription currently granting access, if any. */
+    public function activeSubscription(): ?Subscription
+    {
+        return $this->subscriptions()
+            ->entitling()
+            ->orderByDesc('current_period_end')
+            ->first();
+    }
+
+    /**
+     * May this user reach subscription-gated areas?
+     *
+     * Admins and explicitly exempted accounts (founders, staff, comped
+     * partners) are checked before the subscription lookup — their access does
+     * not come from a card, and demoting them when one lapses would lock staff
+     * out of their own product.
+     */
+    public function hasActiveMembership(): bool
+    {
+        if ($this->isAdmin() || $this->billing_exempt === true) {
+            return true;
+        }
+
+        return $this->activeSubscription() !== null;
+    }
+
+    public function defaultPaymentMethod(): ?PaymentMethod
+    {
+        return $this->paymentMethods()->where('is_default', true)->first();
+    }
+
+    // ── Pre-launch ────────────────────────────────────────────────────────────
+
+    /**
+     * May this user reach sections the pre-launch guard has closed?
+     *
+     * Admins pass automatically — they are the people who need to check that a
+     * closed section still works before it opens. Everyone else needs the flag
+     * set explicitly, via `php artisan prelaunch:preview`.
+     */
+    public function canPreviewPrelaunch(): bool
+    {
+        return $this->isAdmin() || $this->prelaunch_preview === true;
     }
 
     public function sponsorships()

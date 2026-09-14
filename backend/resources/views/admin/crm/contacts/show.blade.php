@@ -23,8 +23,8 @@
         {{-- Identity card --}}
         <div class="card">
             <div class="card-body text-center pb-3">
-                <div class="avatar-circle mx-auto mb-3" style="width:70px;height:70px;background:var(--theme-default,#7366ff);border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                    <span class="text-white fw-bold" style="font-size:1.5rem;">
+                <div class="q3-avatar mx-auto mb-3" style="width:70px;height:70px;">
+                    <span class="fw-bold" style="font-size:1.5rem;">
                         {{ strtoupper(substr($crmContact->first_name, 0, 1)) }}{{ strtoupper(substr($crmContact->last_name ?? '', 0, 1)) }}
                     </span>
                 </div>
@@ -390,7 +390,7 @@
                                            style="width:16px;height:16px;"></i>
                                     </div>
                                     @if(!$loop->last)
-                                        <div style="width:2px;background:#dee2e6;margin:4px auto 0;height:calc(100% - 36px);min-height:16px;"></div>
+                                        <div style="width:2px;background:var(--q3-border-strong);margin:4px auto 0;height:calc(100% - 36px);min-height:16px;"></div>
                                     @endif
                                 </div>
                                 <div class="flex-grow-1 pb-2">

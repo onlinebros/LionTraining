@@ -1,0 +1,98 @@
+<!--meta {"title": "{{ site.brand }} ({{ site.brand_short }}): {{ course.name }} and the Partner Program", "description": "{{ business.legal_name }} offers {{ course.name }}, a member back office and a Partner Program in one membership: {{ membership.price_display }} {{ membership.interval_phrase }} after a {{ membership.trial_days }}-day free trial."}-->
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">{{ site.brand }} · {{ site.brand_short }}</span>
+    <h1>An online membership for learning, growing and sharing what works.</h1>
+    <p class="lede">{{ business.legal_name }} offers the {{ membership.name }}: {{ course.name }}, a private back office, and the option to earn commissions through our Partner Program.</p>
+    <p class="price-line"><strong>{{ membership.price_display }} {{ membership.interval_phrase }}</strong><span>{{ membership.trial_days }}-day free trial · Cancel any time before it ends · Renews {{ membership.interval_adverb }}</span></p>
+    <div class="actions">
+      <a class="btn btn-gold" href="membership">Membership &amp; pricing</a>
+      <a class="btn btn-ghost" href="partners">How the Partner Program works</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">What you get</span>
+      <h2>Everything in one {{ membership.name }}</h2>
+      <p>Membership is fully online. There is nothing to ship, no inventory and nothing else you have to buy.</p>
+    </div>
+    <div class="grid">
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/></svg></div>
+        <h3>{{ course.name }}</h3>
+        <p>{{ course.summary }} Watch the lessons on any device, at your own pace, for as long as your membership is active.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h3M8 17h6"/></svg></div>
+        <h3>Member back office</h3>
+        <p>Track your contacts, notes and follow-ups. Manage your account and billing, and reach our support team, all from one secure dashboard.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div>
+        <h3>Partner tools</h3>
+        <p>Your personal referral link, referral pages for partner products, and a statement of every commission you have earned, had held back, or been paid.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div>
+        <h3>Support when you need it</h3>
+        <p>Send a request through our <a href="contact">contact form</a>, or open a ticket from your back office. Our support team works {{ contact.hours }}.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>From invitation to first lesson</h2>
+    </div>
+    <ol class="steps">
+      <li><h3>Get an invitation</h3><p>Membership is by invitation. You join through a referral link from an existing partner.</p></li>
+      <li><h3>Start your free trial</h3><p>Create your account and add a card. The price, the date your trial ends and your billing date are shown before you confirm.</p></li>
+      <li><h3>Learn at your own pace</h3><p>Work through {{ course.name }} and use the back office. Cancel online whenever you like.</p></li>
+      <li><h3>Share if you want to</h3><p>Earning through our <a href="partners">Partner Program</a> is optional, and commissions are never guaranteed.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap grid grid-2">
+    <article class="card">
+      <span class="eyebrow">Partner products</span>
+      <h2>Products from companies we work with</h2>
+      <p>Partners can refer customers to products that other companies make and sell. The manufacturer is the seller. It takes payment on its own checkout, ships the order, and handles returns and warranty. {{ site.brand }} receives a fee when a sale completes.</p>
+      <p>Our first partner company is {{ vendor.legal_name }}, maker of the {{ vendor.product }}, a commercial air purification system installed into existing heating and cooling ductwork. {{ vendor.name }} runs its own checkout and billing, so charges for its products come from {{ vendor.legal_name }}, not from {{ business.legal_name }}.</p>
+      <p><a href="shipping#partner-products">How partner-product orders are shipped</a></p>
+    </article>
+    <article class="card card-gold">
+      <span class="eyebrow">No surprises</span>
+      <h2>Read the terms before you pay</h2>
+      <ul class="ticks">
+        <li><a href="membership#billing">Price, trial and billing terms</a></li>
+        <li><a href="refunds">Refund &amp; cancellation policy</a></li>
+        <li><a href="terms">Terms of Service</a></li>
+        <li><a href="privacy">Privacy Policy</a></li>
+        <li><a href="earnings-disclaimer">Earnings disclaimer</a></li>
+      </ul>
+      <p class="muted small">Earnings from the Partner Program depend on your own effort and circumstances. You may earn nothing, and we do not promise any level of income.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Talk to us</span>
+      <h2>Questions before you join?</h2>
+    </div>
+    <div class="grid">
+      <div class="card card-gold"><h3>Contact support</h3><p>Send us a question or request through our contact form.</p><a class="btn btn-gold" href="contact">Open the contact form</a></div>
+      <div class="card"><h3>Support hours</h3><p>{{ contact.hours }}</p></div>
+      <div class="card"><h3>Mail</h3><p>{{ business.legal_name }}<br>{{ business.address_line1 }}<br>{{ business.address_line2 }}</p></div>
+    </div>
+  </div>
+</section>

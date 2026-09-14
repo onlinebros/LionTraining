@@ -12,62 +12,52 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css">
 <style>
 /* ── Add-block panel ─────────────────────────────────────────────────── */
+/* These rules used to force a light panel inside the dark shell. Under the Q3
+   theme the panel is charcoal like every other surface, so they now just carry
+   the tokens through — the form controls themselves inherit q3-theme.css. */
 #add-block-panel .add-block-inner {
-    background: #ffffff;
-    border-bottom: 1px solid #dee2e6;
+    background: var(--q3-surface-2);
+    border-bottom: 1px solid var(--q3-border);
     padding: 20px;
 }
 #add-block-panel .add-block-inner .form-label,
 #add-block-panel .add-block-inner label,
 #add-block-panel .add-block-inner h6,
 #add-block-panel .add-block-inner small {
-    color: #374151 !important;
+    color: var(--q3-text-muted) !important;
 }
-#add-block-panel .add-block-inner .form-control,
-#add-block-panel .add-block-inner .form-select {
-    background-color: #f9fafb;
-    color: #111827;
-    border-color: #d1d5db;
-}
-#add-block-panel .add-block-inner .form-control::placeholder { color: #9ca3af; }
-#add-block-panel .add-block-inner .nav-link { color: #374151; }
-#add-block-panel .add-block-inner .nav-link.active { color: #fff; }
+#add-block-panel .add-block-inner .nav-link { color: var(--q3-text-muted); }
+#add-block-panel .add-block-inner .nav-link.active { color: var(--q3-gold-high); }
 
 /* ── Block cards ─────────────────────────────────────────────────────── */
 .block-card {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-sm);
     margin-bottom: 12px;
-    background: #ffffff;
+    background: var(--q3-surface);
 }
 .block-card .block-header {
     padding: 10px 14px;
-    background: #f3f4f6;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 8px 8px 0 0;
+    background: var(--q3-surface-2);
+    border-bottom: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-sm) var(--q3-radius-sm) 0 0;
     display: flex; align-items: center; gap: 8px; cursor: pointer;
-    color: #111827;
+    color: var(--q3-text);
 }
-.block-card .block-header .fw-semibold { color: #111827; }
-.block-card .block-header small { color: #6b7280 !important; }
+.block-card .block-header .fw-semibold { color: var(--q3-text); }
+.block-card .block-header small { color: var(--q3-text-muted) !important; }
 .block-card .block-body { padding: 16px; display: none; }
 .block-card .block-body .form-label,
-.block-card .block-body label { color: #374151 !important; }
-.block-card .block-body .form-control,
-.block-card .block-body .form-select {
-    background-color: #f9fafb;
-    color: #111827;
-    border-color: #d1d5db;
-}
+.block-card .block-body label { color: var(--q3-text-muted) !important; }
 .block-card.open .block-body { display: block; }
 
 /* ── Type badges ─────────────────────────────────────────────────────── */
 .block-type-badge { font-size: .7rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
-.type-video    { background: #fef3c7; color: #92400e; }
-.type-text     { background: #dbeafe; color: #1e40af; }
-.type-download { background: #d1fae5; color: #065f46; }
+.type-video    { background: var(--q3-warning-tint); color: #dcb262; border: 1px solid rgba(201,154,62,.3); }
+.type-text     { background: var(--q3-info-tint);    color: #a2adb4; border: 1px solid rgba(124,138,147,.3); }
+.type-download { background: var(--q3-success-tint); color: #6ec49b; border: 1px solid rgba(62,158,110,.28); }
 
-.drag-handle { cursor: grab; color: #9ca3af; }
+.drag-handle { cursor: grab; color: var(--q3-text-dim); }
 </style>
 @endpush
 

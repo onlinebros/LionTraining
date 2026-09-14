@@ -44,7 +44,7 @@
                     <div class="fw-semibold">{{ $child->name }}</div>
                     <small class="text-muted">{{ $child->lessons->count() }} lessons</small>
                     @if($childTimeLocked && $childAvailAt)
-                        <br><small style="color:#1e40af;">Available {{ $childAvailAt->format('M j, Y') }}</small>
+                        <br><small style="color:var(--q3-info);">Available {{ $childAvailAt->format('M j, Y') }}</small>
                     @elseif($childTimeLocked)
                         <br><small class="text-muted">Start date not yet set</small>
                     @endif

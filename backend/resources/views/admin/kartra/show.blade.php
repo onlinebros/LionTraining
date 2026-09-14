@@ -58,6 +58,55 @@
             </div>
         </div>
 
+        {{-- Page Content --}}
+        @if($kartraImport->page_content)
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Page Content</h6>
+                <span class="badge bg-success">Scraped</span>
+            </div>
+            <div class="card-body">
+                @if($kartraImport->page_html)
+                <div class="border rounded p-3 bg-light" style="max-height:300px;overflow-y:auto;font-size:0.85rem">
+                    {!! $kartraImport->page_html !!}
+                </div>
+                @else
+                <pre class="small text-muted" style="white-space:pre-wrap;max-height:200px;overflow-y:auto">{{ $kartraImport->page_content }}</pre>
+                @endif
+            </div>
+        </div>
+        @endif
+
+        {{-- Downloadable Files --}}
+        @if($kartraImport->files->isNotEmpty())
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">Downloadable Files ({{ $kartraImport->files->count() }})</h6></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Name</th><th>Type</th><th>Size</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach($kartraImport->files as $file)
+                        <tr>
+                            <td class="small">
+                                {{ $file->display_name ?: $file->original_filename ?: "File #{$file->id}" }}
+                            </td>
+                            <td class="small text-muted">{{ $file->mime_type ? Str::after($file->mime_type, '/') : '—' }}</td>
+                            <td class="small text-muted">{{ $file->formattedSize() }}</td>
+                            <td>
+                                <span class="badge badge-light-{{ $file->status === 'downloaded' ? 'success' : ($file->status === 'failed' ? 'danger' : 'secondary') }}">
+                                    {{ $file->status }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
         {{-- Children --}}
         @if($kartraImport->children->isNotEmpty())
         <div class="card mb-3">

@@ -38,7 +38,10 @@ class SupportTicketController extends Controller
             $ticket->update(['status' => 'in_progress']);
         }
 
-        return view('admin.support.show', compact('ticket'));
+        // Website tickets only: an unverified same-email member, shown as a hint.
+        $memberMatch = $ticket->unverifiedMemberMatch();
+
+        return view('admin.support.show', compact('ticket', 'memberMatch'));
     }
 
     public function reply(Request $request, SupportTicket $ticket)

@@ -23,10 +23,10 @@
             <p class="text-muted small mb-2">{{ \Illuminate\Support\Str::limit($lesson->description, 90) }}</p>
         @endif
         @if($roleLocked && $roleNeeded)
-            <p class="small mb-0" style="color:#92400e;">Requires: {{ $roleNeeded->display_name }}</p>
+            <p class="small mb-0" style="color:var(--q3-warning);">Requires: {{ $roleNeeded->display_name }}</p>
         @elseif($timeLocked)
             @if($availableAt)
-                <p class="small mb-0" style="color:#1e40af;">
+                <p class="small mb-0" style="color:var(--q3-info);">
                     Available {{ $availableAt->format('M j, Y') }}
                     <span class="text-muted">(in {{ now()->diffInDays($availableAt) }} days)</span>
                 </p>

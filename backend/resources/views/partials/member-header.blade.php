@@ -17,19 +17,19 @@
         {{-- Logo --}}
         <div class="header-logo-wrapper col-auto p-0">
             <div class="logo-wrapper">
+                @php
+                    $siteName = $siteSettings['site_name'] ?? 'Quantum Life';
+                    // Mirrors the sidebar: admin upload wins, else the Q3 mark.
+                    // Kept in the top bar so the brand survives the mobile
+                    // breakpoint where the sidebar collapses to a drawer.
+                    $headerLogo = ($siteSettings['logo_dark'] ?? null)
+                        ? Storage::url($siteSettings['logo_dark'])
+                        : (($siteSettings['logo_light'] ?? null)
+                            ? Storage::url($siteSettings['logo_light'])
+                            : \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png'));
+                @endphp
                 <a href="{{ route('member.dashboard') }}">
-                    @php
-                        $logoLight = $siteSettings['logo_light'] ?? null;
-                        $logoDark  = $siteSettings['logo_dark']  ?? null;
-                        $siteName  = $siteSettings['site_name']  ?? 'Lion Training';
-                    @endphp
-                    @if($logoLight)
-                        <img class="img-fluid for-light" src="{{ Storage::url($logoLight) }}" alt="{{ $siteName }}">
-                        <img class="img-fluid for-dark"  src="{{ Storage::url($logoDark ?? $logoLight) }}" alt="{{ $siteName }}">
-                    @else
-                        <img class="img-fluid for-light" src="{{ asset('assets/images/logo/logo.png') }}" alt="{{ $siteName }}">
-                        <img class="img-fluid for-dark"  src="{{ asset('assets/images/logo/logo_dark.png') }}" alt="{{ $siteName }}">
-                    @endif
+                    <img class="q3-logo" src="{{ $headerLogo }}" alt="{{ $siteName }}">
                 </a>
             </div>
             <div class="toggle-sidebar">
@@ -40,8 +40,7 @@
         {{-- Left Header --}}
         <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
             <div class="notification-slider">
-                <div class="d-flex h-100">
-                    <img src="{{ asset('assets/images/giftools.gif') }}" alt="gif">
+                <div class="d-flex h-100 align-items-center">
                     <h6 class="mb-0 f-w-400">
                         <span class="font-primary">{{ $siteName }} &mdash; </span>
                         <span class="f-light">Member Portal</span>
@@ -72,14 +71,9 @@
                     </span>
                 </li>
 
-                {{-- Dark mode --}}
-                <li>
-                    <div class="mode">
-                        <svg>
-                            <use href="{{ asset('assets/svg/icon-sprite.svg#moon') }}"></use>
-                        </svg>
-                    </div>
-                </li>
+                {{-- The Cuba light/dark switch is deliberately not rendered: the
+                     Q3 theme is dark-only, and toggling it off would strip the
+                     .dark-only class and leave the UI half-styled. --}}
 
                 {{-- Support ticket button --}}
                 <li>
@@ -103,10 +97,7 @@
                 @endphp
                 <li class="profile-nav onhover-dropdown pe-0 py-0">
                     <div class="d-flex profile-media align-items-center gap-2">
-                        <div style="width:36px;height:36px;border-radius:50%;background:var(--theme-default);color:#fff;
-                                    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                        </div>
+                        <div class="q3-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
                         <div class="flex-grow-1">
                             <span>{{ auth()->user()->name }}</span>
                             <p class="mb-0">{{ $roleName }} <i class="middle fa-solid fa-angle-down"></i></p>

@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class KartraImport extends Model
 {
     protected $fillable = [
-        'kartra_type', 'kartra_id', 'kartra_title', 'kartra_description',
+        'kartra_type', 'kartra_id', 'kartra_title', 'page_title', 'kartra_description',
+        'page_content', 'page_html',
         'kartra_url', 'kartra_video_url', 'kartra_thumbnail_url', 'kartra_order',
         'parent_id', 'status', 'error_message',
         'local_category_id', 'local_lesson_id', 'local_content_block_id', 'video_asset_id',
@@ -48,5 +49,10 @@ class KartraImport extends Model
     public function localContentBlock(): BelongsTo
     {
         return $this->belongsTo(TrainingContentBlock::class, 'local_content_block_id');
+    }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(KartraFile::class);
     }
 }

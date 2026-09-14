@@ -8,13 +8,13 @@
     {{-- Balance card --}}
     <div class="col-sm-6 col-xl-3">
         <div class="card mb-0 h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width:48px;height:48px;border-radius:12px;background:#f0eeff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i data-feather="dollar-sign" style="width:22px;height:22px;color:#7366ff;"></i>
-                </div>
+            {{-- Available balance is the headline number on this page, so it
+                 takes the gold; the other three stay off-white. --}}
+            <div class="card-body q3-stat">
+                <div class="q3-stat-icon q3-stat-icon--gold"><i data-feather="dollar-sign"></i></div>
                 <div>
-                    <div class="fs-4 fw-bold lh-1">${{ number_format($balance, 2) }}</div>
-                    <div class="text-muted small">Available Balance</div>
+                    <div class="q3-stat-value q3-stat-value--gold">${{ number_format($balance, 2) }}</div>
+                    <div class="q3-stat-label">Available Balance</div>
                 </div>
             </div>
         </div>
@@ -23,13 +23,11 @@
     {{-- Lifetime paid --}}
     <div class="col-sm-6 col-xl-3">
         <div class="card mb-0 h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width:48px;height:48px;border-radius:12px;background:#edfceb;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i data-feather="trending-up" style="width:22px;height:22px;color:#54ba4a;"></i>
-                </div>
+            <div class="card-body q3-stat">
+                <div class="q3-stat-icon q3-stat-icon--success"><i data-feather="trending-up"></i></div>
                 <div>
-                    <div class="fs-4 fw-bold lh-1">${{ number_format($lifetime, 2) }}</div>
-                    <div class="text-muted small">Lifetime Paid Out</div>
+                    <div class="q3-stat-value">${{ number_format($lifetime, 2) }}</div>
+                    <div class="q3-stat-label">Lifetime Paid Out</div>
                 </div>
             </div>
         </div>
@@ -38,17 +36,15 @@
     {{-- Pending payout --}}
     <div class="col-sm-6 col-xl-3">
         <div class="card mb-0 h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width:48px;height:48px;border-radius:12px;background:#fff8e7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i data-feather="clock" style="width:22px;height:22px;color:#f7b731;"></i>
-                </div>
+            <div class="card-body q3-stat">
+                <div class="q3-stat-icon"><i data-feather="clock"></i></div>
                 <div>
                     @if($pendingPayout)
-                        <div class="fs-4 fw-bold lh-1">${{ number_format($pendingPayout->total_amount, 2) }}</div>
-                        <div class="text-muted small">Payout {{ ucfirst($pendingPayout->status) }}</div>
+                        <div class="q3-stat-value">${{ number_format($pendingPayout->total_amount, 2) }}</div>
+                        <div class="q3-stat-label">Payout {{ ucfirst($pendingPayout->status) }}</div>
                     @else
-                        <div class="fs-4 fw-bold lh-1 text-muted">—</div>
-                        <div class="text-muted small">No Pending Payout</div>
+                        <div class="q3-stat-value q3-dim">—</div>
+                        <div class="q3-stat-label">No Pending Payout</div>
                     @endif
                 </div>
             </div>
@@ -58,13 +54,11 @@
     {{-- Pending entries count --}}
     <div class="col-sm-6 col-xl-3">
         <div class="card mb-0 h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width:48px;height:48px;border-radius:12px;background:#ffe9e9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i data-feather="list" style="width:22px;height:22px;color:#f04f5f;"></i>
-                </div>
+            <div class="card-body q3-stat">
+                <div class="q3-stat-icon"><i data-feather="list"></i></div>
                 <div>
-                    <div class="fs-4 fw-bold lh-1">{{ $recent->count() }}</div>
-                    <div class="text-muted small">Recent Transactions</div>
+                    <div class="q3-stat-value">{{ $recent->count() }}</div>
+                    <div class="q3-stat-label">Recent Transactions</div>
                 </div>
             </div>
         </div>

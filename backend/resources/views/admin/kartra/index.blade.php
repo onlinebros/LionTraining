@@ -17,19 +17,20 @@
 @endif
 
 {{-- Stats cards --}}
-<div class="row mb-4">
+<div class="row mb-3">
     @foreach([
-        ['label' => 'Total Items',  'key' => 'total',      'color' => 'primary'],
-        ['label' => 'Discovered',   'key' => 'discovered',  'color' => 'secondary'],
-        ['label' => 'Downloaded',   'key' => 'downloaded',  'color' => 'success'],
-        ['label' => 'Mapped',       'key' => 'mapped',      'color' => 'info'],
-        ['label' => 'With Video',   'key' => 'videos',      'color' => 'warning'],
-        ['label' => 'Failed',       'key' => 'failed',      'color' => 'danger'],
+        ['label' => 'Total Items',    'key' => 'total',            'color' => 'primary'],
+        ['label' => 'Videos',         'key' => 'videos',           'color' => 'warning'],
+        ['label' => 'With Content',   'key' => 'with_content',     'color' => 'info'],
+        ['label' => 'Files Total',    'key' => 'files_total',      'color' => 'secondary'],
+        ['label' => 'Files Downloaded','key' => 'files_downloaded','color' => 'success'],
+        ['label' => 'Mapped',         'key' => 'mapped',           'color' => 'success'],
+        ['label' => 'Failed',         'key' => 'failed',           'color' => 'danger'],
     ] as $card)
-    <div class="col-6 col-md-2 mb-3">
+    <div class="col-6 col-md mb-3">
         <div class="card text-center">
-            <div class="card-body py-3">
-                <h3 class="text-{{ $card['color'] }} mb-0">{{ $stats[$card['key']] }}</h3>
+            <div class="card-body py-2">
+                <h4 class="text-{{ $card['color'] }} mb-0">{{ $stats[$card['key']] }}</h4>
                 <small class="text-muted">{{ $card['label'] }}</small>
             </div>
         </div>
@@ -76,6 +77,9 @@
                             {{ $lesson->kartra_title }}
                             @if($lesson->kartra_video_url)
                                 <i data-feather="video" data-width="12" data-height="12" class="text-primary ms-1" title="Has video"></i>
+                            @endif
+                            @if($lesson->page_content)
+                                <i data-feather="file-text" data-width="12" data-height="12" class="text-success ms-1" title="Has page content"></i>
                             @endif
                         </div>
                         <div class="d-flex gap-1 align-items-center">
@@ -141,6 +145,23 @@
                     </button>
                 </form>
                 @endif
+
+                {{-- Download pending files --}}
+                @if($stats['files_total'] > $stats['files_downloaded'])
+                <form method="POST" action="{{ route('admin.kartra.download-files') }}" class="mb-3">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-info w-100">
+                        <i data-feather="paperclip" data-width="14"></i>
+                        Download Lesson Files ({{ $stats['files_total'] - $stats['files_downloaded'] }} pending)
+                    </button>
+                </form>
+                @endif
+
+                <div class="alert alert-secondary py-2 small">
+                    <strong>Content scrape CLI:</strong><br>
+                    <code>node scripts/kartra-scrape-content.js</code><br>
+                    <code>php artisan kartra:content</code>
+                </div>
 
                 {{-- JSON Import --}}
                 <div class="border-top pt-3">

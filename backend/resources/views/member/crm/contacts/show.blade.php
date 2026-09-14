@@ -23,9 +23,8 @@
         {{-- Identity --}}
         <div class="card">
             <div class="card-body text-center pb-3">
-                <div class="mx-auto mb-3 rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:70px;height:70px;background:var(--theme-default,#7366ff);">
-                    <span class="text-white fw-bold" style="font-size:1.5rem;">
+                <div class="q3-avatar mx-auto mb-3" style="width:70px;height:70px;">
+                    <span class="fw-bold" style="font-size:1.5rem;">
                         {{ strtoupper(substr($contact->first_name, 0, 1)) }}{{ strtoupper(substr($contact->last_name ?? '', 0, 1)) }}
                     </span>
                 </div>
