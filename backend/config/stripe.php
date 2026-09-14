@@ -118,6 +118,11 @@ return [
         'enabled'         => (bool) env('STRIPE_CONNECT_ENABLED', true),
         'account_country' => env('STRIPE_CONNECT_COUNTRY', 'US'),
 
+        // What Stripe's review sees on every partner account. The company site,
+        // not a partner's referral link, which does not pass Stripe's website check.
+        'business_url'        => env('STRIPE_CONNECT_BUSINESS_URL', 'https://q3.life'),
+        'product_description' => env('STRIPE_CONNECT_PRODUCT_DESCRIPTION', 'Referral commissions from product sales and marketing through Quantum 3 Solution platform'),
+
         // Offer Stripe's hosted onboarding if the embedded form cannot load.
         'hosted_fallback' => (bool) env('STRIPE_CONNECT_HOSTED_FALLBACK', true),
 

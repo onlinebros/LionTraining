@@ -190,8 +190,11 @@ class StripeConnectService
             // `controller` replaces `type`; Stripe rejects a request with both.
             'controller' => $this->controllerParams(),
 
+            // The company site, not the partner's referral link: Stripe reviews
+            // this URL, and an invite page does not pass its website check.
             'business_profile' => [
-                'product_description' => 'Referral commissions for introducing members to '.config('app.name'),
+                'url'                 => config('stripe.connect.business_url'),
+                'product_description' => config('stripe.connect.product_description'),
             ],
 
             'metadata' => [
@@ -228,14 +231,6 @@ class StripeConnectService
             ]),
         ];
 
-        // Their referral link stands in for a business website, which individuals
-        // rarely have. Stripe rejects anything that is not a public https URL.
-        $url = $user->referral_code ? route('join', $user->referral_code) : null;
-
-        if ($url && str_starts_with($url, 'https://')) {
-            $params['business_profile'] = ['url' => $url];
-        }
-
         return $params;
     }
 
@@ -243,7 +238,7 @@ class StripeConnectService
     {
         $param = (string) ($e->getError()->param ?? '');
 
-        return (bool) preg_match('/^(individual|business_type|business_profile\[url\])/', $param);
+        return (bool) preg_match('/^(individual|business_type)/', $param);
     }
 
     /** @return array{0: ?string, 1: ?string} */

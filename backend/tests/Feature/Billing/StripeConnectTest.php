@@ -135,6 +135,13 @@ class StripeConnectTest extends TestCase
         $this->assertSame('true', $params['capabilities']['transfers']['requested']);
         $this->assertSame('true', $params['capabilities'][StripeConnectService::TAX_CAPABILITY]['requested']);
 
+        // Stripe reviews these: the company site, never a referral link.
+        $this->assertSame('https://q3.life', $params['business_profile']['url']);
+        $this->assertSame(
+            'Referral commissions from product sales and marketing through Quantum 3 Solution platform',
+            $params['business_profile']['product_description'],
+        );
+
         $this->assertSame('individual', $params['business_type']);
         $this->assertSame([
             'first_name' => 'Jane Q',
@@ -182,6 +189,7 @@ class StripeConnectTest extends TestCase
         $this->assertCount(2, $creates);
         $this->assertArrayNotHasKey('individual', $creates[1]);
         $this->assertArrayNotHasKey('business_type', $creates[1]);
+        $this->assertSame('https://q3.life', $creates[1]['business_profile']['url']);
         $this->assertSame($accountId, $user->fresh()->stripe_connect_account_id);
     }
 
