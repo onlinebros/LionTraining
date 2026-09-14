@@ -149,6 +149,8 @@
                                    class="{{ request()->routeIs('admin.billing.subscriptions') ? 'active' : '' }}">Subscriptions</a></li>
                             <li><a href="{{ route('admin.billing.webhooks') }}"
                                    class="{{ request()->routeIs('admin.billing.webhooks') ? 'active' : '' }}">Webhooks</a></li>
+                            <li><a href="{{ route('admin.billing.payout-accounts.index') }}"
+                                   class="{{ request()->routeIs('admin.billing.payout-accounts.*') ? 'active' : '' }}">Payout Accounts</a></li>
                         </ul>
                     </li>
 

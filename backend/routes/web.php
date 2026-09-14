@@ -21,9 +21,11 @@ use App\Http\Controllers\Admin\TrainingLessonController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VideoAssetController;
 use App\Http\Controllers\Admin\BillingController as AdminBillingController;
+use App\Http\Controllers\Admin\ConnectAccountController;
 use App\Http\Controllers\MemberBillingController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberCrmController;
+use App\Http\Controllers\MemberPayoutController;
 use App\Http\Controllers\MemberSupportController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\VendorStorefrontController;
@@ -135,6 +137,15 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
     Route::get('/training/download/{block}',     [MemberController::class, 'trainingDownload'])->name('training.download');
     Route::get('/referrals',         [MemberController::class, 'referral'])->name('referrals');
 
+    // Get Paid: the Stripe Connect account a partner's commissions are paid
+    // into. The POSTs call Stripe, so they are throttled per partner.
+    Route::prefix('payouts')->name('payouts.')->group(function () {
+        Route::get('/',                 [MemberPayoutController::class, 'index'])->name('index');
+        Route::post('/account-session', [MemberPayoutController::class, 'accountSession'])->middleware('throttle:30,10')->name('account-session');
+        Route::post('/refresh',         [MemberPayoutController::class, 'refresh'])->middleware('throttle:20,10')->name('refresh');
+        Route::get('/hosted',           [MemberPayoutController::class, 'hosted'])->middleware('throttle:10,10')->name('hosted');
+    });
+
     // Commissions portal
     Route::prefix('commissions')->name('commissions.')->group(function () {
         Route::get('/',         [MemberController::class, 'commissions'])->name('index');
@@ -230,6 +241,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             Route::get('/webhooks', [AdminBillingController::class, 'webhooks'])->name('webhooks');
             Route::post('/webhooks/{event}/replay', [AdminBillingController::class, 'replay'])->name('webhooks.replay');
+
+            // Partners' Stripe payout accounts: who is missing what.
+            Route::prefix('payout-accounts')->name('payout-accounts.')->group(function () {
+                Route::get('/',                [ConnectAccountController::class, 'index'])->name('index');
+                Route::post('/sync-all',       [ConnectAccountController::class, 'syncAll'])->name('sync-all');
+                Route::post('/request-all',    [ConnectAccountController::class, 'requestInformationBulk'])->name('request-all');
+                Route::post('/{user}/sync',    [ConnectAccountController::class, 'sync'])->name('sync');
+                Route::post('/{user}/request', [ConnectAccountController::class, 'requestInformation'])->name('request');
+            });
         });
 
         // Vendor referral oversight — attribution, reconciliation, and the
@@ -268,6 +288,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{commissionPayout}',     [CommissionPayoutController::class, 'show'])->name('show');
             Route::post('/{commissionPayout}/approve',   [CommissionPayoutController::class, 'approve'])->name('approve');
             Route::post('/{commissionPayout}/mark-paid', [CommissionPayoutController::class, 'markPaid'])->name('mark-paid');
+            Route::post('/{commissionPayout}/send-transfer',    [CommissionPayoutController::class, 'sendTransfer'])->name('send-transfer');
+            Route::post('/{commissionPayout}/reverse-transfer', [CommissionPayoutController::class, 'reverseTransfer'])->name('reverse-transfer');
             Route::delete('/{commissionPayout}',         [CommissionPayoutController::class, 'cancel'])->name('cancel');
         });
 

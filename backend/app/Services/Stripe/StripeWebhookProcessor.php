@@ -25,6 +25,7 @@ class StripeWebhookProcessor
     public function __construct(
         private readonly StripeClientFactory $stripe,
         private readonly BillingService $billing,
+        private readonly StripeConnectService $connect,
     ) {}
 
     /**
@@ -53,6 +54,14 @@ class StripeWebhookProcessor
 
                 'payment_method.attached'       => $this->handlePaymentMethodAttached($object),
                 'payment_method.detached'       => $this->handlePaymentMethodDetached($object),
+
+                // Connect. account.updated and payout.failed happen on a partner's
+                // account and arrive on the Connect endpoint; transfers belong to
+                // the platform account and arrive on the main one.
+                'account.updated'               => $this->handleAccountUpdated($object),
+                'payout.failed'                 => $this->handleConnectedPayoutFailed($object, $payload['account'] ?? null),
+                'transfer.updated',
+                'transfer.reversed'             => $this->handleTransfer($object),
 
                 'charge.refunded'               => $this->handleChargeRefunded($object),
 
@@ -216,6 +225,80 @@ class StripeWebhookProcessor
     {
         // Idempotent by construction: deleting an already-deleted row is a no-op.
         PaymentMethod::where('provider_payment_method_id', $object['id'] ?? '')->delete();
+    }
+
+    // ── Connect: partner payout accounts ──────────────────────────────────────
+
+    /**
+     * Re-read the account from Stripe rather than applying the payload.
+     *
+     * Events are queued and Stripe does not deliver them in order, so an older
+     * `account.updated` can be processed after a newer one. Retrieving the
+     * current account makes every delivery converge on the same state.
+     */
+    private function handleAccountUpdated(array $object): void
+    {
+        $user = User::where('stripe_connect_account_id', $object['id'] ?? '')->first();
+
+        if ($user === null) {
+            Log::info('account.updated for an unknown connected account', ['account' => $object['id'] ?? null]);
+
+            return;
+        }
+
+        try {
+            $this->connect->syncAccount($user);
+        } catch (\App\Exceptions\BillingException $e) {
+            // A bank account already claimed by another partner. The claim blocks
+            // it; failing the event would only make it replay forever.
+            Log::warning('Connect identity conflict on account.updated', ['user_id' => $user->id, 'reason' => $e->getMessage()]);
+        }
+    }
+
+    /** A transfer to a partner, reversed in full or in part. Platform-account event. */
+    private function handleTransfer(array $object): void
+    {
+        $payout = \App\Models\CommissionPayout::where('stripe_transfer_id', $object['id'] ?? '')->first();
+
+        if ($payout === null) {
+            return;
+        }
+
+        if (($object['reversed'] ?? false) === true) {
+            $payout->update(['transfer_status' => 'reversed']);
+
+            return;
+        }
+
+        if ((int) ($object['amount_reversed'] ?? 0) > 0) {
+            Log::warning('Commission transfer partially reversed', [
+                'payout_id'       => $payout->id,
+                'amount_reversed' => $object['amount_reversed'],
+            ]);
+        }
+    }
+
+    /**
+     * Stripe could not pay a partner's balance out to their bank.
+     *
+     * Usually closed or mistyped bank details. Re-syncing surfaces the new
+     * requirement on Get Paid and the admin Payout Accounts page.
+     */
+    private function handleConnectedPayoutFailed(array $object, ?string $accountId): void
+    {
+        $user = $accountId ? User::where('stripe_connect_account_id', $accountId)->first() : null;
+
+        if ($user === null) {
+            return;
+        }
+
+        Log::warning('Partner bank payout failed', [
+            'user_id' => $user->id,
+            'payout'  => $object['id'] ?? null,
+            'reason'  => $object['failure_message'] ?? null,
+        ]);
+
+        $this->connect->syncAccount($user, enforceIdentity: false);
     }
 
     private function handleChargeRefunded(array $object): void

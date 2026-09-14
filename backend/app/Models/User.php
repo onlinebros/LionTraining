@@ -7,6 +7,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
+/**
+ * @property string|null $stripe_connect_account_id
+ * @property bool $connect_charges_enabled
+ * @property bool $connect_payouts_enabled
+ * @property bool $connect_details_submitted
+ * @property string|null $connect_tax_reporting_status
+ * @property array<string, mixed>|null $connect_requirements
+ * @property \Illuminate\Support\Carbon|null $connect_synced_at
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -59,7 +68,7 @@ class User extends Authenticatable
 
     // ── Role relationship ─────────────────────────────────────────────────────
 
-    public function role()
+    public function role(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Role::class);
     }
@@ -108,6 +117,12 @@ class User extends Authenticatable
             'placement_queued_at' => 'datetime',
             'placed_at'           => 'datetime',
             'billing_exempt'      => 'boolean',
+
+            'connect_charges_enabled'   => 'boolean',
+            'connect_payouts_enabled'   => 'boolean',
+            'connect_details_submitted' => 'boolean',
+            'connect_requirements'      => 'array',
+            'connect_synced_at'         => 'datetime',
         ];
     }
 
@@ -187,6 +202,82 @@ class User extends Authenticatable
     public function defaultPaymentMethod(): ?PaymentMethod
     {
         return $this->paymentMethods()->where('is_default', true)->first();
+    }
+
+    // ── Connect payout account ────────────────────────────────────────────────
+    //
+    // stripe_connect_account_id is written only by StripeConnectService and never
+    // mass-assigned, for the same reason as provider_customer_id.
+
+    public function connectIdentityClaims()
+    {
+        return $this->hasMany(ConnectIdentityClaim::class);
+    }
+
+    public function hasConnectAccount(): bool
+    {
+        return filled($this->stripe_connect_account_id);
+    }
+
+    /** Ready to receive a commission transfer. */
+    public function canReceivePayouts(): bool
+    {
+        return $this->hasConnectAccount() && $this->connect_payouts_enabled === true;
+    }
+
+    /**
+     * Stripe requirement codes blocking payouts now.
+     *
+     * @return array<int, string>
+     */
+    public function connectOutstandingRequirements(): array
+    {
+        $requirements = $this->connect_requirements ?? [];
+
+        return array_values(array_unique(array_merge(
+            $requirements['currently_due'] ?? [],
+            $requirements['past_due'] ?? [],
+        )));
+    }
+
+    /**
+     * Codes Stripe will ask for later that are not already outstanding.
+     *
+     * @return array<int, string>
+     */
+    public function connectUpcomingRequirements(): array
+    {
+        $requirements = $this->connect_requirements ?? [];
+        $future = $requirements['future'] ?? [];
+
+        $upcoming = array_unique(array_merge(
+            $requirements['eventually_due'] ?? [],
+            $future['currently_due'] ?? [],
+            $future['eventually_due'] ?? [],
+        ));
+
+        return array_values(array_diff($upcoming, $this->connectOutstandingRequirements()));
+    }
+
+    /** @return array<int, array{code: ?string, reason: ?string, requirement: ?string}> */
+    public function connectRequirementErrors(): array
+    {
+        $requirements = $this->connect_requirements ?? [];
+
+        return array_merge($requirements['errors'] ?? [], $requirements['future']['errors'] ?? []);
+    }
+
+    /** The earliest deadline Stripe has set, now or for future requirements. */
+    public function connectRequirementDeadline(): ?\Illuminate\Support\Carbon
+    {
+        $requirements = $this->connect_requirements ?? [];
+
+        $deadlines = array_filter([
+            $requirements['current_deadline'] ?? null,
+            $requirements['future']['current_deadline'] ?? null,
+        ]);
+
+        return $deadlines ? \Illuminate\Support\Carbon::createFromTimestamp(min($deadlines)) : null;
     }
 
     // ── Pre-launch ────────────────────────────────────────────────────────────

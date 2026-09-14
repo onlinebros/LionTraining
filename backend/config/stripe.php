@@ -97,6 +97,48 @@ return [
 
     'safeguards' => [
         'enforce_card_uniqueness' => (bool) env('STRIPE_ENFORCE_CARD_UNIQUENESS', true),
+
+        // A bank account already attached to another partner's payout account
+        // is refused during onboarding.
+        'enforce_connect_uniqueness' => (bool) env('STRIPE_ENFORCE_CONNECT_UNIQUENESS', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Connect: partner payouts
+    |--------------------------------------------------------------------------
+    |
+    | Partners set up a connected account from the Get Paid page, inside Stripe's
+    | embedded components, and commission payouts are sent to it as transfers
+    | from the Q3 balance. See App\Services\Stripe\StripeConnectService.
+    |
+    */
+
+    'connect' => [
+        'enabled'         => (bool) env('STRIPE_CONNECT_ENABLED', true),
+        'account_country' => env('STRIPE_CONNECT_COUNTRY', 'US'),
+
+        // Offer Stripe's hosted onboarding if the embedded form cannot load.
+        'hosted_fallback' => (bool) env('STRIPE_CONNECT_HOSTED_FALLBACK', true),
+
+        // Who collects KYC requirements.
+        //   application: we do. Onboarding stays inside our page with no Stripe
+        //                sign-in pop-up; partners have no Stripe dashboard and
+        //                manage their bank on Get Paid; we carry fees and losses.
+        //   stripe:      Stripe does, with an Express dashboard, but its embedded
+        //                form then opens a sign-in pop-up we cannot suppress.
+        // Immutable per account: changing it only affects accounts created
+        // afterwards (see `connect:reset-account`).
+        'requirement_collection' => env('STRIPE_CONNECT_REQUIREMENT_COLLECTION', 'application'),
+
+        // Have Stripe collect filing-grade tax details and file partners' 1099s.
+        // Stripe treats the capability as permanent once requested.
+        'tax_reporting' => (bool) env('STRIPE_CONNECT_TAX_REPORTING', true),
+
+        // Who pays Stripe's Connect fees and covers negative balances. Must both
+        // be `application` when requirement_collection is `application`.
+        'fees_payer'   => env('STRIPE_CONNECT_FEES_PAYER', 'application'),
+        'losses_payer' => env('STRIPE_CONNECT_LOSSES_PAYER', 'application'),
     ],
 
 ];

@@ -55,6 +55,20 @@ class BillingException extends RuntimeException
         );
     }
 
+    public static function connectDisabled(): self
+    {
+        return new self(
+            'Payout accounts are not available right now. Please check back soon.'
+        );
+    }
+
+    public static function duplicateConnectIdentity(): self
+    {
+        return new self(
+            'That bank account is already set up for payouts on another account. Please use a different bank account, or contact support.'
+        );
+    }
+
     public static function lastCardOnActiveSubscription(): self
     {
         return new self(

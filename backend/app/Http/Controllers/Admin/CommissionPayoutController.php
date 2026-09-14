@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\BillingException;
 use App\Http\Controllers\Controller;
 use App\Models\CommissionPayout;
 use App\Models\User;
 use App\Services\CommissionService;
+use App\Services\Stripe\StripePayoutService;
 use Illuminate\Http\Request;
 use RuntimeException;
 
 class CommissionPayoutController extends Controller
 {
-    public function __construct(private CommissionService $commissionService) {}
+    public function __construct(
+        private CommissionService $commissionService,
+        private StripePayoutService $stripePayouts,
+    ) {}
 
     public function index(Request $request)
     {
@@ -66,7 +71,41 @@ class CommissionPayoutController extends Controller
     public function show(CommissionPayout $commissionPayout)
     {
         $commissionPayout->load(['earner', 'processedBy', 'ledgerEntries.commissionPlan']);
-        return view('admin.commissions.payouts.show', ['payout' => $commissionPayout]);
+
+        return view('admin.commissions.payouts.show', [
+            'payout'                => $commissionPayout,
+            'transferBlockedReason' => $this->stripePayouts->blockingReason($commissionPayout),
+        ]);
+    }
+
+    /**
+     * Pay this payout through Stripe Connect.
+     *
+     * Moves real money, so the service re-checks the partner's account with
+     * Stripe first and marks the payout paid only once the transfer exists.
+     */
+    public function sendTransfer(CommissionPayout $commissionPayout)
+    {
+        try {
+            $payout = $this->stripePayouts->send($commissionPayout, auth()->user());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Paid {$payout->earner->name} through Stripe ({$payout->stripe_transfer_id}).");
+    }
+
+    public function reverseTransfer(Request $request, CommissionPayout $commissionPayout)
+    {
+        $data = $request->validate(['reason' => 'nullable|string|max:255']);
+
+        try {
+            $this->stripePayouts->reverse($commissionPayout, $data['reason'] ?? null);
+        } catch (BillingException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Transfer reversed.');
     }
 
     public function approve(CommissionPayout $commissionPayout)

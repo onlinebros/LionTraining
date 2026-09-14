@@ -4,6 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property \Illuminate\Support\Carbon|null $period_start
+ * @property \Illuminate\Support\Carbon|null $period_end
+ * @property \Illuminate\Support\Carbon|null $transferred_at
+ * @property-read User|null $earner
+ */
 class CommissionPayout extends Model
 {
     protected $fillable = [
@@ -17,15 +23,23 @@ class CommissionPayout extends Model
         'notes',
         'processed_by',
         'paid_at',
+
+        // Written only by StripePayoutService and the Connect webhooks.
+        'stripe_transfer_id',
+        'stripe_destination_account',
+        'transfer_status',
+        'transfer_failure_reason',
+        'transferred_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'period_start' => 'date',
-            'period_end'   => 'date',
-            'total_amount' => 'decimal:4',
-            'paid_at'      => 'datetime',
+            'period_start'   => 'date',
+            'period_end'     => 'date',
+            'total_amount'   => 'decimal:4',
+            'paid_at'        => 'datetime',
+            'transferred_at' => 'datetime',
         ];
     }
 

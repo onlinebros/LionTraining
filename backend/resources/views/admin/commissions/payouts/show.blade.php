@@ -55,9 +55,59 @@
                         <dt>Processed By</dt>
                         <dd>{{ $payout->processedBy->name }}</dd>
                     @endif
+                    @if($payout->stripe_transfer_id)
+                        <dt>Stripe Transfer</dt>
+                        <dd>
+                            <code>{{ $payout->stripe_transfer_id }}</code><br>
+                            @php $transferBadge = match($payout->transfer_status) {'paid'=>'success','failed'=>'danger','reversed'=>'warning',default=>'secondary'}; @endphp
+                            <span class="badge bg-{{ $transferBadge }}">{{ ucfirst($payout->transfer_status ?? 'unknown') }}</span>
+                            <small class="text-muted d-block mt-1">
+                                Sent {{ $payout->transferred_at?->format('M j, Y g:i A') }} to <code>{{ $payout->stripe_destination_account }}</code>
+                            </small>
+                            @if($payout->transfer_status === 'reversed' && $payout->transfer_failure_reason)
+                                <small class="text-muted d-block">Reason: {{ $payout->transfer_failure_reason }}</small>
+                            @endif
+                        </dd>
+                    @elseif($payout->transfer_failure_reason)
+                        <dt>Last Stripe Attempt</dt>
+                        <dd class="text-danger small">{{ $payout->transfer_failure_reason }}</dd>
+                    @endif
                 </dl>
 
                 <hr>
+
+                {{-- Pay through Stripe Connect --}}
+                @if(! $payout->stripe_transfer_id && in_array($payout->status, ['pending', 'approved']))
+                    @if($transferBlockedReason)
+                        <div class="alert alert-warning py-2 small mb-2">
+                            <strong>Cannot pay via Stripe:</strong> {{ $transferBlockedReason }}
+                        </div>
+                    @else
+                        <form action="{{ route('admin.commission-payouts.send-transfer', $payout) }}" method="POST" class="mb-2"
+                              onsubmit="return confirm('Send ${{ number_format($payout->total_amount, 2) }} to {{ $payout->earner?->name }} through Stripe? This moves real money and marks the payout paid.')">
+                            @csrf
+                            <button class="btn btn-primary w-100">Pay ${{ number_format($payout->total_amount, 2) }} via Stripe</button>
+                        </form>
+                    @endif
+                @elseif($payout->transfer_status !== 'reversed')
+                    <button class="btn btn-outline-warning w-100 mb-2" data-bs-toggle="collapse" data-bs-target="#reverseForm">Reverse Transfer</button>
+                    <div class="collapse mb-2" id="reverseForm">
+                        <div class="card card-body">
+                            <p class="small text-muted mb-2">
+                                Only works while the money is still on the partner's Stripe balance. Once Stripe has paid
+                                it to their bank this will fail.
+                            </p>
+                            <form action="{{ route('admin.commission-payouts.reverse-transfer', $payout) }}" method="POST">
+                                @csrf
+                                <div class="mb-2">
+                                    <label class="form-label form-label-sm">Reason</label>
+                                    <input type="text" name="reason" class="form-control form-control-sm" maxlength="255">
+                                </div>
+                                <button class="btn btn-warning btn-sm w-100">Confirm Reversal</button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Action buttons --}}
                 @if($payout->isPending())

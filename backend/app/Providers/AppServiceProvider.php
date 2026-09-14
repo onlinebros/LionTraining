@@ -52,6 +52,15 @@ class AppServiceProvider extends ServiceProvider
 
         RedirectIfAuthenticated::redirectUsing(fn () => route('member.dashboard'));
 
+        // Stripe notices become log entries rather than warnings that Laravel
+        // turns into 500s; see NoticeLoggingHttpClient. Only Stripe's default
+        // client is wrapped, so a test double installed later is left alone.
+        if (\Stripe\ApiRequestor::httpClient() instanceof \Stripe\HttpClient\CurlClient) {
+            \Stripe\ApiRequestor::setHttpClient(
+                new \App\Services\Stripe\NoticeLoggingHttpClient(\Stripe\HttpClient\CurlClient::instance())
+            );
+        }
+
         // Public website contact form: 10 requests per 10 minutes per client IP.
         // Only per *visitor* if request()->ip() is the visitor's address, which
         // depends on the proxy setup in front of the app.

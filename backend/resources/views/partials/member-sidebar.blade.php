@@ -167,6 +167,23 @@
                         </a>
                     </li>
 
+                    {{-- Get Paid — where a partner sets up the Stripe account their
+                         commissions are paid into. --}}
+                    @if (config('stripe.connect.enabled'))
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.payouts.*') ? 'active' : '' }}"
+                           href="{{ route('member.payouts.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-ecommerce') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-ecommerce') }}"></use></svg>
+                            <span>Get Paid</span>
+                            @if (! auth()->user()->isAdmin() && ! auth()->user()->canReceivePayouts())
+                                <span class="badge bg-warning text-dark ms-1">setup</span>
+                            @endif
+                        </a>
+                    </li>
+                    @endif
+
                     {{-- Support — deliberately never closed. People have the most
                          questions during the busiest signup period. --}}
                     <li class="sidebar-list">
