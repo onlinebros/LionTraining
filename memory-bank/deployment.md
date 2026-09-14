@@ -10,7 +10,7 @@ Agents do production work only when the project owner explicitly asks for it. Th
 |---|---|
 | IP | `142.93.181.39` (DigitalOcean droplet, Ubuntu 26.04 LTS, 2 vCPU / 4 GB / 80 GB) |
 | Role | Web tier only. **No database on this server.** The database is a separate managed cluster. |
-| Serves | `q3.life` + `www.q3.life`: static landing site. `app.q3.life`: reserved for the member app (not deployed). |
+| Serves | `q3.life` + `www.q3.life`: static landing site. `app.q3.life`: the member app (Laravel), first deployed 2026-09-14. |
 | DNS | Cloudflare, proxied (orange cloud) for q3.life, www and app |
 
 ### Access
@@ -48,6 +48,43 @@ Agents do production work only when the project owner explicitly asks for it. Th
 - Production `.env`: `MAIL_MAILER=resend`, `RESEND_API_KEY=…`, `MAIL_FROM_NAME="Quantum 3 Solution"`, `MAIL_FROM_ADDRESS=<address>@q3.life` (sender address not yet chosen).
 - Verified 2026-09-14: a test send from the droplet to `delivered@resend.dev` was delivered.
 - Before the app launches: add a DMARC record (`_dmarc.q3.life`; none exists yet), and replace the current full-access key with a sending-only key scoped to `q3.life`.
+
+## Member app: `app.q3.life`
+
+The owner asked for it on 2026-09-14 and chose: git-based deploys from GitHub `main`, **live** Stripe (keys not yet supplied), public access (signup stays invite-only), a fresh database with a founder account, and `QL_PRELAUNCH=true`.
+
+| | |
+|---|---|
+| Runtime | PHP 8.5 (Ubuntu 26.04 packages; dev runs 8.4), Composer 2.9, Node 22 for the Vite build |
+| Layout | `/var/www/app.q3.life/releases/<timestamp>` (full repo clones), `current` symlink to the live release, `shared/.env` and `shared/storage` linked into each release |
+| nginx | `/etc/nginx/sites-available/app.q3.life` (source: `deploy/app.q3.life/nginx.conf`). Root `current/backend/public`. HTTP redirects to HTTPS. Cloudflare real-IP snippet included |
+| TLS | Let's Encrypt `app.q3.life` via webroot `/var/www/certbot`, renewed by `certbot.timer` |
+| PHP-FPM | `www` pool, `pm.max_children = 10`, which keeps within the database's 25-connection limit. `memory_limit 256M`, uploads up to 100M |
+| Queue | `q3-queue.service` (systemd, runs as www-data, `queue:work database`). Source: `deploy/app.q3.life/q3-queue.service` |
+| Scheduler | None. The app defines no scheduled tasks. Add a `schedule:run` timer when it does |
+| Database | Managed Postgres database `q3_app`, owner role `q3app` (connection limit 20), `ltree` + `pgcrypto`. Credentials in `~deploy/.config/q3/db-app.env` and `shared/.env` |
+| Mail | `MAIL_MAILER=resend`, from `noreply@q3.life` |
+| Files | `FILESYSTEM_DISK=local` (shared/storage) until Spaces keys exist |
+| GitHub | Read-only deploy key `~deploy/.ssh/github_liontraining` (repo deploy key id 163282666) |
+
+### Deploying
+
+From the dev VPS, after the change has been reviewed on q3.onlinebros.com and pushed to `main`:
+
+```bash
+ssh liontraining-prod /var/www/app.q3.life/deploy.sh          # or: deploy.sh <branch-or-tag>
+```
+
+The script clones, runs `composer install --no-dev`, `npm ci && npm run build`, `migrate --force`, `storage:link` and `optimize`, then switches `current`, reloads PHP-FPM and restarts the queue worker. If any step fails, the previous release keeps serving. It keeps 5 releases. Rollback steps are in the script header. Rolling back does not reverse migrations.
+
+The production `.env` exists only on the droplet. Change it there, then run `php artisan optimize` in `current/backend` and `sudo systemctl reload php8.5-fpm && sudo systemctl restart q3-queue`.
+
+### Still open
+
+- Live Stripe keys, the monthly $49.99 price (`billing:bootstrap-product`), webhook endpoints and secrets, then `billing:preflight`
+- Turnstile site key and secret. Until then the q3.life contact form answers 503
+- PlasmaGuard / FedEx / Vimeo credentials, and Spaces access keys
+- The CI workflow `.github/workflows/ci.yml` is uncommitted: the GitHub token in `origin` lacks the `workflow` scope
 
 ## Landing site deploy
 
