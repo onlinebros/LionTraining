@@ -24,6 +24,15 @@
 
     <div class="card mb-3">
         <div class="card-body">
+            @if ($buyYours)
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                    <span>
+                        <strong>{{ $buyYours['remaining'] }} left for the launch special.</strong>
+                        Only the first {{ $buyYours['cap'] }} systems qualify, and a system you buy for yourself counts.
+                    </span>
+                    <a class="btn btn-primary" href="{{ $buyYours['buy_url'] }}">Buy yours</a>
+                </div>
+            @endif
             @if (filled($standings['promotion']['summary'] ?? null))
                 <p class="mb-3">{{ $standings['promotion']['summary'] }}</p>
             @endif

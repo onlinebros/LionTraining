@@ -61,6 +61,12 @@ class AppServiceProvider extends ServiceProvider
         // Inject $siteSettings into every layout so logo/color/mode are admin-controlled
         View::composer(['layouts.admin', 'layouts.member', 'layouts.public'], SiteSettingsComposer::class);
 
+        // The first-100 "buy yours" offer, wherever a partner is shown it.
+        View::composer(
+            ['partials.member-sidebar', 'member.dashboard', 'member.vendor.leads', 'member.vendor.promotion'],
+            \App\Http\ViewComposers\BuyYoursPromoComposer::class,
+        );
+
         RedirectIfAuthenticated::redirectUsing(fn () => route('member.dashboard'));
 
         // Stripe notices become log entries rather than warnings that Laravel

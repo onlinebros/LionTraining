@@ -43,6 +43,13 @@
         </div>
     </div>
 
+    {{-- ── First-100 offer, while places remain ─────────────────── --}}
+    @if ($buyYours)
+        <div class="col-12">
+            @include('member.vendor.partials.buy-yours')
+        </div>
+    @endif
+
     {{-- ── Stat cards ──────────────────────────────────────────
          Gold is spent only on the enrolment count — the metric a partner
          acts on. The rest stay off-white so the accent keeps its weight. --}}

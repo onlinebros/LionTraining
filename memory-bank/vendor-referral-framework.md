@@ -230,6 +230,27 @@ Systems**:
 places are stored. Partners see a leaderboard at `member.sales.promotion`, and
 admins see every qualifying order at `admin.vendor-leads.promotion`.
 
+**The "buy yours" offer (owner, 2026-09-15).** The first 100 are a **launch
+special**, not the product's supply. More than 100 systems will be sold, but
+only a partner who gets one of the first 100 gets the special. Copy must never
+suggest only 100 exist. Buying for yourself is marketed wherever partners look
+while qualifying places remain:
+
+- **Member dashboard:** a banner under the welcome strip.
+- **Product Sales:** the hero at the top, and the share-link button reads "Buy yours".
+- **Sidebar:** a "N left" badge on Product Sales, plus a "Buy Yours" link.
+- **Promotion page:** a "Buy yours" button.
+
+`BuyYoursPromoComposer` feeds all four with `$buyYours`, and caches places-left
+for 60 seconds. It is null, and the offer disappears everywhere, when no
+promotion is running, when the vendor is switched off, or once every place is
+taken.
+
+The copy names **no reward**. The bonus terms are not written down yet, so
+partners with a sponsor are told "Ask your sponsor about the launch bonus".
+It always states who is paid on an own purchase. Once the terms exist, update
+`member/vendor/partials/buy-yours.blade.php` to state them.
+
 ## 13. Delivery address check (owner, 2026-09-15)
 
 Both order paths check the delivery address with **FedEx Address Validation**

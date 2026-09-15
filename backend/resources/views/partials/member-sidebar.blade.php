@@ -107,9 +107,33 @@
                            href="{{ route('member.sales.index') }}">
                             <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-ecommerce') }}"></use></svg>
                             <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-ecommerce') }}"></use></svg>
-                            <span>Product Sales</span>
+                            <span>Product Sales
+                                {{-- A second line under the label, not a badge beside it. It
+                                     must not be a <span>: the theme forces every span in a
+                                     sidebar link to 13.5px, which made a badge overlap the
+                                     label. Inside the label span, so it collapses with it. --}}
+                                @if ($buyYours ?? null)
+                                    <small style="display:block;font-size:11px;line-height:1.25;margin-top:2px;color:var(--q3-gold-high);font-weight:500;">
+                                        {{ $buyYours['remaining'] }} left for the special
+                                    </small>
+                                @endif
+                            </span>
                         </a>
                     </li>
+
+                    {{-- The first-100 offer, straight to the order form. Shown only
+                         while places remain; see BuyYoursPromoComposer. --}}
+                    @if ($buyYours ?? null)
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.sales.buy') ? 'active' : '' }}"
+                           href="{{ $buyYours['buy_url'] }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-bonus-kit') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-bonus-kit') }}"></use></svg>
+                            <span>Buy Yours</span>
+                        </a>
+                    </li>
+                    @endif
 
                     {{-- Commissions — hidden while the pre-launch guard has the
                          section closed. Both this and the middleware read

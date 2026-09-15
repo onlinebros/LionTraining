@@ -130,10 +130,13 @@ class PromotionTrackerTest extends TestCase
             ->assertSee('Ann Able')
             ->assertSee('3 places left');
 
+        // While places remain, Product Sales leads with the "buy yours" offer,
+        // which links to the leaderboard.
         $this->actingAs($this->ben)
             ->get('/member/sales')
             ->assertOk()
-            ->assertSee('View leaderboard');
+            ->assertSee('Buy one of the first 5 and get the launch special')
+            ->assertSee(route('member.sales.promotion'), false);
     }
 
     public function test_admins_see_every_order_holding_a_place(): void

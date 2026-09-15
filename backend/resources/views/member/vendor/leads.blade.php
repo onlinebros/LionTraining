@@ -19,6 +19,13 @@
     ];
 @endphp
 
+{{-- ── First-100 offer, while places remain ─────────────────────────────── --}}
+@if ($buyYours)
+    <div class="mb-3">
+        @include('member.vendor.partials.buy-yours', ['variant' => 'hero'])
+    </div>
+@endif
+
 {{-- Gold is spent on the one metric that matters. Making all four gold would
      leave the partner no idea which number to read first. --}}
 <div class="row g-3 mb-3">
@@ -50,25 +57,17 @@
     </div>
 </div>
 
-{{-- ── Promotion ────────────────────────────────────────────────────────── --}}
-@if ($promotion)
-    @php $percent = (int) floor($promotion['filled'] / $promotion['cap'] * 100); @endphp
+{{-- ── Promotion, once every place is taken ─────────────────────────────── --}}
+@if ($promotion && ! $buyYours)
     <div class="card mb-3">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <div>
-                    <h5 class="mb-0">{{ $promotion['promotion']['name'] }}</h5>
-                    <span class="text-muted small">
-                        {{ $promotion['filled'] }} of {{ $promotion['cap'] }} sold ·
-                        {{ $promotion['remaining'] }} {{ Str::plural('place', $promotion['remaining']) }} left
-                    </span>
-                </div>
-                <a class="btn btn-sm btn-outline-primary" href="{{ route('member.sales.promotion') }}">View leaderboard</a>
+        <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-0">{{ $promotion['promotion']['name'] }}</h5>
+                <span class="text-muted small">
+                    {{ $promotion['full'] ? 'All '.$promotion['cap'].' places are filled.' : $promotion['filled'].' of '.$promotion['cap'].' sold.' }}
+                </span>
             </div>
-            <div class="progress" style="height:8px;" role="progressbar" aria-label="Places filled"
-                 aria-valuenow="{{ $promotion['filled'] }}" aria-valuemin="0" aria-valuemax="{{ $promotion['cap'] }}">
-                <div class="progress-bar" style="width: {{ $percent }}%"></div>
-            </div>
+            <a class="btn btn-sm btn-outline-primary" href="{{ route('member.sales.promotion') }}">View leaderboard</a>
         </div>
     </div>
 @endif
@@ -90,8 +89,10 @@
                             <div class="fw-semibold">{{ $product['name'] }}</div>
                             <div class="text-muted small">{{ $vendor['name'] }}</div>
                         </div>
-                        <a class="btn btn-sm btn-outline-primary"
-                           href="{{ route('member.sales.buy', [$slug, $productKey]) }}">Buy for yourself</a>
+                        <a class="btn btn-sm {{ $buyYours ? 'btn-primary' : 'btn-outline-primary' }}"
+                           href="{{ route('member.sales.buy', [$slug, $productKey]) }}">
+                            {{ $buyYours ? 'Buy yours' : 'Buy for yourself' }}
+                        </a>
                     </div>
                     <div class="input-group">
                         <input type="text" class="form-control" readonly value="{{ $shareUrl }}"
@@ -106,7 +107,7 @@
                 {{-- Said where the links are, because this is where a partner
                      would think of using their own. --}}
                 <p class="text-muted small mb-0">
-                    Buying for yourself? Use <strong>Buy for yourself</strong>. Your own purchase counts as your
+                    Buying for yourself? Use <strong>{{ $buyYours ? 'Buy yours' : 'Buy for yourself' }}</strong>. Your own purchase counts as your
                     sale, and the commission on it goes to your sponsor. The same applies through any share link:
                     an order placed with your account's email or phone number is treated as your own purchase.
                 </p>
