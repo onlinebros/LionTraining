@@ -1,5 +1,5 @@
 @extends('layouts.public')
-@section('title', 'You\'ve Been Invited — Quantum Life')
+@section('title', 'You\'ve Been Invited — Quantum 3 Solution')
 @section('body-class', 'dark-only q3-theme q3-auth')
 
 @push('styles')
@@ -31,7 +31,7 @@
     <div class="q3-auth-card q3-auth-card--wide">
 
         <a href="{{ route('home') }}">
-            <img class="q3-auth-logo" src="{{ \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png') }}" alt="Quantum Life">
+            <img class="q3-auth-logo" src="{{ \App\Support\Asset::v('assets/images/logo/q3_logo-sm.png') }}" alt="Quantum 3 Solution">
         </a>
 
         <div class="text-center">
@@ -45,7 +45,7 @@
             <div class="q3-avatar q3-avatar-lg">{{ strtoupper(substr($sponsor->name, 0, 1)) }}</div>
             <div>
                 <div class="q3-sponsor-name">{{ $sponsor->name }}</div>
-                <div class="q3-sponsor-sub">is inviting you to join Quantum Life as their sponsored member.</div>
+                <div class="q3-sponsor-sub">is inviting you to join Quantum 3 Solution as their sponsored member.</div>
             </div>
         </div>
 

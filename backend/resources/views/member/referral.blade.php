@@ -63,15 +63,15 @@
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap">
-                    <a href="https://wa.me/?text={{ urlencode('Join Quantum Life through my referral link: ' . $referralUrl) }}"
+                    <a href="https://wa.me/?text={{ urlencode('Join Quantum 3 Solution through my referral link: ' . $referralUrl) }}"
                        target="_blank" class="btn btn-sm btn-outline-success">
                         <i data-feather="message-circle" style="width:13px;height:13px;" class="me-1"></i>WhatsApp
                     </a>
-                    <a href="https://twitter.com/intent/tweet?text={{ urlencode('Join me on Quantum Life! ' . $referralUrl) }}"
+                    <a href="https://twitter.com/intent/tweet?text={{ urlencode('Join me on Quantum 3 Solution! ' . $referralUrl) }}"
                        target="_blank" class="btn btn-sm btn-outline-info">
                         <i data-feather="twitter" style="width:13px;height:13px;" class="me-1"></i>Twitter / X
                     </a>
-                    <a href="mailto:?subject={{ urlencode('Join Quantum Life') }}&body={{ urlencode('I\'d like to invite you to join Quantum Life. Use my referral link: ' . $referralUrl) }}"
+                    <a href="mailto:?subject={{ urlencode('Join Quantum 3 Solution') }}&body={{ urlencode('I\'d like to invite you to join Quantum 3 Solution. Use my referral link: ' . $referralUrl) }}"
                        class="btn btn-sm btn-outline-secondary">
                         <i data-feather="mail" style="width:13px;height:13px;" class="me-1"></i>Email
                     </a>
