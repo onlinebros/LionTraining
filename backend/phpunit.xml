@@ -48,5 +48,13 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- No real FedEx calls from the test suite. Rating and address checks
+             fall back to their unconfigured behaviour here; the tests that cover
+             FedEx set credentials and fake the HTTP replies themselves. -->
+        <env name="FEDEX_MODE" value="test"/>
+        <env name="FEDEX_TEST_API_KEY" value=""/>
+        <env name="FEDEX_TEST_SECRET_KEY" value=""/>
+        <env name="FEDEX_LIVE_API_KEY" value=""/>
+        <env name="FEDEX_LIVE_SECRET_KEY" value=""/>
     </php>
 </phpunit>

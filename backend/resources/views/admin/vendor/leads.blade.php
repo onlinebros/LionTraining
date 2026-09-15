@@ -20,19 +20,29 @@
 @endphp
 
 <div class="row g-3 mb-3">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md">
         <div class="card mb-0"><div class="card-body py-3 text-center">
             <div class="fs-4 fw-bold">{{ $stats['awaiting'] }}</div>
             <div class="text-muted small">At Checkout</div>
         </div></div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md">
         <div class="card mb-0"><div class="card-body py-3 text-center">
             <div class="fs-4 fw-bold text-success">{{ $stats['converted'] }}</div>
             <div class="text-muted small">Converted</div>
         </div></div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md">
+        <a class="card mb-0 text-reset text-decoration-none" href="{{ route('admin.vendor-leads.index', ['address' => 'review']) }}">
+            <div class="card-body py-3 text-center">
+                {{-- The buyer shipped to an address FedEx did not confirm. Check
+                     it with them, or with PlasmaGuard, before it ships. --}}
+                <div class="fs-4 fw-bold {{ $stats['address_review'] > 0 ? 'text-warning' : '' }}">{{ $stats['address_review'] }}</div>
+                <div class="text-muted small">Address Checks</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md">
         <div class="card mb-0"><div class="card-body py-3 text-center">
             <div class="fs-4 fw-bold {{ $stats['unpaid'] > 0 ? 'text-warning' : '' }}">{{ $stats['unpaid'] }}</div>
             {{-- Converted but with no commission raised — the vendor sent no
@@ -121,6 +131,9 @@
                         <span class="badge bg-{{ $statusColors[$lead->status] ?? 'secondary' }}">
                             {{ Str::headline($lead->status) }}
                         </span>
+                        @if ($lead->needsAddressReview())
+                            <span class="badge bg-warning ms-1" title="The buyer confirmed an address FedEx did not verify">Check address</span>
+                        @endif
                     </td>
                     <td>{{ $lead->amountDecimal() ? $lead->currency.' '.$lead->amountDecimal() : '—' }}</td>
                     <td>

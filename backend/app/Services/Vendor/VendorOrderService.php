@@ -62,7 +62,8 @@ class VendorOrderService
 
         $shippingQuote = $this->rater->quote(
             origin: $vendor['pricing']['shipping']['origin'] ?? [],
-            destination: $this->destination($lead),
+            // The address check's classification, so a home is rated as a home.
+            destination: $this->destination($lead) + ['residential' => $lead->address_classification === 'RESIDENTIAL'],
             parcel: $product['parcel'] ?? [],
             cartons: $cartons,
         );
@@ -114,6 +115,12 @@ class VendorOrderService
      */
     public function place(VendorLead $lead): array
     {
+        // The checkout already refuses, but no charge may be built for an
+        // address that neither FedEx nor the buyer has confirmed.
+        if (! $lead->addressReadyForPayment()) {
+            throw new RuntimeException('The delivery address has not been verified by FedEx or confirmed by the buyer.');
+        }
+
         $quote = $this->quote($lead);
 
         if (! $quote['quotable']) {
@@ -248,6 +255,11 @@ class VendorOrderService
             'ship_phone'       => (string) $lead->phone,
             'ship_company'     => (string) $lead->company,
 
+            // Whether FedEx confirmed where this is going, so their team knows
+            // which orders to double-check before they ship.
+            'ship_address_check' => $lead->addressCheckLabel()[0],
+            'ship_address_type'  => (string) $lead->address_classification,
+
             'amt_subtotal'     => $this->money($quote['subtotal']),
             'amt_shipping'     => $this->money($quote['shipping']),
             'amt_handling'     => $this->money($quote['handling']),
@@ -256,7 +268,7 @@ class VendorOrderService
             // The commercial term, stated on their own record so an invoice from
             // us is reconcilable against it without a phone call.
             'q3_owed_to_partner_co' => $this->money($quote['our_share']),
-            'q3_referred_by'   => (string) ($lead->member?->name ?? ''),
+            'q3_referred_by'   => (string) ($lead->member->name ?? ''),
             'q3_referral_code' => (string) $lead->referral_code,
         ], static fn ($v) => $v !== '' && $v !== null);
     }

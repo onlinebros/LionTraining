@@ -47,6 +47,18 @@ class FedExRatingTest extends TestCase
         $this->assertSame('FedEx', $quote->carrier);
     }
 
+    public function test_a_home_delivery_is_rated_as_residential(): void
+    {
+        // Without the flag FedEx quotes a house as a business, and the
+        // residential surcharge is missing from every home delivery quote.
+        $this->fakeFedEx($this->rateReply(account: 24.31, list: 41.80));
+
+        $this->rater()->quote(self::ORIGIN, self::DEST + ['residential' => true], self::PARCEL, 1);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/rate/')
+            && ($request->data()['requestedShipment']['recipient']['address']['residential'] ?? null) === true);
+    }
+
     public function test_it_sends_dimensions_so_the_box_is_dim_weighted(): void
     {
         // 12 x 12 x 15 = 2160 cu in, which bills at ~16 lb against 9 lb actual.

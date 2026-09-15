@@ -170,9 +170,9 @@ Only item 1 is required to launch. Item 2 is what makes it not manual.
   expiry sweep once we know the vendor's typical time-to-purchase.
 - **One product, one link.** The config is a registry keyed by vendor and product
   so a second product or a second vendor is data, not a new integration.
-- **No address validation.** We capture the address for the vendor's benefit but
-  do not validate it — that is the merchant of record's job, and duplicating it
-  invites two systems disagreeing about the same address.
+- **Address validation (owner, 2026-09-15).** Both order paths (the customer
+  checkout and Buy for yourself) now check the delivery address with FedEx
+  before payment. See §13.
 
 ## 11. A partner's own purchase (owner, 2026-09-14)
 
@@ -229,3 +229,43 @@ Systems**:
 `PromotionTracker` computes standings from converted leads on every read. No
 places are stored. Partners see a leaderboard at `member.sales.promotion`, and
 admins see every qualifying order at `admin.vendor-leads.promotion`.
+
+## 13. Delivery address check (owner, 2026-09-15)
+
+Both order paths check the delivery address with **FedEx Address Validation**
+before payment: the customer checkout (`/p/order/{ref}`) and Buy for yourself.
+The check runs in `App\Services\Vendor\AddressCheck`, backed by
+`FedExAddressVerifier`, and uses the same FedEx project keys as rating.
+
+**When it runs.** When an address is saved, or when a back-office order is
+placed. An order whose address was never checked is checked the first time it
+is opened. Changing only the quantity or the notes does not check again.
+Changing the address clears any earlier confirmation or review.
+
+**Outcomes.** Stored in `vendor_leads.address_status`:
+
+| Status | What happens |
+|---|---|
+| `verified` | FedEx confirmed the address (DPV). Its standard form is saved (for example "Court" becomes "CT") and payment opens. |
+| `suggested` | FedEx moved the address: a different ZIP, city, state or house number. The buyer chooses "Use suggested address" or "Keep my address". |
+| `unverified` | FedEx couldn't confirm it (not found, missing or invalid unit, several matches). The buyer ticks "ship to this address as entered". |
+| `unavailable` | No FedEx keys, FedEx down, or a sandbox canned reply. The buyer ticks to confirm. |
+| `rejected` | A PO Box. It can't be confirmed, and the buyer must enter a street address. The forms also refuse PO Boxes before FedEx is called. |
+
+**Buyer-confirmed addresses.** The buyer can pay, and the order is flagged:
+
+- **Admin:** the Vendor Orders "Address Checks" count, a badge on the order, and
+  "I have checked this address" on the order page.
+- **PlasmaGuard:** the Stripe metadata carries `ship_address_check` and
+  `ship_address_type`, so their team can see this too.
+
+**Payment gate.** The Pay endpoint and `VendorOrderService::place()` both
+refuse until `VendorLead::addressReadyForPayment()` is true.
+
+**Rating.** A delivery FedEx classifies as residential is rated with
+`residential: true`, which gives Home Delivery rates. On a Green Bay home that
+is $23.30, not the $14.78 business Ground rate.
+
+**Tests.** They never call FedEx: `phpunit.xml` blanks the keys, and
+`AddressVerificationTest` fakes production-shaped replies. In those replies the
+attribute values are the strings "true" and "false".

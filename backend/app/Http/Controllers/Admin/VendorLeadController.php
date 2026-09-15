@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VendorLead;
+use App\Services\Vendor\AddressCheck;
 use App\Services\Vendor\PromotionTracker;
 use App\Services\Vendor\VendorReferralService;
 use App\Support\Vendors;
@@ -42,6 +43,10 @@ class VendorLeadController extends Controller
             $query->where('attribution', $attribution);
         }
 
+        if ($request->query('address') === 'review') {
+            $query->addressAwaitingReview();
+        }
+
         if ($search = $request->query('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('public_ref', 'like', "%{$search}%")
@@ -54,7 +59,7 @@ class VendorLeadController extends Controller
         return view('admin.vendor.leads', [
             'leads'   => $query->paginate(30)->withQueryString(),
             'vendors' => Vendors::all(),
-            'filters' => $request->only(['vendor', 'status', 'q', 'attribution']),
+            'filters' => $request->only(['vendor', 'status', 'q', 'attribution', 'address']),
             'stats'   => [
                 'awaiting'  => VendorLead::awaitingPurchase()->count(),
                 'converted' => VendorLead::converted()->count(),
@@ -64,6 +69,8 @@ class VendorLeadController extends Controller
                 // Matched a partner on address alone. Nobody is paid until an
                 // admin decides who the order counts for.
                 'review'    => VendorLead::needsAttributionReview()->count(),
+                // The buyer shipped to an address FedEx did not confirm.
+                'address_review' => VendorLead::addressAwaitingReview()->count(),
             ],
         ]);
     }
@@ -185,7 +192,7 @@ class VendorLeadController extends Controller
         return view('admin.vendor.lead-show', [
             'lead'   => $vendorLead->load([
                 'member', 'crmContact', 'confirmedBy',
-                'buyer.sponsor', 'creditedMember', 'earner', 'attributionResolvedBy',
+                'buyer.sponsor', 'creditedMember', 'earner', 'attributionResolvedBy', 'addressReviewedBy',
             ]),
             'vendor' => Vendors::find($vendorLead->vendor),
         ]);
@@ -241,6 +248,23 @@ class VendorLeadController extends Controller
             : "{$lead->public_ref} recorded as a customer sale for {$lead->member?->name}.";
 
         return back()->with('status', $message.($lead->commission_ledger_id ? ' Commission raised.' : ''));
+    }
+
+    /**
+     * An admin checked a delivery address the buyer confirmed but FedEx did not.
+     *
+     * Recorded rather than silently cleared, so it is clear later who looked at
+     * the address before the system shipped.
+     */
+    public function addressReviewed(Request $request, VendorLead $vendorLead, AddressCheck $addresses)
+    {
+        if (! $vendorLead->needsAddressReview()) {
+            return back()->withErrors('This order has no delivery address waiting to be checked.');
+        }
+
+        $addresses->markReviewed($vendorLead, $request->user());
+
+        return back()->with('status', "Delivery address for {$vendorLead->public_ref} marked as checked.");
     }
 
     public function lost(VendorLead $vendorLead)

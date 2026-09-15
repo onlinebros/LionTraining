@@ -3,9 +3,25 @@
 How to replace the flat placeholder with live rates on **PlasmaGuard's own FedEx
 account (769848738)**, so quotes use their negotiated pricing rather than retail.
 
-Current state: `FlatShippingRater` returns a configured per-carton figure and
-labels it `flat`. Everything below swaps that for a carrier rate. The interface
-already exists, so this is one new class and one container binding.
+**Current state (2026-09-15): live.** Production keys from our FedEx developer
+project are installed (`FEDEX_MODE=live`, `FEDEX_LIVE_API_KEY`,
+`FEDEX_LIVE_SECRET_KEY`). PlasmaGuard's account 769848738 returns negotiated
+`ACCOUNT` rates. Livonia → Green Bay WI measured on 2026-09-15:
+
+| Service | Negotiated | List |
+|---|---|---|
+| FedEx Ground (business) | $14.78 | $25.48 |
+| FedEx Home Delivery (residential) | $23.30 | — |
+
+- **Rating.** `FedExShippingRater` quotes these rates. It sends `residential: true`
+  whenever the FedEx address check classified the delivery as a home.
+- **Address checks.** The same keys drive `FedExAddressVerifier`.
+- **No outage fallback.** There is no flat fallback (`PLASMAGUARD_SHIPPING_FLAT=0`),
+  so while FedEx is down an order goes to a human.
+- **Sandbox.** It can't test address checks: every request gets the same canned
+  Chilean address back.
+
+The rest of this runbook records how rating was set up.
 
 ---
 

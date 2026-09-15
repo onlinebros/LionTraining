@@ -222,7 +222,15 @@ class FedExShippingRater implements ShippingRater
         ];
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * A FedEx address.
+     *
+     * `residential` is sent for a delivery the FedEx address check classified
+     * as a home. Rated without it, a house is quoted as a business and the
+     * residential surcharge is missing from the quote.
+     *
+     * @return array<string,mixed>
+     */
     private function address(array $a): array
     {
         return array_filter([
@@ -230,36 +238,13 @@ class FedExShippingRater implements ShippingRater
             'stateOrProvinceCode' => $a['state'] ?? null,
             'postalCode'          => $a['postal_code'] ?? null,
             'countryCode'         => $a['country'] ?? 'US',
+            'residential'         => ($a['residential'] ?? false) === true ? true : null,
         ], static fn ($v) => $v !== null && $v !== '');
     }
 
-    /**
-     * An OAuth bearer token, cached just short of its hour.
-     *
-     * Fetching one per quote would double the latency of every address change
-     * on the checkout for no benefit.
-     */
+    /** The shared FedEx token; address validation uses the same one. */
     private function token(): ?string
     {
-        return Cache::remember('fedex:token:'.config('fedex.mode'), (int) config('fedex.token_ttl', 3300), function () {
-            $response = Http::asForm()
-                ->timeout((int) config('fedex.timeout', 12))
-                ->post(config('fedex.host').'/oauth/token', [
-                    'grant_type'    => 'client_credentials',
-                    'client_id'     => config('fedex.key'),
-                    'client_secret' => config('fedex.secret'),
-                ]);
-
-            if (! $response->successful()) {
-                Log::warning('FedEx OAuth failed', [
-                    'status' => $response->status(),
-                    'error'  => $response->json('errors.0.message') ?? $response->body(),
-                ]);
-
-                return null;
-            }
-
-            return $response->json('access_token');
-        });
+        return FedExAuth::token();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Vendor\Shipping\AddressVerification;
 use App\Support\Vendors;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * This is the local record of a sale we do not process. It is written BEFORE
  * the customer is handed to the vendor's checkout, which is the whole point:
  * attribution must survive the vendor telling us nothing at all.
+ *
+ * @property array<string, string|null>|null $address_suggestion  FedEx's corrected address, while the buyer decides.
  */
 class VendorLead extends Model
 {
@@ -42,6 +45,10 @@ class VendorLead extends Model
      * The attribution columns (attribution, buyer_user_id, credited_member_id,
      * earner_id, attribution_resolved_*) are deliberately not fillable. They
      * decide who is paid, and are only ever written by PurchaseAttribution.
+     *
+     * The address check columns (address_status and the rest) are not fillable
+     * either: they decide whether payment opens, and are only written by
+     * AddressCheck.
      */
     protected $fillable = [
         'public_ref', 'vendor', 'product_key',
@@ -79,6 +86,10 @@ class VendorLead extends Model
             'converted_at'  => 'datetime',
             'refunded_at'   => 'datetime',
             'attribution_resolved_at' => 'datetime',
+            'address_suggestion'   => 'array',
+            'address_checked_at'   => 'datetime',
+            'address_confirmed_at' => 'datetime',
+            'address_reviewed_at'  => 'datetime',
         ];
     }
 
@@ -128,6 +139,12 @@ class VendorLead extends Model
     public function attributionResolvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'attribution_resolved_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function addressReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'address_reviewed_by');
     }
 
     /** @return BelongsTo<CrmContact, $this> */
@@ -211,6 +228,20 @@ class VendorLead extends Model
         return $query->where('attribution', self::ATTRIBUTION_REVIEW);
     }
 
+    /**
+     * The buyer confirmed an address FedEx did not, and no admin has checked it.
+     *
+     * Named differently from needsAddressReview() on purpose: a static call to a
+     * scope that shares a name with an instance method reaches the method, not
+     * the query.
+     */
+    public function scopeAddressAwaitingReview($query)
+    {
+        return $query->whereNotNull('address_confirmed_at')
+            ->where('address_status', '!=', AddressVerification::VERIFIED)
+            ->whereNull('address_reviewed_at');
+    }
+
     // ── Derived ───────────────────────────────────────────────────────────────
 
     public function isConverted(): bool
@@ -221,6 +252,53 @@ class VendorLead extends Model
     public function isOwnPurchase(): bool
     {
         return $this->attribution === self::ATTRIBUTION_SELF;
+    }
+
+    /**
+     * May the buyer pay?
+     *
+     * Only once FedEx has verified the address, or the buyer has confirmed one
+     * FedEx could not. Never for an address FedEx cannot deliver to.
+     */
+    public function addressReadyForPayment(): bool
+    {
+        return match ($this->address_status) {
+            AddressVerification::VERIFIED => true,
+            AddressVerification::SUGGESTED,
+            AddressVerification::UNVERIFIED,
+            AddressVerification::UNAVAILABLE => $this->address_confirmed_at !== null,
+            default => false,
+        };
+    }
+
+    public function needsAddressReview(): bool
+    {
+        return $this->address_confirmed_at !== null
+            && $this->address_status !== AddressVerification::VERIFIED
+            && $this->address_reviewed_at === null;
+    }
+
+    /**
+     * A short label for the address check, and its badge colour.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public function addressCheckLabel(): array
+    {
+        if ($this->address_confirmed_at !== null && $this->address_status !== AddressVerification::VERIFIED) {
+            return $this->address_reviewed_at !== null
+                ? ['Buyer confirmed; checked by admin', 'success']
+                : ['Buyer confirmed; not verified', 'warning'];
+        }
+
+        return match ($this->address_status) {
+            AddressVerification::VERIFIED    => ['Verified by FedEx', 'success'],
+            AddressVerification::SUGGESTED   => ['FedEx suggested a correction', 'info'],
+            AddressVerification::UNVERIFIED  => ['Not verified', 'warning'],
+            AddressVerification::UNAVAILABLE => ['Not checked (FedEx unavailable)', 'secondary'],
+            AddressVerification::REJECTED    => ['Undeliverable (PO Box)', 'danger'],
+            default                          => ['Not checked', 'secondary'],
+        };
     }
 
     public function fullName(): string

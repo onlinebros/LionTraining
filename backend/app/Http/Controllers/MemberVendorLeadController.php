@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CommissionLedger;
 use App\Models\VendorLead;
+use App\Rules\NotPoBox;
+use App\Services\Vendor\AddressCheck;
 use App\Services\Vendor\PromotionTracker;
 use App\Services\Vendor\VendorReferralService;
 use App\Support\Vendors;
@@ -20,6 +22,7 @@ class MemberVendorLeadController extends Controller
     public function __construct(
         private readonly VendorReferralService $referrals,
         private readonly PromotionTracker $promotions,
+        private readonly AddressCheck $addresses,
     ) {}
 
     public function index(Request $request)
@@ -123,8 +126,8 @@ class MemberVendorLeadController extends Controller
             'last_name'     => ['nullable', 'string', 'max:100'],
             'phone'         => ['nullable', 'string', 'max:40'],
             'company'       => ['nullable', 'string', 'max:150'],
-            'address_line1' => ['required', 'string', 'max:191'],
-            'address_line2' => ['nullable', 'string', 'max:191'],
+            'address_line1' => ['required', 'string', 'max:191', new NotPoBox],
+            'address_line2' => ['nullable', 'string', 'max:191', new NotPoBox],
             'city'          => ['required', 'string', 'max:100'],
             'state'         => ['required', 'string', 'max:100'],
             'postal_code'   => ['required', 'string', 'max:20'],
@@ -142,6 +145,9 @@ class MemberVendorLeadController extends Controller
             'ip'         => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
+
+        // Checked before the order page opens, the same as a customer's address.
+        $this->addresses->check($lead);
 
         $mode = Vendors::find($vendor)['checkout']['mode'] ?? 'payment_link';
 

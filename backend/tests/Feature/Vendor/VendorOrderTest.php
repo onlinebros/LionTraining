@@ -43,6 +43,17 @@ class VendorOrderTest extends TestCase
         $this->app->bind(\App\Services\Vendor\Shipping\ShippingRater::class,
             fn () => new \App\Services\Vendor\Shipping\FlatShippingRater('plasmaguard'));
 
+        // Pinned for the same reason. These tests are about the order, and an
+        // address check reaching FedEx would decide whether the payment form
+        // renders. AddressVerificationTest covers the check itself.
+        $this->app->bind(\App\Services\Vendor\Shipping\AddressVerifier::class, fn () => new class implements \App\Services\Vendor\Shipping\AddressVerifier
+        {
+            public function verify(array $address): \App\Services\Vendor\Shipping\AddressVerification
+            {
+                return new \App\Services\Vendor\Shipping\AddressVerification(\App\Services\Vendor\Shipping\AddressVerification::VERIFIED);
+            }
+        });
+
         $this->member = User::factory()->create(['referral_code' => 'PARTNER1', 'is_active' => true]);
     }
 

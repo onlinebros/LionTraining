@@ -11,6 +11,9 @@
 
     One URL, two states: no address yet, so ask for one; address present, so show
     the quote. A customer who leaves and returns lands wherever they got to.
+
+    Payment opens only once the address is settled: verified by FedEx, or
+    confirmed by the buyer. See partials/address-check.
 --}}
 
 @push('styles')
@@ -128,6 +131,7 @@
                         <label for="address_line2">Suite / unit <span class="q3-sf-opt">(optional)</span></label>
                         <input type="text" id="address_line2" name="address_line2"
                                value="{{ old('address_line2', $lead->address_line2) }}" autocomplete="address-line2">
+                        @error('address_line2') <div class="q3-sf-err">{{ $message }}</div> @enderror
                     </div>
 
                     <div class="q3-sf-row">
@@ -171,6 +175,10 @@
                     </button>
                 </form>
 
+                @if ($hasAddress)
+                    @include('public.vendor.partials.address-check')
+                @endif
+
                 @if ($quote && $quote['quotable'])
                     @php
                         $pk       = $vendor['stripe']['key'] ?? null;
@@ -179,7 +187,12 @@
 
                     <div class="q3-sf-legend">Payment</div>
 
-                    @if (! $pk)
+                    @if (! $addressReady)
+                        {{-- The Pay endpoint refuses too; this just says why. --}}
+                        <div class="q3-sf-warn">
+                            Settle the delivery address above to continue to payment.
+                        </div>
+                    @elseif (! $pk)
                         <div class="q3-sf-warn">
                             Card payment is not configured for {{ $vendor['name'] }} yet.
                             {{ $lead->member?->name ?? 'Your partner' }} will be in touch to complete
@@ -229,7 +242,7 @@
 
 @endsection
 
-@if ($quote && ($quote['quotable'] ?? false) && ! empty($vendor['stripe']['key']))
+@if ($quote && ($quote['quotable'] ?? false) && $addressReady && ! empty($vendor['stripe']['key']))
 @push('scripts')
 @php
     /*

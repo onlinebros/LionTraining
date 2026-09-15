@@ -33,6 +33,31 @@
                             {{ $lead->address_line1 }}@if($lead->address_line2), {{ $lead->address_line2 }}@endif<br>
                             {{ collect([$lead->city, $lead->state, $lead->postal_code, $lead->country])->filter()->implode(', ') }}
                         </dd>
+
+                        {{-- What FedEx made of the address, and what the buyer did about it. --}}
+                        @php [$addressLabel, $addressColor] = $lead->addressCheckLabel(); @endphp
+                        <dt class="col-sm-4 text-muted fw-normal">Address check</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{{ $addressColor }}">{{ $addressLabel }}</span>
+                            @if ($lead->address_classification && $lead->address_classification !== 'UNKNOWN')
+                                <span class="text-muted small ms-1">{{ Str::lower($lead->address_classification) }}</span>
+                            @endif
+                            @if ($lead->address_status_reason)
+                                <div class="text-muted small mt-1">{{ $lead->address_status_reason }}</div>
+                            @endif
+                            @if ($lead->address_reviewed_at)
+                                <div class="text-muted small mt-1">
+                                    Checked by {{ $lead->addressReviewedBy?->name ?? 'an admin' }},
+                                    {{ $lead->address_reviewed_at->format('d M Y H:i') }}
+                                </div>
+                            @endif
+                            @if ($lead->needsAddressReview())
+                                <form method="POST" action="{{ route('admin.vendor-leads.address-reviewed', $lead->id) }}" class="mt-2">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-warning">I have checked this address</button>
+                                </form>
+                            @endif
+                        </dd>
                     @endif
 
                     <dt class="col-sm-4 text-muted fw-normal">Partner</dt>

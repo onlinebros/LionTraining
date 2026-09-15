@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\VendorLead;
+use App\Rules\NotPoBox;
+use App\Services\Vendor\AddressCheck;
+use App\Services\Vendor\Shipping\AddressVerification;
 use App\Services\Vendor\VendorOrderService;
 use App\Services\Vendor\VendorStripeClient;
 use App\Services\Vendor\VendorReferralService;
@@ -27,6 +30,7 @@ class VendorStorefrontController extends Controller
         private readonly VendorReferralService $referrals,
         private readonly VendorOrderService $orders,
         private readonly VendorStripeClient $stripe,
+        private readonly AddressCheck $addresses,
     ) {}
 
     public function show(string $code, string $vendor, string $product)
@@ -116,6 +120,12 @@ class VendorStorefrontController extends Controller
             return redirect()->route('vendor.complete', $lead->public_ref);
         }
 
+        // An address saved before checking existed, or by a path that did not
+        // check it, is checked the first time the order is opened.
+        if (filled($lead->postal_code) && $lead->address_status === null) {
+            $this->addresses->check($lead);
+        }
+
         $vendorConfig  = Vendors::find($lead->vendor);
         $productConfig = Vendors::product($lead->vendor, $lead->product_key);
 
@@ -138,11 +148,12 @@ class VendorStorefrontController extends Controller
         }
 
         return view('public.vendor.order', [
-            'lead'    => $lead,
-            'vendor'  => $vendorConfig,
-            'product' => $productConfig,
-            'quote'   => $quote,
-            'error'   => $error,
+            'lead'         => $lead,
+            'vendor'       => $vendorConfig,
+            'product'      => $productConfig,
+            'quote'        => $quote,
+            'error'        => $error,
+            'addressReady' => $lead->addressReadyForPayment(),
         ]);
     }
 
@@ -157,8 +168,8 @@ class VendorStorefrontController extends Controller
 
         $data = $request->validate([
             'company'       => ['nullable', 'string', 'max:150'],
-            'address_line1' => ['required', 'string', 'max:191'],
-            'address_line2' => ['nullable', 'string', 'max:191'],
+            'address_line1' => ['required', 'string', 'max:191', new NotPoBox],
+            'address_line2' => ['nullable', 'string', 'max:191', new NotPoBox],
             'city'          => ['required', 'string', 'max:100'],
             'state'         => ['required', 'string', 'max:100'],
             'postal_code'   => ['required', 'string', 'max:20'],
@@ -169,7 +180,53 @@ class VendorStorefrontController extends Controller
 
         $data['country'] = $data['country'] ?? 'US';
 
-        $lead->fill(array_filter($data, static fn ($v) => $v !== null))->save();
+        $lead->fill(array_filter($data, static fn ($v) => $v !== null));
+
+        // Only an address change costs a FedEx call and resets the buyer's
+        // confirmation. Changing the quantity or the notes does neither.
+        $recheck = AddressCheck::addressChanged($lead) || $lead->address_status === null;
+
+        $lead->save();
+
+        if ($recheck) {
+            $this->addresses->check($lead);
+        }
+
+        return redirect()->route('vendor.order', $lead->public_ref);
+    }
+
+    /**
+     * The buyer's answer to the address check: take FedEx's correction, or ship
+     * to the address as entered.
+     */
+    public function addressChoice(Request $request, string $reference)
+    {
+        $lead = $this->lead($reference);
+
+        if ($lead->isConverted()) {
+            return redirect()->route('vendor.complete', $lead->public_ref);
+        }
+
+        // Keeping an address FedEx could not confirm at all takes a tick, not
+        // just a button. Keeping one over FedEx's correction is already an
+        // explicit choice between the two shown.
+        $needsTick = $request->input('choice') === 'entered'
+            && $lead->address_status !== AddressVerification::SUGGESTED;
+
+        $request->validate([
+            'choice'          => ['required', Rule::in(['suggested', 'entered'])],
+            'confirm_address' => $needsTick ? ['accepted'] : ['nullable'],
+        ], [
+            'confirm_address.accepted' => 'Tick the box to confirm this delivery address is correct.',
+        ]);
+
+        try {
+            $request->input('choice') === 'suggested'
+                ? $this->addresses->acceptSuggestion($lead)
+                : $this->addresses->confirmAsEntered($lead);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('vendor.order', $lead->public_ref)->withErrors(['address' => $e->getMessage()]);
+        }
 
         return redirect()->route('vendor.order', $lead->public_ref);
     }
@@ -191,6 +248,12 @@ class VendorStorefrontController extends Controller
 
         if ($lead->isConverted()) {
             return response()->json(['error' => 'This order has already been paid.'], 409);
+        }
+
+        // Checked here as well as on the page, because this endpoint can be
+        // called without the page.
+        if (! $lead->addressReadyForPayment()) {
+            return response()->json(['error' => 'Please confirm the delivery address before paying.'], 422);
         }
 
         try {

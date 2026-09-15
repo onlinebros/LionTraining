@@ -28,6 +28,17 @@ class AppServiceProvider extends ServiceProvider
                 : new \App\Services\Vendor\Shipping\FlatShippingRater($vendor);
         });
 
+        /*
+         * Delivery address checks, on the same FedEx project as rating. Without
+         * credentials every address reads as "could not be checked", so buyers
+         * confirm it themselves and the order is flagged for an admin.
+         */
+        $this->app->bind(\App\Services\Vendor\Shipping\AddressVerifier::class, function () {
+            return filled(config('fedex.key'))
+                ? new \App\Services\Vendor\Shipping\FedExAddressVerifier
+                : new \App\Services\Vendor\Shipping\UnconfiguredAddressVerifier;
+        });
+
         // The placement structure is a config choice — see config/genealogy.php.
         // Resolved here so nothing downstream of GenealogyService has to know
         // which structure is running.

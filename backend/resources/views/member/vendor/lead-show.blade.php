@@ -49,6 +49,10 @@
                         <dd class="col-sm-8">
                             {{ $lead->address_line1 }}@if($lead->address_line2), {{ $lead->address_line2 }}@endif<br>
                             {{ collect([$lead->city, $lead->state, $lead->postal_code])->filter()->implode(', ') }}
+                            {{-- So the partner knows to ring the customer about an
+                                 address FedEx could not confirm. --}}
+                            @php [$addressLabel, $addressColor] = $lead->addressCheckLabel(); @endphp
+                            <div class="mt-1"><span class="badge bg-{{ $addressColor }}">{{ $addressLabel }}</span></div>
                         </dd>
                     @endif
 

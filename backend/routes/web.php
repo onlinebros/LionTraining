@@ -58,6 +58,9 @@ Route::prefix('p')->name('vendor.')->group(function () {
     Route::get('/order/{reference}',           [VendorStorefrontController::class, 'order'])->name('order');
     Route::post('/order/{reference}/address',  [VendorStorefrontController::class, 'saveAddress'])
         ->middleware('throttle:20,1')->name('order.address');
+    // The buyer's answer to the address check: FedEx's correction, or as entered.
+    Route::post('/order/{reference}/address/confirm', [VendorStorefrontController::class, 'addressChoice'])
+        ->middleware('throttle:20,1')->name('order.address.choice');
     Route::post('/order/{reference}/pay',      [VendorStorefrontController::class, 'pay'])
         ->middleware('throttle:10,1')->name('order.pay');
     Route::get('/complete/{reference}',        [VendorStorefrontController::class, 'complete'])->name('complete');
@@ -278,6 +281,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{vendorLead}/lost',    [VendorLeadController::class, 'lost'])->name('lost');
             // Who an order counts for: a customer sale or a partner's own purchase.
             Route::post('/{vendorLead}/attribution', [VendorLeadController::class, 'attribution'])->name('attribution');
+            // An admin checked a delivery address the buyer confirmed but FedEx did not.
+            Route::post('/{vendorLead}/address-reviewed', [VendorLeadController::class, 'addressReviewed'])->name('address-reviewed');
         });
 
         // Commission system
