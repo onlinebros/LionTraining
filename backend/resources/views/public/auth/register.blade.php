@@ -51,7 +51,8 @@
             <div class="form-check mb-4">
                 <input class="form-check-input" type="checkbox" id="terms" required>
                 <label class="form-check-label" for="terms">
-                    I agree to the <a href="#">Terms &amp; Conditions</a>
+                    I agree to the <a href="{{ config('registration.terms_url') }}" target="_blank" rel="noopener">Terms of Service</a>
+                    and <a href="{{ config('registration.privacy_url') }}" target="_blank" rel="noopener">Privacy Policy</a>
                 </label>
                 <div class="invalid-feedback">You must agree before continuing.</div>
             </div>

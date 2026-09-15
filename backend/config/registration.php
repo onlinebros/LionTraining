@@ -69,4 +69,19 @@ return [
 
     'notice' => 'Quantum Life is invitation only. You need a referral link from an existing partner to create an account.',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Signup agreement
+    |--------------------------------------------------------------------------
+    |
+    | The documents the signup checkbox links to. They live on the company site
+    | (sites/q3.life), which is always the production URL — the dev server is
+    | never shown to members — so these default to q3.life on every environment.
+    |
+    */
+
+    'terms_url' => env('QL_TERMS_URL', 'https://q3.life/terms'),
+
+    'privacy_url' => env('QL_PRIVACY_URL', 'https://q3.life/privacy'),
+
 ];
