@@ -104,6 +104,6 @@ class ConnectRequirements
 
     private static function normalise(string $code): string
     {
-        return preg_replace('/^person_[A-Za-z0-9]+\./', 'individual.', $code) ?? $code;
+        return preg_replace('/^(person_[A-Za-z0-9]+|representative)\./', 'individual.', $code) ?? $code;
     }
 }

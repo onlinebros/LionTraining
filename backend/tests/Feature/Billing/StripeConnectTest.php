@@ -142,55 +142,12 @@ class StripeConnectTest extends TestCase
             $params['business_profile']['product_description'],
         );
 
-        $this->assertSame('individual', $params['business_type']);
-        $this->assertSame([
-            'first_name' => 'Jane Q',
-            'last_name' => 'Partner',
-            'email' => $user->email,
-            'phone' => '+19105550123',
-            'address' => [
-                'line1' => '1038 Peterson Place',
-                'city' => 'Wilmington',
-                'state' => 'NC',
-                'postal_code' => '28411',
-                'country' => 'US',
-            ],
-        ], $params['individual']);
-    }
-
-    public function test_profile_details_stripe_would_refuse_are_left_out(): void
-    {
-        $user = $this->partner([
-            'name' => 'Sam Rivers',
-            'phone' => '555-0123',
-            'address_line1' => '1 Main St',
-            'city' => 'Toronto',
-            'state' => 'Ontario',
-            'postal_code' => 'M5V 2T6',
-            'country' => 'Canada',
-        ]);
-
-        $this->connect()->accountFor($user);
-        $individual = $this->stripe->paramsFor('post', '/v1/accounts')[0]['individual'];
-
-        $this->assertSame('Sam', $individual['first_name']);
-        $this->assertArrayNotHasKey('phone', $individual);
-        $this->assertArrayNotHasKey('address', $individual);
-    }
-
-    public function test_a_refused_prefill_falls_back_to_an_account_without_it(): void
-    {
-        $user = $this->partner(['name' => 'Jane Partner', 'phone' => '9105550123']);
-        $this->stripe->rejectPrefill = true;
-
-        $accountId = $this->connect()->accountFor($user);
-        $creates = $this->stripe->paramsFor('post', '/v1/accounts');
-
-        $this->assertCount(2, $creates);
-        $this->assertArrayNotHasKey('individual', $creates[1]);
-        $this->assertArrayNotHasKey('business_type', $creates[1]);
-        $this->assertSame('https://q3.life', $creates[1]['business_profile']['url']);
-        $this->assertSame($accountId, $user->fresh()->stripe_connect_account_id);
+        // Stripe's form opens by asking whether the partner is paid as themselves
+        // or through a registered business. A business type, or the `individual`
+        // details Stripe only accepts alongside one, answers it and skips the step.
+        $this->assertArrayNotHasKey('business_type', $params);
+        $this->assertArrayNotHasKey('individual', $params);
+        $this->assertSame($user->email, $params['email']);
     }
 
     public function test_an_existing_account_is_reused(): void
@@ -392,6 +349,14 @@ class StripeConnectTest extends TestCase
             ->assertOk()
             ->assertSee($partner->name)
             ->assertSee('Date of birth');
+    }
+
+    public function test_a_business_account_names_what_its_representative_owes(): void
+    {
+        $this->assertSame(
+            ['Date of birth', 'Business tax ID (EIN)'],
+            ConnectRequirements::summarise(['representative.dob.day', 'representative.dob.year', 'company.tax_id']),
+        );
     }
 
     public function test_request_information_emails_the_partner_the_exact_items(): void

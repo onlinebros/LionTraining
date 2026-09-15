@@ -123,13 +123,14 @@
                 @if(! $user->canReceivePayouts())
                     <div class="alert alert-light border small mb-4">
                         <p class="mb-2">
-                            <strong>We've started the form with the details from your profile.</strong>
-                            Check them as you go, then add your date of birth, Social Security number and the
-                            bank account you want to be paid into.
+                            <strong>The form starts by asking your business type.</strong>
+                            If you are paid through a registered business such as an LLC or corporation, choose it
+                            there and enter the business. Otherwise choose the individual option.
                         </p>
                         <p class="mb-0 text-muted">
-                            Your 1099 is issued in the name and tax ID you enter here. If you are paid through an
-                            LLC or corporation with an EIN, enter the business instead of yourself.
+                            Your 1099 is issued in the name and tax ID you enter here. Have your date of birth,
+                            Social Security number, EIN if you use a business, and the bank account you want to be
+                            paid into ready.
                         </p>
                     </div>
                 @endif

@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Log;
 use Stripe\Account;
 use Stripe\AccountSession;
 use Stripe\Exception\ApiErrorException;
-use Stripe\Exception\InvalidRequestException;
 
 /**
  * Stripe Connect: the account a partner sets up so we can pay them commissions.
@@ -39,24 +38,18 @@ use Stripe\Exception\InvalidRequestException;
  * nobody has to be chased for tax details in January. (There is no `_nec`
  * capability; `_misc` collects the data, and the form type is a Dashboard
  * setting.)
+ *
+ * ── Business type is the partner's choice ─────────────────────────────────────
+ * Accounts are created without `business_type`, so Stripe's form opens on the
+ * business-type step and a partner paid through an LLC or corporation can pick
+ * it. Stripe refuses `individual` details without a business type, so nothing
+ * from the profile beyond the email is prefilled. A business type cannot be
+ * cleared once set: an account created with one skips the step until it is
+ * rebuilt with `connect:reset-account`.
  */
 class StripeConnectService
 {
     public const TAX_CAPABILITY = 'tax_reporting_us_1099_misc';
-
-    private const US_STATES = [
-        'alabama' => 'AL', 'alaska' => 'AK', 'arizona' => 'AZ', 'arkansas' => 'AR', 'california' => 'CA',
-        'colorado' => 'CO', 'connecticut' => 'CT', 'delaware' => 'DE', 'district of columbia' => 'DC',
-        'florida' => 'FL', 'georgia' => 'GA', 'hawaii' => 'HI', 'idaho' => 'ID', 'illinois' => 'IL',
-        'indiana' => 'IN', 'iowa' => 'IA', 'kansas' => 'KS', 'kentucky' => 'KY', 'louisiana' => 'LA',
-        'maine' => 'ME', 'maryland' => 'MD', 'massachusetts' => 'MA', 'michigan' => 'MI', 'minnesota' => 'MN',
-        'mississippi' => 'MS', 'missouri' => 'MO', 'montana' => 'MT', 'nebraska' => 'NE', 'nevada' => 'NV',
-        'new hampshire' => 'NH', 'new jersey' => 'NJ', 'new mexico' => 'NM', 'new york' => 'NY',
-        'north carolina' => 'NC', 'north dakota' => 'ND', 'ohio' => 'OH', 'oklahoma' => 'OK', 'oregon' => 'OR',
-        'pennsylvania' => 'PA', 'rhode island' => 'RI', 'south carolina' => 'SC', 'south dakota' => 'SD',
-        'tennessee' => 'TN', 'texas' => 'TX', 'utah' => 'UT', 'vermont' => 'VT', 'virginia' => 'VA',
-        'washington' => 'WA', 'west virginia' => 'WV', 'wisconsin' => 'WI', 'wyoming' => 'WY',
-    ];
 
     public function __construct(private readonly StripeClientFactory $stripe) {}
 
@@ -122,27 +115,8 @@ class StripeConnectService
             return $user->stripe_connect_account_id;
         }
 
-        $base = $this->baseAccountParams($user);
-
         try {
-            try {
-                $account = $this->createAccount($user, array_replace_recursive($base, $this->prefillParams($user)));
-            } catch (InvalidRequestException $e) {
-                // Stripe refused a prefilled value. Every one of them is something
-                // the partner can type into Stripe's form, so start without them
-                // rather than leave the partner unable to set up at all.
-                if (! $this->isPrefillError($e)) {
-                    throw $e;
-                }
-
-                Log::warning('Stripe refused prefilled partner details; creating the account without them', [
-                    'user_id' => $user->id,
-                    'param'   => $e->getError()->param ?? null,
-                    'error'   => $e->getMessage(),
-                ]);
-
-                $account = $this->createAccount($user, $base);
-            }
+            $account = $this->createAccount($user, $this->baseAccountParams($user));
         } catch (ApiErrorException $e) {
             Log::error('Stripe Connect account create failed', [
                 'user_id' => $user->id,
@@ -203,107 +177,6 @@ class StripeConnectService
                 'app'           => 'q3',
             ],
         ];
-    }
-
-    /**
-     * What we already know about the partner, so Stripe's form opens filled in.
-     *
-     * Only values Stripe will accept are sent. The profile form takes free text,
-     * and one malformed field (a state spelled out, a phone without an area code)
-     * makes Stripe refuse the whole account, so anything that does not normalise
-     * cleanly is left for the partner to enter in Stripe's form. The partner
-     * reviews every prefilled value during onboarding.
-     *
-     * @return array<string, mixed>
-     */
-    public function prefillParams(User $user): array
-    {
-        [$first, $last] = $this->splitName((string) $user->name);
-
-        $params = [
-            'business_type' => 'individual',
-            'individual'    => array_filter([
-                'first_name' => $first,
-                'last_name'  => $last,
-                'email'      => $user->email,
-                'phone'      => $this->usPhone($user->phone),
-                'address'    => $this->usAddress($user),
-            ]),
-        ];
-
-        return $params;
-    }
-
-    private function isPrefillError(InvalidRequestException $e): bool
-    {
-        $param = (string) ($e->getError()->param ?? '');
-
-        return (bool) preg_match('/^(individual|business_type)/', $param);
-    }
-
-    /** @return array{0: ?string, 1: ?string} */
-    private function splitName(string $name): array
-    {
-        $parts = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        if (count($parts) < 2) {
-            return [$parts[0] ?? null, null];
-        }
-
-        $last = array_pop($parts);
-
-        return [implode(' ', $parts), $last];
-    }
-
-    /** E.164 for a valid US number, otherwise null. */
-    private function usPhone(?string $phone): ?string
-    {
-        $digits = preg_replace('/\D+/', '', (string) $phone) ?? '';
-
-        if (strlen($digits) === 11 && str_starts_with($digits, '1')) {
-            $digits = substr($digits, 1);
-        }
-
-        // Area code and exchange never start with 0 or 1.
-        return preg_match('/^[2-9]\d{2}[2-9]\d{6}$/', $digits) ? '+1'.$digits : null;
-    }
-
-    /** A complete US address in Stripe's shape, or null if any part would be refused. */
-    private function usAddress(User $user): ?array
-    {
-        // Membership is US-only, so a blank country is read as US.
-        $country = strtolower(trim((string) $user->country));
-
-        if (! in_array($country, ['', 'us', 'usa', 'u.s.', 'u.s.a.', 'united states', 'united states of america'], true)) {
-            return null;
-        }
-
-        $state  = $this->usStateCode($user->state);
-        $postal = trim((string) $user->postal_code);
-
-        if (blank($user->address_line1) || blank($user->city) || $state === null || ! preg_match('/^\d{5}(-\d{4})?$/', $postal)) {
-            return null;
-        }
-
-        return array_filter([
-            'line1'       => trim((string) $user->address_line1),
-            'line2'       => filled($user->address_line2) ? trim((string) $user->address_line2) : null,
-            'city'        => trim((string) $user->city),
-            'state'       => $state,
-            'postal_code' => $postal,
-            'country'     => 'US',
-        ]);
-    }
-
-    private function usStateCode(?string $state): ?string
-    {
-        $value = strtolower(trim((string) $state, " \t\n\r\0\x0B."));
-
-        if (strlen($value) === 2 && in_array(strtoupper($value), self::US_STATES, true)) {
-            return strtoupper($value);
-        }
-
-        return self::US_STATES[$value] ?? null;
     }
 
     /** @return array<string, array{requested: bool}> */

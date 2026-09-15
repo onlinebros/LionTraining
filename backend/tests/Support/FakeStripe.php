@@ -26,9 +26,6 @@ class FakeStripe implements ClientInterface
     /** @var list<array{method: string, path: string, params: array}> */
     public array $calls = [];
 
-    /** Refuse the next account create that carries prefilled individual details. */
-    public bool $rejectPrefill = false;
-
     /** A Stripe error code the next transfer create fails with. */
     public ?string $transferError = null;
 
@@ -125,12 +122,6 @@ class FakeStripe implements ClientInterface
         }
 
         if ($method === 'post' && $path === '/v1/accounts') {
-            if ($this->rejectPrefill && isset($params['individual'])) {
-                $this->rejectPrefill = false;
-
-                return $this->error('Invalid phone number.', 'individual[phone]');
-            }
-
             $id = $this->connectedAccount('acct_fake'.(count($this->accounts) + 1), ['email' => $params['email'] ?? null]);
 
             return $this->respond($this->accounts[$id]);
