@@ -88,7 +88,8 @@
                             <span class="badge bg-{{ in_array($sub->status, ['active','trialing']) ? 'success' : ($sub->status === 'past_due' ? 'warning' : 'secondary') }}">
                                 {{ str_replace('_', ' ', $sub->status) }}
                             </span>
-                            @if($sub->is_prelaunch_trial)<span class="badge bg-info ms-1">parked</span>@endif
+                            @if($sub->isCommissionHold())<span class="badge bg-info ms-1">waiting on commissions</span>
+                            @elseif($sub->is_prelaunch_trial)<span class="badge bg-info ms-1">parked</span>@endif
                         </td>
                         <td class="small">{{ $sub->trial_ends_at?->format('j M Y') ?? '—' }}</td>
                         <td class="small">{{ $sub->current_period_end?->format('j M Y') ?? '—' }}</td>
@@ -96,7 +97,14 @@
                         <td class="small {{ $sub->last_synced_at === null || $sub->last_synced_at->lt(now()->subDay()) ? 'text-warning' : 'text-muted' }}">
                             {{ $sub->last_synced_at?->diffForHumans() ?? 'never' }}
                         </td>
-                        <td class="text-end">
+                        <td class="text-end text-nowrap">
+                            @if($sub->isCommissionHold())
+                                <form method="POST" action="{{ route('admin.billing.subscriptions.start-billing', $sub) }}" class="d-inline"
+                                      onsubmit="return confirm('Start billing for this partner now? They will be charged when the training program opens, or today if it already has.')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-primary py-0">Start billing</button>
+                                </form>
+                            @endif
                             <form method="POST" action="{{ route('admin.billing.subscriptions.sync', $sub) }}" class="d-inline">
                                 @csrf
                                 <button class="btn btn-sm btn-outline-secondary py-0">Sync</button>

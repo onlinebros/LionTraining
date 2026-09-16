@@ -23,6 +23,12 @@ class Subscription extends Model
     /** Statuses that grant access outright, with no grace arithmetic. */
     public const ENTITLING = [self::STATUS_TRIALING, self::STATUS_ACTIVE];
 
+    /** Enrollment options: what starts the first charge. */
+    public const TRIGGER_LAUNCH     = 'launch';
+    public const TRIGGER_COMMISSION = 'commission';
+
+    public const TRIGGERS = [self::TRIGGER_LAUNCH, self::TRIGGER_COMMISSION];
+
     protected $guarded = [];
 
     protected function casts(): array
@@ -36,8 +42,27 @@ class Subscription extends Model
             'last_synced_at'       => 'datetime',
             'cancel_at_period_end' => 'boolean',
             'is_prelaunch_trial'   => 'boolean',
+            'billing_trigger_met_at' => 'datetime',
             'amount'               => 'integer',
         ];
+    }
+
+    /**
+     * Parked until the partner's paid commissions reach the threshold.
+     *
+     * Only while still trialing: once the trial ends the partner is paying, and
+     * the option they joined under no longer holds anything back.
+     */
+    public function isCommissionHold(): bool
+    {
+        return $this->billing_trigger === self::TRIGGER_COMMISSION
+            && $this->status === self::STATUS_TRIALING;
+    }
+
+    public function scopeCommissionHolds(Builder $query): Builder
+    {
+        return $query->where('billing_trigger', self::TRIGGER_COMMISSION)
+            ->where('status', self::STATUS_TRIALING);
     }
 
     public function user()

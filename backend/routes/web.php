@@ -108,6 +108,7 @@ Route::prefix('member/billing')->name('member.billing.')->middleware('auth')->gr
     Route::delete('/card/{paymentMethod}', [MemberBillingController::class, 'removeCard'])->name('card.remove');
     Route::post('/cancel',      [MemberBillingController::class, 'cancel'])->name('cancel');
     Route::post('/resume',      [MemberBillingController::class, 'resume'])->name('resume');
+    Route::post('/start-now',   [MemberBillingController::class, 'startNow'])->middleware('throttle:10,60')->name('start-now');
 });
 
 // Also outside the gate: a partner held at card capture still needs to fix their
@@ -134,10 +135,13 @@ Route::prefix('member')->name('member.')->middleware('auth')->group(function () 
 Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->group(function () {
     Route::get('/dashboard',         [MemberController::class, 'dashboard'])->name('dashboard');
     Route::get('/network',           [MemberController::class, 'network'])->name('network');
-    Route::get('/training',                      [MemberController::class, 'trainingIndex'])->name('training');
-    Route::get('/training/c/{slug}',             [MemberController::class, 'trainingCategory'])->name('training.category');
-    Route::get('/training/l/{slug}',             [MemberController::class, 'trainingLesson'])->name('training.lesson');
-    Route::get('/training/download/{block}',     [MemberController::class, 'trainingDownload'])->name('training.download');
+    // Partners waiting on commissions before paying don't get training yet.
+    Route::middleware('training.unlocked')->group(function () {
+        Route::get('/training',                  [MemberController::class, 'trainingIndex'])->name('training');
+        Route::get('/training/c/{slug}',         [MemberController::class, 'trainingCategory'])->name('training.category');
+        Route::get('/training/l/{slug}',         [MemberController::class, 'trainingLesson'])->name('training.lesson');
+        Route::get('/training/download/{block}', [MemberController::class, 'trainingDownload'])->name('training.download');
+    });
     Route::get('/referrals',         [MemberController::class, 'referral'])->name('referrals');
 
     // Get Paid: the Stripe Connect account a partner's commissions are paid
@@ -247,6 +251,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/subscriptions', [AdminBillingController::class, 'subscriptions'])->name('subscriptions');
             Route::post('/subscriptions/{subscription}/sync', [AdminBillingController::class, 'sync'])->name('subscriptions.sync');
             Route::post('/subscriptions/{subscription}/extend-trial', [AdminBillingController::class, 'extendTrial'])->name('subscriptions.extend-trial');
+            Route::post('/subscriptions/{subscription}/start-billing', [AdminBillingController::class, 'startBilling'])->name('subscriptions.start-billing');
 
             Route::get('/webhooks', [AdminBillingController::class, 'webhooks'])->name('webhooks');
             Route::post('/webhooks/{event}/replay', [AdminBillingController::class, 'replay'])->name('webhooks.replay');

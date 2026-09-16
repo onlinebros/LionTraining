@@ -199,6 +199,21 @@ class User extends Authenticatable
         return $this->activeSubscription() !== null;
     }
 
+    /**
+     * Enrolled under "wait for my commissions" and not yet billed.
+     *
+     * These partners can build and earn, but the training program stays locked
+     * until their billing starts.
+     */
+    public function isOnCommissionHold(): bool
+    {
+        if ($this->isAdmin() || $this->billing_exempt === true) {
+            return false;
+        }
+
+        return $this->activeSubscription()?->isCommissionHold() === true;
+    }
+
     public function defaultPaymentMethod(): ?PaymentMethod
     {
         return $this->paymentMethods()->where('is_default', true)->first();

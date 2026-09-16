@@ -55,8 +55,25 @@ return [
         'currency'  => env('STRIPE_CURRENCY', 'usd'),
         'interval'  => env('STRIPE_PRICE_INTERVAL', 'year'),
 
-        // Trial granted to anyone signing up after pre-launch has ended.
-        'trial_days' => (int) env('STRIPE_TRIAL_DAYS', 30),
+        // There is no free trial. "Recover my genius now" partners are charged
+        // the day the training program opens (QL_PRELAUNCH_ENDS_AT), or at
+        // sign-up once it is open. The "trial" in the code is only the Stripe
+        // mechanism that holds the card until then.
+
+        /*
+        | "Wait for my commissions" partners are held until their paid
+        | commission payouts add up to this many dollars. There is no cutoff: a
+        | partner who never reaches it is never charged.
+        */
+        'commission_threshold' => (float) env('STRIPE_COMMISSION_BILLING_THRESHOLD', 200),
+
+        /*
+        | Stripe will not park a trial more than two years out, so a commission
+        | hold is parked this far ahead and `billing:commission-holds` pushes it
+        | back out whenever it gets within `commission_hold_renew_days`.
+        */
+        'commission_hold_days'       => (int) env('STRIPE_COMMISSION_HOLD_DAYS', 700),
+        'commission_hold_renew_days' => (int) env('STRIPE_COMMISSION_HOLD_RENEW_DAYS', 90),
 
         /*
         | Pre-launch signups park on a placeholder trial this far out, because

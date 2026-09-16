@@ -97,6 +97,33 @@ class BillingController extends Controller
         return back()->with('status', 'Trial extended and recorded.');
     }
 
+    /**
+     * Start billing for a partner who chose to wait on commissions.
+     *
+     * Same schedule as reaching the threshold: charged when the training
+     * program opens, or now if it already has.
+     */
+    public function startBilling(Subscription $subscription)
+    {
+        if (! $subscription->isCommissionHold()) {
+            return back()->withErrors(['subscription' => 'This subscription is not waiting on commissions.']);
+        }
+
+        try {
+            $this->billing->startBillingOnLaunchSchedule($subscription);
+        } catch (ApiErrorException $e) {
+            return back()->withErrors(['subscription' => 'Provider refused: ' . $e->getMessage()]);
+        }
+
+        Log::info('Commission hold released by admin', [
+            'subscription_id' => $subscription->id,
+            'user_id'         => $subscription->user_id,
+            'actor_id'        => auth()->id(),
+        ]);
+
+        return back()->with('status', 'Billing started for this partner.');
+    }
+
     public function webhooks(Request $request)
     {
         $query = StripeWebhookEvent::query();

@@ -1,4 +1,4 @@
-<!--meta {"title": "Membership & pricing", "description": "The {{ membership.name }} costs {{ membership.price_display }} {{ membership.interval_phrase }} after a {{ membership.trial_days }}-day free trial. What is included, and how billing, trials and cancellation work.", "nav": "membership"}-->
+<!--meta {"title": "Membership & pricing", "description": "The {{ membership.name }} costs {{ membership.price_display }} {{ membership.interval_phrase }}. What is included, the two enrollment options, and how billing and cancellation work.", "nav": "membership"}-->
 <section class="page-head">
   <div class="wrap">
     <span class="eyebrow">Membership</span>
@@ -12,9 +12,9 @@
     <article class="card card-gold">
       <span class="eyebrow">{{ membership.name }}</span>
       <p class="plan-price">{{ membership.price_display }} <small>{{ membership.interval_phrase }}</small></p>
-      <p class="muted">Billed {{ membership.interval_adverb }} after your {{ membership.trial_days }}-day free trial. Renews automatically until you cancel.</p>
+      <p class="muted">Billed {{ membership.interval_adverb }} once your billing starts, under the enrollment option you choose. Renews automatically until you cancel.</p>
       <ul class="ticks">
-        <li>Full access to {{ course.name }}</li>
+        <li>Full access to {{ course.name }} once your billing starts</li>
         <li>Member back office: contacts, notes, follow-ups and support tickets</li>
         <li>The Partner Program: referral link, partner-product pages and commission statements</li>
         <li>Support through our contact form and back office</li>
@@ -42,13 +42,13 @@
       <table>
         <tbody>
           <tr><th scope="row">Price</th><td>{{ membership.price_display }} {{ membership.interval_phrase }}. All prices are in US dollars. Any sales tax that applies is shown before you confirm.</td></tr>
-          <tr><th scope="row">Free trial</th><td>New members get a {{ membership.trial_days }}-day free trial. You are not charged until it ends, and the end date is shown before you confirm. We email you {{ membership.trial_reminder_days }} days before your trial ends. Cancel any time before then and you pay nothing. <strong>Once the trial ends and your card is charged, the charge is not refundable.</strong></td></tr>
-          <tr><th scope="row">Joining before launch</th><td>If you join before our official launch, your card is saved with Stripe but not charged before launch. We email you {{ membership.prelaunch_notice_days }} days before launch with the launch date. Your {{ membership.trial_days }}-day free trial starts on launch day, and your first charge of {{ membership.price_display }} is made when the trial ends. Cancel any time before then and you pay nothing. Once charged, it is not refundable.</td></tr>
+          <tr><th scope="row">Enrollment options</th><td>When you join, you save a card and choose when it is first charged. There is no free trial. <strong>Start now:</strong> your card is charged {{ membership.price_display }} when {{ course.name }} opens, or straight away if it is already open. <strong>Wait for commissions:</strong> your card is first charged {{ membership.price_display }} once the Partner Program commissions actually paid to you add up to {{ membership.commission_threshold_display }}. {{ course.name }} opens when your billing starts, and you can switch to Start now from Billing at any time. Commissions are never guaranteed. If yours never reach {{ membership.commission_threshold_display }}, you are not charged. Cancel any time before your first charge and you pay nothing. <strong>Once your card is charged, the charge is not refundable.</strong></td></tr>
+          <tr><th scope="row">Joining before launch</th><td>If you join before our official launch, your card is saved with Stripe but not charged before launch. If you chose Start now, we email you {{ membership.prelaunch_notice_days }} days before launch with the launch date, and your first charge of {{ membership.price_display }} is made on launch day, when {{ course.name }} opens. Cancel any time before then and you pay nothing. Once charged, it is not refundable.</td></tr>
           <tr><th scope="row">Renewal</th><td>Your membership renews automatically every {{ membership.interval_noun }} at the price then in effect, charged to the card on file. We email a receipt for every charge, and your next billing date is always shown in Billing.</td></tr>
           <tr><th scope="row">Price changes</th><td>We give at least 30 days' email notice before a new price applies to your membership, so you can cancel first if you choose.</td></tr>
           <tr><th scope="row">Failed payments</th><td>If a payment fails, we email you and retry the card. Access continues for {{ policies.payment_grace_days }} days while you update your card, then pauses until payment succeeds.</td></tr>
           <tr><th scope="row">Cancellation</th><td>Cancel from Billing in your back office, or send a request through our <a href="contact">contact form</a>. Cancelling stops the next charge, and you keep access until the end of the {{ membership.interval_noun }} you paid for.</td></tr>
-          <tr><th scope="row">Refunds</th><td>Membership charges are not refundable once they are made. That includes the first charge after your trial and every renewal. Duplicate or mistaken charges are always refunded. See the <a href="refunds">Refund &amp; Cancellation Policy</a>.</td></tr>
+          <tr><th scope="row">Refunds</th><td>Membership charges are not refundable once they are made. That includes the first charge and every renewal. Duplicate or mistaken charges are always refunded. See the <a href="refunds">Refund &amp; Cancellation Policy</a>.</td></tr>
           <tr><th scope="row">Card statement</th><td>Charges appear on your statement as <strong>{{ membership.statement_descriptor }}</strong>.</td></tr>
           <tr><th scope="row">Payment methods</th><td>Visa, Mastercard, American Express and Discover. Payments are processed by Stripe, and we never see or store your full card number.</td></tr>
         </tbody>
@@ -72,8 +72,8 @@
       <p>Ask the person who told you about {{ site.brand }} for their referral link. If you don't know a partner, send us a request through our <a href="contact">contact form</a>.</p>
     </details>
     <details>
-      <summary>Can I cancel during the free trial?</summary>
-      <p>Yes. Cancel any time before the trial end date shown at signup and you will not be charged. We also email you {{ membership.trial_reminder_days }} days before it ends.</p>
+      <summary>Can I cancel before my first charge?</summary>
+      <p>Yes. Cancel from Billing any time before your first charge and you will not be charged. Billing always shows when your first charge will happen.</p>
     </details>
     <details>
       <summary>What happens to my access when I cancel?</summary>

@@ -9,9 +9,7 @@
 
 @section('content')
 
-@if(session('status'))
-    <div class="alert alert-success py-2">{{ session('status') }}</div>
-@endif
+{{-- The member layout renders the status flash. --}}
 @if($errors->any())
     <div class="alert alert-danger py-2">{{ $errors->first() }}</div>
 @endif
@@ -38,10 +36,25 @@
                         @if($subscription->cancel_at_period_end)
                             <span class="badge bg-secondary">Ends at period close</span>
                         @endif
-                        @if($subscription->is_prelaunch_trial)
-                            <span class="badge bg-info">Pre-launch trial</span>
+                        @if($subscription->isCommissionHold())
+                            <span class="badge bg-info">Waiting on commissions</span>
+                        @elseif($subscription->is_prelaunch_trial)
+                            <span class="badge bg-info">Charged when training opens</span>
                         @endif
                     </div>
+
+                    @if($subscription->isCommissionHold())
+                        <div class="alert alert-light border small">
+                            You chose to wait until you've been paid ${{ number_format($threshold) }} in commissions.
+                            Paid so far: <strong>${{ number_format($commissionPaid, 2) }}</strong>.
+                            The training program opens when your billing starts.
+                            <form method="POST" action="{{ route('member.billing.start-now') }}" class="mt-2"
+                                  onsubmit="return confirm('Start your membership billing now? This opens the training program.')">
+                                @csrf
+                                <button class="btn btn-sm btn-primary">Start my membership now</button>
+                            </form>
+                        </div>
+                    @endif
 
                     <dl class="row mb-0 small">
                         @if($subscription->amount)
@@ -49,7 +62,13 @@
                             <dd class="col-7">{{ strtoupper($subscription->currency) }} {{ number_format($subscription->amount / 100, 2) }}</dd>
                         @endif
 
-                        @if($subscription->trial_ends_at)
+                        @if($subscription->isCommissionHold())
+                            <dt class="col-5 text-muted fw-normal">First charge</dt>
+                            <dd class="col-7">When your paid commissions reach ${{ number_format($threshold) }}</dd>
+                        @elseif($subscription->status === 'trialing' && $subscription->is_prelaunch_trial && $awaitingLaunch)
+                            <dt class="col-5 text-muted fw-normal">First charge</dt>
+                            <dd class="col-7">As soon as the training program is ready</dd>
+                        @elseif($subscription->status === 'trialing' && $subscription->trial_ends_at)
                             <dt class="col-5 text-muted fw-normal">First charge</dt>
                             <dd class="col-7">{{ $subscription->trial_ends_at->format('j F Y') }}</dd>
                         @endif

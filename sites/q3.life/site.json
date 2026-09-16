@@ -7,9 +7,9 @@
     "The app's names still say Quantum Life or The Quantum Solutions (STRIPE_PRODUCT_NAME, admin site_name, PWA title). The owner chose Quantum 3 Solution on 2026-09-14",
     "Statement descriptor Q3SOLUTION is set in the Stripe dashboard (owner: 'Q3Solution is fine for now', 2026-09-14)",
     "7-day access grace period after a failed payment (STRIPE_GRACE_DAYS)",
-    "Stripe Billing customer emails switched on: a trial-ending reminder 7 days before a trial ends, receipts for every charge, failed-payment emails and Smart Retries",
-    "Pre-launch members (owner, 2026-09-14): the email 14 days before launch is actually sent (not built yet), and on launch day billing:apply-prelaunch-end starts each pre-launch member's 30-day trial from the official launch date, so the first charge is launch + 30 days",
-    "The app's signup and Billing pages show the trial end date, and state that charges after the trial are non-refundable, next to the confirm button",
+    "Stripe Billing customer emails switched on: receipts for every charge, failed-payment emails and Smart Retries. There is no free trial any more (owner, 2026-09-16), so the site no longer promises a reminder before the first charge",
+    "Enrollment options (owner, 2026-09-16): Start now is charged on launch day, when the training program opens, with no free trial; Wait for commissions is charged once paid commissions total $200, never if they don't, with training locked until then. The email 14 days before launch is still not built",
+    "The app's signup and Billing pages show when the first charge happens under each option, and state that charges are non-refundable, next to the confirm button",
     "Refund exceptions kept alongside the no-refund policy: duplicate or mistaken charges, and a refund of unused time if we end a membership without cause (Terms section 18)",
     "30 days' email notice before a price change, a Compensation Plan change, or a material Terms change",
     "The Partner Program page is deliberately general while the Compensation Plan is developed during pre-launch (owner, 2026-09-14). It does not say which sales pay commission. Publish the plan there, with 30 days' notice, before it takes effect. If the plan pays commissions on membership fees, tell Stripe: multi-level commissions are on its prohibited list",
@@ -57,8 +57,7 @@
     "amount_cents": 4999,
     "currency": "usd",
     "interval": "month",
-    "trial_days": 30,
-    "trial_reminder_days": 7,
+    "commission_threshold_display": "$200",
     "prelaunch_notice_days": 14,
     "statement_descriptor": "Q3SOLUTION"
   },
@@ -69,7 +68,7 @@
   },
 
   "policies": {
-    "updated": "2026-09-14",
+    "updated": "2026-09-16",
     "payment_grace_days": 7,
     "refund_processing": "5 to 10 business days",
     "min_age": 18

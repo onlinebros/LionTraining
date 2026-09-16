@@ -24,36 +24,89 @@
                 </div>
             @endif
 
-            @php($price = strtoupper($currency) . ' ' . number_format($amount / 100, 2))
+            @php($price = '$' . number_format($amount / 100, 2))
+            @php($thresholdText = '$' . number_format($threshold))
 
             <div class="card">
                 <div class="card-body p-4">
 
-                    <h5 class="mb-1">Add a payment method</h5>
-                    <p class="text-muted small mb-4">
-                        @if($awaitingLaunch)
-                            Your {{ $trialDays }}-day free trial starts on launch day. Your first charge of
-                            {{ $price }} is {{ $trialDays }} days after launch, then every {{ $interval }}.
-                        @else
-                            {{ $price }} per {{ $interval }}, starting {{ $trialEnd->format('j F Y') }}.
-                        @endif
-                        <strong>You will not be charged today.</strong>
+                    <h4 class="mb-3">Quantum VISION</h4>
+                    <p class="mb-2">
+                        Quantum VISION is the Foundational HEART of The Quantum Solution.
+                    </p>
+                    <p class="mb-2">
+                        The Rediscovery of the HEART Institute awakens the Creative Genius Code that is
+                        dormant in 98% of adults.
+                    </p>
+                    <p class="mb-4">
+                        Just imagine how productive your network will be when everyone is learning how to
+                        live with Quantum VISION. The monthly tuition is <strong>{{ $price }}</strong>.
                     </p>
 
                     @if($errors->any())
                         <div class="alert alert-danger py-2 small">{{ $errors->first() }}</div>
                     @endif
 
+                    <h6 class="fw-bold mb-2">Enrollment options</h6>
+
+                    <div class="mb-4" role="radiogroup" aria-label="Enrollment options">
+                        <label class="d-flex gap-3 border rounded p-3 mb-2" style="cursor:pointer;">
+                            <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="enrollment_choice"
+                                   value="launch" @checked($enrollment === 'launch')>
+                            <span>
+                                <span class="fw-semibold d-block">I Want To Recover My Genius NOW!</span>
+                                <span class="text-muted small">
+                                    @if($awaitingLaunch)
+                                        Your card is saved today and charged {{ $price }} as soon as the training
+                                        program is ready. You'll get the date before then.
+                                    @elseif($firstCharge)
+                                        Your card is saved today and charged {{ $price }} on
+                                        {{ $firstCharge->format('j F Y') }}, when the training program opens.
+                                    @else
+                                        Your card is charged {{ $price }} today and the training program opens
+                                        right away.
+                                    @endif
+                                    Then {{ $price }} every {{ $interval }}.
+                                </span>
+                            </span>
+                        </label>
+
+                        <label class="d-flex gap-3 border rounded p-3" style="cursor:pointer;">
+                            <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="enrollment_choice"
+                                   value="commission" @checked($enrollment === 'commission')>
+                            <span>
+                                <span class="fw-semibold d-block">
+                                    I will wait until I've been paid at least {{ $thresholdText }} in commissions.
+                                </span>
+                                <span class="text-muted small">
+                                    Your card is saved today and first charged {{ $price }} once your paid
+                                    commissions add up to {{ $thresholdText }}. The training program opens when your
+                                    billing starts, and you can start sooner from your Billing page at any time.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <h6 class="fw-bold mb-2">Payment method</h6>
+                    <p class="text-muted small mb-3" id="charge-note">
+                        @if($firstCharge === null)
+                            <span data-for="launch">Your card will be charged {{ $price }} today.</span>
+                            <span data-for="commission"><strong>You will not be charged today.</strong></span>
+                        @else
+                            <strong>You will not be charged today.</strong>
+                        @endif
+                    </p>
+
                     <div id="payment-element" class="mb-3"></div>
                     <div id="card-error" class="text-danger small mb-3" role="alert"></div>
 
                     <button id="submit-card" class="btn btn-primary w-100">
-                        <span id="submit-text">Save card &amp; activate</span>
+                        <span id="submit-text">Save card &amp; enroll</span>
                         <span id="submit-spinner" class="spinner-border spinner-border-sm d-none"></span>
                     </button>
 
                     <p class="text-muted small mt-3 mb-2">
-                        Charges after your trial are non-refundable. A card can back only one membership.
+                        Charges are non-refundable. A card can back only one membership.
                         See the <a href="https://q3.life/terms" target="_blank" rel="noopener">Terms</a>
                         and <a href="https://q3.life/refunds" target="_blank" rel="noopener">Refund Policy</a>.
                     </p>
@@ -66,6 +119,7 @@
             <form id="confirm-form" method="POST" action="{{ route('member.billing.confirm') }}" class="d-none">
                 @csrf
                 <input type="hidden" name="payment_method" id="payment_method_id">
+                <input type="hidden" name="enrollment" id="enrollment_input">
             </form>
         @endif
     </div>
@@ -89,6 +143,18 @@ document.addEventListener('DOMContentLoaded', async function () {
         text.classList.toggle('d-none', on);
         spinner.classList.toggle('d-none', !on);
     }
+
+    const choices = document.querySelectorAll('input[name="enrollment_choice"]');
+    const selected = () => document.querySelector('input[name="enrollment_choice"]:checked')?.value;
+
+    // Only the note that matches the chosen option is shown.
+    function showChargeNote() {
+        document.querySelectorAll('#charge-note [data-for]').forEach(function (el) {
+            el.classList.toggle('d-none', el.dataset.for !== selected());
+        });
+    }
+    choices.forEach(c => c.addEventListener('change', showChargeNote));
+    showChargeNote();
 
     function fail(message) {
         errorEl.textContent = message;
@@ -125,8 +191,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     }).mount('#payment-element');
 
     button.addEventListener('click', async function () {
-        busy(true);
         errorEl.textContent = '';
+
+        if (!selected()) {
+            errorEl.textContent = 'Choose an enrollment option.';
+            return;
+        }
+
+        busy(true);
 
         const { error, setupIntent } = await stripe.confirmSetup({
             elements,
@@ -142,6 +214,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         // opens the subscription. The webhook corrects the row moments later —
         // this response is optimistic, never final.
         document.getElementById('payment_method_id').value = setupIntent.payment_method;
+        document.getElementById('enrollment_input').value = selected();
         document.getElementById('confirm-form').submit();
     });
 });

@@ -22,13 +22,21 @@ use Stripe\Subscription as StripeSubscription;
 /**
  * Partner subscriptions: customers, saved cards, and the trial subscription.
  *
- * ── Trial model ───────────────────────────────────────────────────────────────
- * Pre-launch signups are promised they will not be charged until launch. The
- * launch date is not known when they sign up, so their subscription parks on a
- * placeholder trial far in the future and is flagged `is_prelaunch_trial`. When
- * the date is finally set, `billing:apply-prelaunch-end` rolls every flagged
- * subscription's trial end onto the real schedule and clears the flag. Anyone
- * signing up after launch simply gets the standard trial.
+ * ── Enrollment options ────────────────────────────────────────────────────────
+ * Every partner saves a card at sign-up and picks when billing starts. There is
+ * no free trial; a Stripe trial is only how the card is held until then.
+ *
+ * `launch` ("Recover my genius now"): the first charge lands the day the
+ * training program opens. That date is not known when most partners sign up, so
+ * their subscription parks on a placeholder trial and is flagged
+ * `is_prelaunch_trial`. Once the date is set, `billing:apply-prelaunch-end`
+ * moves every flagged trial to end on it and clears the flag. After launch this
+ * option charges at sign-up.
+ *
+ * `commission` ("Wait for my commissions"): parked until the partner's paid
+ * commissions reach `commission_threshold`, then moved onto the launch schedule
+ * above (see CommissionBillingTrigger). Stripe caps how far out a trial can sit,
+ * so `billing:commission-holds` keeps pushing the hold back out.
  *
  * The alternative — creating subscriptions retroactively for everyone on launch
  * morning — means thousands of provider calls in one batch, on the day with the
@@ -222,46 +230,63 @@ class BillingService
     // ── Trial arithmetic ──────────────────────────────────────────────────────
 
     /**
-     * When the first charge should land, and whether this is a pre-launch trial.
+     * When the first charge of a `launch` subscription should land, and whether
+     * it is still parked for launch.
      *
-     * @return array{0: Carbon, 1: bool}
+     * A null date means the training program is already open: charge now.
+     *
+     * @return array{0: Carbon|null, 1: bool}
      */
     public function resolveTrialEnd(?Carbon $now = null): array
     {
-        $now       = $now ?? now();
-        $trialDays = (int) config('stripe.subscription.trial_days', 30);
-        $launchAt  = Prelaunch::endsAt();
+        $now      = $now ?? now();
+        $launchAt = Prelaunch::endsAt();
 
         if ($launchAt === null) {
-            // Pre-launch is running and no date has been published. Park it.
+            // No date has been published. Park it.
             $days = (int) config('stripe.subscription.prelaunch_placeholder_days', 365);
 
             return [$now->copy()->addDays($days), true];
         }
 
         if ($launchAt->isAfter($now)) {
-            // Launch date known: free until then, plus the standard trial.
-            return [$launchAt->copy()->addDays($trialDays), true];
+            // Date known: the first charge is launch day itself. Still flagged,
+            // so apply-prelaunch-end follows the date if it slips.
+            return [$launchAt->copy(), true];
         }
 
-        return [$now->copy()->addDays($trialDays), false];
+        return [null, false];
+    }
+
+    /** Where a commission hold is parked from now. */
+    public function commissionHoldEnd(?Carbon $now = null): Carbon
+    {
+        return ($now ?? now())->copy()->addDays((int) config('stripe.subscription.commission_hold_days', 700));
     }
 
     // ── Subscription lifecycle ────────────────────────────────────────────────
 
     /**
-     * Start a subscription: attach the card, then open the trial.
+     * Start a subscription: attach the card, then open it under the chosen
+     * enrollment option.
      *
      * Safe to call twice. The browser can retry after a slow confirm, and a
      * duplicate call returns the existing subscription rather than opening a
      * second one.
      */
-    public function startSubscription(User $user, string $paymentMethodId): SubscriptionModel
-    {
+    public function startSubscription(
+        User $user,
+        string $paymentMethodId,
+        string $trigger = SubscriptionModel::TRIGGER_LAUNCH,
+    ): SubscriptionModel {
         $priceId = config('stripe.subscription.price_id');
 
         if (blank($priceId)) {
             throw BillingException::noPriceConfigured();
+        }
+
+        if (! in_array($trigger, SubscriptionModel::TRIGGERS, true)) {
+            throw new BillingException('Choose an enrollment option.');
         }
 
         $paymentMethod = $this->attachPaymentMethod($user, $paymentMethodId);
@@ -276,12 +301,12 @@ class BillingService
         // include a trial end computed from the current time, so two requests a
         // second apart hash differently.
         try {
-            return Cache::lock("subscription-start-user-{$user->id}", 60)->block(20, function () use ($user, $paymentMethod, $priceId) {
+            return Cache::lock("subscription-start-user-{$user->id}", 60)->block(20, function () use ($user, $paymentMethod, $priceId, $trigger) {
                 if ($existing = $user->subscriptions()->entitling()->first()) {
                     return $existing;
                 }
 
-                return $this->createTrialSubscription($user, $paymentMethod, $priceId);
+                return $this->createSubscription($user, $paymentMethod, $priceId, $trigger);
             });
         } catch (LockTimeoutException) {
             throw new BillingException(
@@ -291,34 +316,47 @@ class BillingService
     }
 
     /** Only ever called under the lock taken in startSubscription(). */
-    private function createTrialSubscription(User $user, PaymentMethod $paymentMethod, string $priceId): SubscriptionModel
+    private function createSubscription(User $user, PaymentMethod $paymentMethod, string $priceId, string $trigger): SubscriptionModel
     {
-        [$trialEnd, $isPrelaunch] = $this->resolveTrialEnd();
-
-        $floor = now()->addHours(self::MIN_TRIAL_HOURS);
-
-        if ($trialEnd->isBefore($floor)) {
-            $trialEnd = $floor;
+        if ($trigger === SubscriptionModel::TRIGGER_COMMISSION) {
+            [$trialEnd, $isPrelaunch] = [$this->commissionHoldEnd(), false];
+        } else {
+            [$trialEnd, $isPrelaunch] = $this->resolveTrialEnd();
         }
 
         $params = [
             'customer'               => $this->customerFor($user),
             'items'                  => [['price' => $priceId]],
-            'trial_end'              => $trialEnd->getTimestamp(),
             'default_payment_method' => $paymentMethod->provider_payment_method_id,
-
-            // If the card is gone by the time the trial ends, cancel rather than
-            // leave an unpaid subscription hanging around.
-            'trial_settings' => [
-                'end_behavior' => ['missing_payment_method' => 'cancel'],
-            ],
 
             'metadata' => [
                 'user_id'            => (string) $user->id,
                 'is_prelaunch_trial' => $isPrelaunch ? 'true' : 'false',
+                'billing_trigger'    => $trigger,
                 'app'                => 'quantumlife',
             ],
         ];
+
+        if ($trialEnd === null) {
+            // The training program is open: charge the saved card now. If that
+            // payment fails, Stripe creates nothing, so a retry cannot leave an
+            // unpaid subscription behind.
+            $params['payment_behavior'] = 'error_if_incomplete';
+        } else {
+            $floor = now()->addHours(self::MIN_TRIAL_HOURS);
+
+            if ($trialEnd->isBefore($floor)) {
+                $trialEnd = $floor;
+            }
+
+            $params['trial_end'] = $trialEnd->getTimestamp();
+
+            // If the card is gone by the time the hold ends, cancel rather than
+            // leave an unpaid subscription hanging around.
+            $params['trial_settings'] = [
+                'end_behavior' => ['missing_payment_method' => 'cancel'],
+            ];
+        }
 
         try {
             $subscription = $this->stripe->client()->subscriptions->create($params, [
@@ -334,6 +372,54 @@ class BillingService
         }
 
         return $this->syncSubscription($user, $subscription, $isPrelaunch);
+    }
+
+    /**
+     * Put a subscription on the launch schedule: parked until the training
+     * program opens, or charged now if it already has.
+     *
+     * Used when a commission hold reaches its threshold, when a held partner
+     * chooses to start now, and by admins.
+     */
+    public function startBillingOnLaunchSchedule(SubscriptionModel $subscription): SubscriptionModel
+    {
+        // Already paying (or finished): setting a trial end here would hand a
+        // paying partner free time.
+        if ($subscription->status !== SubscriptionModel::STATUS_TRIALING) {
+            return $subscription;
+        }
+
+        [$trialEnd, $isPrelaunch] = $this->resolveTrialEnd();
+
+        if ($trialEnd === null) {
+            return $this->endTrialNow($subscription);
+        }
+
+        if (Prelaunch::endsAt() === null && $subscription->trial_ends_at !== null) {
+            // No date yet. Leave the hold where it is; apply-prelaunch-end moves
+            // it once the date is set.
+            $trialEnd = $subscription->trial_ends_at->copy();
+        }
+
+        return $this->setTrialEnd($subscription, $trialEnd, $isPrelaunch, SubscriptionModel::TRIGGER_LAUNCH);
+    }
+
+    /** End the trial now; Stripe invoices and charges the saved card immediately. */
+    public function endTrialNow(SubscriptionModel $subscription): SubscriptionModel
+    {
+        $remote = $this->stripe->client()->subscriptions->update(
+            $subscription->provider_subscription_id,
+            [
+                'trial_end'          => 'now',
+                'proration_behavior' => 'none',
+                'metadata'           => [
+                    'is_prelaunch_trial' => 'false',
+                    'billing_trigger'    => SubscriptionModel::TRIGGER_LAUNCH,
+                ],
+            ],
+        );
+
+        return $this->syncSubscription($subscription->user, $remote, false);
     }
 
     /**
@@ -362,6 +448,11 @@ class BillingService
             'status'                    => $subscription->status,
             'trial_ends_at'             => $subscription->trial_end ? Carbon::createFromTimestamp($subscription->trial_end) : null,
             'is_prelaunch_trial'        => $isPrelaunch,
+            // Stripe's metadata is the record of the enrollment option, so a
+            // webhook that arrives after a change cannot put it back.
+            'billing_trigger'           => in_array($subscription->metadata['billing_trigger'] ?? null, SubscriptionModel::TRIGGERS, true)
+                ? $subscription->metadata['billing_trigger']
+                : null,
             'current_period_start'      => $periodStart ? Carbon::createFromTimestamp($periodStart) : null,
             'current_period_end'        => $periodEnd ? Carbon::createFromTimestamp($periodEnd) : null,
             'cancel_at_period_end'      => $subscription->cancel_at_period_end,
@@ -403,14 +494,26 @@ class BillingService
     /**
      * Move a subscription's trial end.
      *
-     * Used when the launch date is finally decided, and by admin extensions.
+     * Used when the launch date is finally decided, by admin extensions, and to
+     * renew commission holds. Leaves the enrollment option alone unless a new
+     * one is given.
      */
-    public function setTrialEnd(SubscriptionModel $subscription, Carbon $trialEnd, bool $stillPrelaunch = false): SubscriptionModel
-    {
+    public function setTrialEnd(
+        SubscriptionModel $subscription,
+        Carbon $trialEnd,
+        bool $stillPrelaunch = false,
+        ?string $trigger = null,
+    ): SubscriptionModel {
         $floor = now()->addHours(self::MIN_TRIAL_HOURS);
 
         if ($trialEnd->isBefore($floor)) {
             $trialEnd = $floor;
+        }
+
+        $metadata = ['is_prelaunch_trial' => $stillPrelaunch ? 'true' : 'false'];
+
+        if ($trigger !== null) {
+            $metadata['billing_trigger'] = $trigger;
         }
 
         $remote = $this->stripe->client()->subscriptions->update(
@@ -420,7 +523,7 @@ class BillingService
                 // The partner agreed to a price at signup. Moving the trial date
                 // is not a plan change and must not generate a proration invoice.
                 'proration_behavior' => 'none',
-                'metadata'           => ['is_prelaunch_trial' => $stillPrelaunch ? 'true' : 'false'],
+                'metadata'           => $metadata,
             ],
         );
 

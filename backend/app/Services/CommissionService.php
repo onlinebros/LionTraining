@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\CheckCommissionBillingJob;
 use App\Models\CommissionClawback;
 use App\Models\CommissionLedger;
 use App\Models\CommissionPayout;
@@ -184,6 +185,10 @@ class CommissionService
             ]);
 
             $payout->ledgerEntries()->update(['status' => 'paid']);
+
+            // A partner waiting on commissions may have just reached the
+            // billing threshold. Only once this payout is committed.
+            CheckCommissionBillingJob::dispatch($payout->earner_id)->afterCommit();
         });
     }
 

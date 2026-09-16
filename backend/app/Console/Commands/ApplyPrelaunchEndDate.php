@@ -11,10 +11,12 @@ use Stripe\Exception\ApiErrorException;
 /**
  * Rolls every parked pre-launch trial onto the real schedule.
  *
- * Partners who signed up during pre-launch were promised no charge until launch,
- * but the launch date was unknown at the time, so their subscriptions sit on a
- * placeholder trial far in the future. Once `QL_PRELAUNCH_ENDS_AT` is set, this
- * moves each one to (launch date + trial days) and clears the flag.
+ * Partners who chose "Recover my genius now" during pre-launch were promised no
+ * charge until the training program opens, but the date was unknown at the
+ * time, so their subscriptions sit on a placeholder trial far in the future.
+ * Once `QL_PRELAUNCH_ENDS_AT` is set, this moves each one to end on that date
+ * (the first charge) and clears the flag. Partners waiting on commissions are
+ * never flagged and are left alone.
  *
  * Run it on launch day BEFORE opening the closed sections, so nobody hits a
  * billing state mid-session. It is the one launch step that touches money, so
@@ -38,16 +40,16 @@ class ApplyPrelaunchEndDate extends Command
             return self::FAILURE;
         }
 
-        $trialDays = (int) config('stripe.subscription.trial_days', 30);
-        $target    = $launchAt->copy()->addDays($trialDays);
+        $target = $launchAt->copy();
 
         $this->line('');
         $this->info("Launch date : {$launchAt->toDayDateTimeString()}");
-        $this->info("New trial end: {$target->toDayDateTimeString()} (launch + {$trialDays} days)");
+        $this->info("First charge: {$target->toDayDateTimeString()} (launch day)");
         $this->line('');
 
         $query = Subscription::query()
             ->where('is_prelaunch_trial', true)
+            ->where('billing_trigger', Subscription::TRIGGER_LAUNCH)
             ->whereIn('status', [Subscription::STATUS_TRIALING, Subscription::STATUS_ACTIVE])
             ->with('user')
             ->orderBy('id');
@@ -89,7 +91,10 @@ class ApplyPrelaunchEndDate extends Command
         // deleted subscription must not strand everyone after it in the list.
         foreach ($subscriptions as $subscription) {
             try {
-                $billing->setTrialEnd($subscription, $target->copy(), stillPrelaunch: false);
+                // Launch has already passed: charge now rather than two days late.
+                $target->isPast()
+                    ? $billing->endTrialNow($subscription)
+                    : $billing->setTrialEnd($subscription, $target->copy(), stillPrelaunch: false);
                 $moved++;
             } catch (ApiErrorException $e) {
                 $failed++;

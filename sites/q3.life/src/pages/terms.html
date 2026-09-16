@@ -17,7 +17,7 @@
       <li><a href="terms#accounts">Your account</a></li>
       <li><a href="terms#billing">Membership, billing and renewal</a></li>
       <li><a href="terms#prelaunch">Joining before launch</a></li>
-      <li><a href="terms#trials">Free trials</a></li>
+      <li><a href="terms#enrollment">Enrollment options</a></li>
       <li><a href="terms#cancellation">Cancellation and refunds</a></li>
       <li><a href="terms#price-changes">Price and service changes</a></li>
       <li><a href="terms#content">Using the course</a></li>
@@ -69,18 +69,23 @@
 
   <section id="prelaunch">
     <h2>5. Joining before launch</h2>
-    <p>If you join before our official launch, your card is saved with Stripe but not charged before launch. We will email you {{ membership.prelaunch_notice_days }} days before launch with the launch date. Your {{ membership.trial_days }}-day free trial starts on launch day. The membership fee is first charged when that trial ends, then every {{ membership.interval_noun }} until you cancel. You can cancel at any time before the first charge and pay nothing. Once made, charges are not refundable. We do not guarantee a launch date. If we do not launch, your card is never charged.</p>
+    <p>If you join before our official launch, your card is saved with Stripe but not charged before launch. If you choose Start now, we will email you {{ membership.prelaunch_notice_days }} days before launch with the launch date, and the membership fee is first charged on launch day, then every {{ membership.interval_noun }} until you cancel. If you choose Wait for commissions, section 6 applies instead. You can cancel at any time before the first charge and pay nothing. Once made, charges are not refundable. We do not guarantee a launch date. If we do not launch, your card is never charged.</p>
   </section>
 
-  <section id="trials">
-    <h2>6. Free trials</h2>
-    <p>New memberships start with a {{ membership.trial_days }}-day free trial. The trial end date is shown before you confirm, and we email you {{ membership.trial_reminder_days }} days before it ends. You can cancel at any time before that date and you are not charged. If you don't cancel, the membership fee is charged when the trial ends, and every {{ membership.interval_noun }} after that until you cancel. Each person may have one free trial.</p>
+  <section id="enrollment">
+    <h2>6. Enrollment options</h2>
+    <p>When you join, you save a card and choose when the membership fee is first charged. There is no free trial.</p>
+    <ul>
+      <li><strong>Start now.</strong> The fee is first charged when {{ course.name }} opens: on launch day if you join before launch, or when you join if we have already launched.</li>
+      <li><strong>Wait for commissions.</strong> The fee is first charged once the Partner Program commissions actually paid to you total at least {{ membership.commission_threshold_display }}. A commission that is reversed does not count. Until then, you can use the back office and the Partner Program, but not {{ course.name }}. You can switch to Start now from Billing at any time. We do not promise that you will earn any commissions. If yours never reach {{ membership.commission_threshold_display }}, you are not charged.</li>
+    </ul>
+    <p>Whichever option you choose, the fee is then charged every {{ membership.interval_noun }} until you cancel. You can cancel at any time before the first charge and pay nothing.</p>
   </section>
 
   <section id="cancellation">
     <h2>7. Cancellation and refunds</h2>
     <p>You can cancel at any time, online in Billing or by sending a request through our <a href="contact">contact form</a>. Cancelling stops future charges, and you keep access until the end of the {{ membership.interval_noun }} you paid for.</p>
-    <p><strong>Membership charges are not refundable.</strong> This covers the first charge when your free trial ends, every renewal charge, and the unused part of any billing period. The only exceptions are duplicate or mistaken charges and the cases in section 18, as set out in our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>
+    <p><strong>Membership charges are not refundable.</strong> This covers the first charge, every renewal charge, and the unused part of any billing period. The only exceptions are duplicate or mistaken charges and the cases in section 18, as set out in our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>
   </section>
 
   <section id="price-changes">

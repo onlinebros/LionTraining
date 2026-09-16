@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\BillingException;
 use App\Models\PaymentMethod;
+use App\Models\Subscription;
 use App\Services\Stripe\BillingService;
+use App\Services\Stripe\CommissionBillingTrigger;
 use App\Services\Stripe\StripeClientFactory;
 use App\Support\Prelaunch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Stripe\Exception\ApiErrorException;
 
 /**
@@ -24,6 +27,7 @@ class MemberBillingController extends Controller
     public function __construct(
         private readonly BillingService $billing,
         private readonly StripeClientFactory $stripe,
+        private readonly CommissionBillingTrigger $trigger,
     ) {}
 
     /** Card capture. Where the subscription gate sends an unsubscribed partner. */
@@ -37,20 +41,21 @@ class MemberBillingController extends Controller
             return redirect()->route('member.billing.index');
         }
 
-        [$trialEnd, $isPrelaunchTrial] = $this->billing->resolveTrialEnd();
+        [$firstCharge] = $this->billing->resolveTrialEnd();
 
         return view('member.billing.start', [
             'user'           => $user,
             'publishableKey' => $this->stripe->publishableKey(),
             'configured'     => $this->stripe->isConfigured(),
             'testMode'       => $this->stripe->isConfigured() && $this->stripe->isTestMode(),
-            'trialEnd'       => $trialEnd,
-            // With no launch date published, $trialEnd is only a placeholder and
-            // must not be shown as the first charge date.
-            'awaitingLaunch' => $isPrelaunchTrial && Prelaunch::endsAt() === null,
-            'trialDays'      => (int) config('stripe.subscription.trial_days'),
+            // Null when the training program is already open (charged today).
+            // With no date published it is only a placeholder, never shown.
+            'firstCharge'    => $firstCharge,
+            'awaitingLaunch' => Prelaunch::endsAt() === null,
+            'threshold'      => (float) config('stripe.subscription.commission_threshold'),
+            // No option is pre-selected; the partner has to choose one.
+            'enrollment'     => old('enrollment'),
             'amount'         => (int) config('stripe.subscription.amount'),
-            'currency'       => config('stripe.subscription.currency'),
             'interval'       => config('stripe.subscription.interval'),
         ]);
     }
@@ -88,22 +93,64 @@ class MemberBillingController extends Controller
     {
         $data = $request->validate([
             'payment_method' => 'required|string|max:255',
+            'enrollment'     => ['required', Rule::in(Subscription::TRIGGERS)],
+        ], [
+            'enrollment.required' => 'Choose an enrollment option.',
         ]);
 
         try {
-            $this->billing->startSubscription(auth()->user(), $data['payment_method']);
+            $subscription = $this->billing->startSubscription(auth()->user(), $data['payment_method'], $data['enrollment']);
         } catch (BillingException $e) {
-            return back()->withErrors(['payment_method' => $e->getMessage()]);
+            return back()->withInput($request->only('enrollment'))->withErrors(['payment_method' => $e->getMessage()]);
         } catch (ApiErrorException $e) {
             Log::error('Subscription confirm failed', ['user_id' => auth()->id(), 'error' => $e->getMessage()]);
 
-            return back()->withErrors([
+            return back()->withInput($request->only('enrollment'))->withErrors([
                 'payment_method' => 'We could not complete your membership. No charge has been made.',
             ]);
         }
 
         return redirect()->route('member.billing.index')
-            ->with('status', 'Your membership is set up. You will not be charged until your trial ends.');
+            ->with('status', $this->statusFor($subscription));
+    }
+
+    /**
+     * A partner waiting on commissions chooses to start billing now, which
+     * opens the training program.
+     */
+    public function startNow()
+    {
+        $subscription = auth()->user()->activeSubscription();
+
+        if ($subscription === null || ! $subscription->isCommissionHold()) {
+            return back()->withErrors(['subscription' => 'Your membership billing has already started.']);
+        }
+
+        try {
+            $subscription = $this->billing->startBillingOnLaunchSchedule($subscription);
+        } catch (ApiErrorException $e) {
+            Log::error('Start-now failed', ['user_id' => auth()->id(), 'error' => $e->getMessage()]);
+
+            return back()->withErrors(['subscription' => 'We could not start your membership. Please try again.']);
+        }
+
+        return back()->with('status', $this->statusFor($subscription));
+    }
+
+    private function statusFor(Subscription $subscription): string
+    {
+        if ($subscription->billing_trigger === Subscription::TRIGGER_COMMISSION && $subscription->isCommissionHold()) {
+            return 'Your card is on file. You will not be charged until your paid commissions reach $'
+                . number_format((float) config('stripe.subscription.commission_threshold')) . '.';
+        }
+
+        if ($subscription->status !== Subscription::STATUS_TRIALING) {
+            return 'Your membership is active and your card has been charged.';
+        }
+
+        return Prelaunch::endsAt() === null
+            ? 'Your card is on file. It will be charged as soon as the training program is ready.'
+            : 'Your card is on file. Your first charge is ' . $subscription->trial_ends_at?->format('j F Y') . ', when the training program opens.';
     }
 
     /** Manage screen: subscription state, cards, invoices. */
@@ -112,6 +159,9 @@ class MemberBillingController extends Controller
         $user = auth()->user()->load(['subscriptions', 'paymentMethods']);
 
         return view('member.billing.index', [
+            'awaitingLaunch' => Prelaunch::endsAt() === null,
+            'threshold'      => $this->trigger->threshold(),
+            'commissionPaid' => $this->trigger->paidTotal($user),
             'user'           => $user,
             'subscription'   => $user->activeSubscription() ?? $user->subscriptions()->latest('id')->first(),
             'paymentMethods' => $user->paymentMethods()->orderByDesc('is_default')->get(),

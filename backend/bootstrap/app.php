@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'prelaunch'   => \App\Http\Middleware\PrelaunchGuard::class,
             'invitation'  => \App\Http\Middleware\RequireInvitation::class,
             'subscribed'  => \App\Http\Middleware\RequireActiveSubscription::class,
+            'training.unlocked' => \App\Http\Middleware\EnsureTrainingUnlocked::class,
         ]);
 
         // Check is_active on every authenticated web request
