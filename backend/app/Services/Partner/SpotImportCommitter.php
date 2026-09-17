@@ -206,23 +206,27 @@ class SpotImportCommitter
      */
     private function resolveSponsors(PartnerImport $import): void
     {
+        // effective_sponsor_id, not external_sponsor_id: validation already
+        // worked out that a sponsor the file does not contain falls back to the
+        // position above, and wrote it down. Reading the raw column here is
+        // what made the commit and the depth pass disagree, which built 4,581
+        // of iHub's positions as enrollment roots.
         DB::statement(
             'UPDATE users AS child
                 SET sponsor_id = sponsor.id
                FROM partner_import_rows AS r
                JOIN users AS sponsor
                  ON sponsor.partner_company_id = ?
-                AND sponsor.external_user_id = r.external_sponsor_id
+                AND sponsor.external_user_id = r.effective_sponsor_id
               WHERE r.partner_import_id = ?
                 AND child.partner_import_id = ?
                 AND child.external_user_id = r.external_user_id
-                AND r.external_sponsor_id IS NOT NULL',
+                AND r.effective_sponsor_id IS NOT NULL',
             [$import->partner_company_id, $import->id, $import->id],
         );
 
-        // Everything the sponsor column could not answer falls back to the
-        // position above — including every leg top, whose sponsor is the
-        // Quantum partner it was connected to.
+        // What is left is the leg tops, whose sponsor is the Quantum partner
+        // the leg was connected to.
         DB::statement(
             'UPDATE users
                 SET sponsor_id = placement_parent_id

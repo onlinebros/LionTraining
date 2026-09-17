@@ -27,6 +27,7 @@ class PartnerImportRow extends Model
         'activation_code',
         'external_parent_id',
         'external_sponsor_id',
+        'effective_sponsor_id',
         'link_to_existing',
         'parent_user_id',
         'status',

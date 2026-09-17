@@ -61,10 +61,54 @@ those rows, and somebody will eventually ask why.
       it until iHub confirms their receiver is ready.
 - [ ] You know which Quantum account each of the 40 legs belongs under, in
       writing, agreed with iHub. Especially `iHub-2`.
+- [ ] **The database cluster has room.** This is the one that will stop you —
+      see § 2a. Measured on dev, a completed import needs roughly **6.5 GB**,
+      and production's managed cluster started at 12 MB.
 - [ ] A database backup taken within the last hour, and you have checked it
       restores.
 - [ ] Nobody is mid-signup. Pick a quiet window: the commit takes an exclusive
       chunk of database time (see § 5).
+
+## 2a. Storage — check this before anything else
+
+Measured on the dev rehearsal, after 1,304,352 positions:
+
+| | |
+|---|---|
+| `users` table | 2,188 MB |
+| `users` indexes | 2,010 MB — mostly the two ltree GIST indexes |
+| `partner_import_rows` (staging) | 1,533 MB |
+| `sponsorships` | ~400–600 MB, one row per position |
+| **Total** | **~6.5 GB** |
+
+On top of that, the commit is a single transaction writing several gigabytes, so
+WAL grows until it checkpoints. Budget meaningfully more than 6.5 GB free, not
+6.5 GB exactly.
+
+**Resolved for the first import (2026-09-18).** The cluster was on
+DigitalOcean's smallest node — 1 GB RAM, 10 GB disk — which 6.5 GB of data plus
+the WAL from a single multi-gigabyte transaction would not have fitted safely.
+The failure mode is bad: a full DigitalOcean cluster goes read-only, which takes
+`app.q3.life` down, and rolling the failed transaction back needs disk of its
+own.
+
+The owner moved it to 2 GB RAM with more disk **and turned on storage
+auto-scaling at 80%**, which is what actually removes the risk — the cluster
+grows itself rather than stopping. Leave that on.
+
+For any future partner import, the check is the same: estimate ~5 KB of database
+per position and confirm there is several times the transaction's size free.
+
+Staging alone is 1.5 GB and is reversible (`DELETE FROM partner_import_rows`),
+so the file can always be checked in place before committing to anything.
+
+### Worth revisiting later
+
+4.2 GB for 1.3M positions is ~3.2 KB per row, and half of it is index. The two
+ltree GIST indexes are what make every downline query fast, so they earn their
+place, but if storage becomes the binding constraint the first thing to look at
+is whether `enrollment_path` needs its own GIST index on this dataset — for this
+import the enrollment tree is the placement tree.
 
 ## 3. Timings, measured on dev
 
@@ -75,10 +119,29 @@ assume much better.
 |---|---|---|
 | Parse (`--stage`) | ~7 min | Streams the file, 2,000 rows per insert |
 | Validate | ~14 min | 144 depth passes, two trees × 72 levels |
-| Commit | see § 5 | One transaction |
+| Commit | ~1 hr on dev | One transaction. **See the warning below.** |
 
-Total, end to end, is measured in tens of minutes, not hours. It is not a job
-you start and walk away from.
+**The commit timing above was measured without the index that makes it fast.**
+The dev rehearsal ran before `2026_09_18_000001_index_imported_users_for_commit`
+could be applied — the import's own transaction was holding the lock the index
+needed. Every statement after the initial INSERT joins on
+`(partner_import_id, external_user_id)`, and without that index the 144 path
+passes each scan 1.3M rows.
+
+Production already has the index: it went on with the deploy on 2026-09-18.
+Before running the import, confirm it is there —
+
+```sql
+SELECT indexname FROM pg_indexes
+ WHERE tablename = 'users' AND indexname = 'users_partner_import_lookup_idx';
+```
+
+— and if it is missing, run `php artisan migrate --force` and check again
+**before** starting. Adding it afterwards does not help; it cannot be added
+during.
+
+Plan for the commit taking tens of minutes and hold the window open longer than
+you think you need. It is not a job you start and walk away from.
 
 ## 4. Stage and check
 

@@ -346,6 +346,66 @@ class SpotImportTest extends TestCase
         $this->assertSame('Spot A-1', $spot->name);
     }
 
+    public function test_a_sponsor_outside_the_file_falls_back_without_orphaning_the_enrollment_tree(): void
+    {
+        // iHub's export names a sponsor on 4,581 rows that is not in the file,
+        // because they track recruitment across a system wider than the slice
+        // they sent us. A-3 is one of those rows.
+        $import = $this->stage($this->header()
+            . "A-1,CODE-ALPHA,,\n"
+            . "A-2,CODE-BETA,A-1,A-1\n"
+            . "A-3,CODE-GAMMA,A-2,SOMEBODY-ELSE\n");
+
+        $this->validate($import);
+        $this->linkTop($import, 'A-1');
+        $this->validate($import->refresh());
+        $this->commit($import->refresh());
+
+        $spots = User::query()->holding()->get()->keyBy('external_user_id');
+
+        // The position above becomes the sponsor — that part always worked.
+        $this->assertSame($spots['A-2']->id, $spots['A-3']->sponsor_id);
+
+        // What did not: the depth pass treated an unresolvable sponsor as the
+        // top of an enrollment chain while the commit fell back to the position
+        // above, so A-3's enrollment path was built before A-2 had one and A-3
+        // came out as a root of its own tree, upline and all.
+        $this->assertSame(
+            "{$this->founder->enrollment_path}.{$spots['A-1']->id}.{$spots['A-2']->id}.{$spots['A-3']->id}",
+            $spots['A-3']->enrollment_path,
+        );
+
+        $this->assertSame(
+            'A-2',
+            $import->rows()->where('external_user_id', 'A-3')->value('effective_sponsor_id'),
+        );
+    }
+
+    public function test_a_sponsor_the_file_does_contain_is_honoured_over_the_parent(): void
+    {
+        // Placement and enrollment genuinely diverge here: A-3 sits under A-2
+        // but was recruited by A-1.
+        $import = $this->stage($this->header()
+            . "A-1,CODE-ALPHA,,\n"
+            . "A-2,CODE-BETA,A-1,A-1\n"
+            . "A-3,CODE-GAMMA,A-2,A-1\n");
+
+        $this->validate($import);
+        $this->linkTop($import, 'A-1');
+        $this->validate($import->refresh());
+        $this->commit($import->refresh());
+
+        $spots = User::query()->holding()->get()->keyBy('external_user_id');
+
+        $this->assertSame($spots['A-2']->id, $spots['A-3']->placement_parent_id);
+        $this->assertSame($spots['A-1']->id, $spots['A-3']->sponsor_id);
+
+        $this->assertSame(
+            "{$this->founder->enrollment_path}.{$spots['A-1']->id}.{$spots['A-3']->id}",
+            $spots['A-3']->enrollment_path,
+        );
+    }
+
     public function test_committing_twice_is_refused(): void
     {
         $import = $this->stage($this->header() . "A-1,CODE-ALPHA,,\n");

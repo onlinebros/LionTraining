@@ -92,6 +92,7 @@ class SpotImportValidator
             $this->flagAlreadyImported($import);
             $this->flagBrokenLegLinks($import);
 
+            $this->resolveEffectiveSponsors($import);
             $this->computeDepths($import);
             $this->flagUnreachable($import);
 
@@ -258,17 +259,50 @@ class SpotImportValidator
      * does not recompute it, and a pathological file stops at MAX_DEPTH with
      * rows still null rather than running until something gives out.
      */
+    /**
+     * Write down who each row's sponsor actually resolves to.
+     *
+     * The sponsor column if the file contains that id, and the position
+     * directly above otherwise. A partner tracks recruitment across a system
+     * wider than the slice they export, so a sponsor we cannot see is expected
+     * — iHub's list has 4,581 of them.
+     *
+     * Worked out here, once, rather than implied in two places. It was implied
+     * in two places, and they disagreed: the depth pass treated an unresolvable
+     * sponsor as the top of an enrollment chain while the commit fell back to
+     * the position above, so those rows had their enrollment path built before
+     * the row they actually hang under had one, and came out as roots.
+     */
+    private function resolveEffectiveSponsors(PartnerImport $import): void
+    {
+        $import->rows()->update(['effective_sponsor_id' => DB::raw('external_parent_id')]);
+
+        DB::statement(
+            'UPDATE partner_import_rows AS child
+                SET effective_sponsor_id = child.external_sponsor_id
+               FROM partner_import_rows AS sponsor
+              WHERE child.partner_import_id = ?
+                AND sponsor.partner_import_id = ?
+                AND sponsor.external_user_id = child.external_sponsor_id
+                AND child.external_sponsor_id IS NOT NULL
+                AND child.external_sponsor_id <> child.external_user_id',
+            [$import->id, $import->id],
+        );
+    }
+
     private function computeDepths(PartnerImport $import): void
     {
-        foreach (['placement' => 'external_parent_id', 'enrollment' => 'external_sponsor_id'] as $tree => $column) {
+        foreach (['placement' => 'external_parent_id', 'enrollment' => 'effective_sponsor_id'] as $tree => $column) {
             $depthColumn = "{$tree}_depth";
 
             $import->rows()->update([$depthColumn => null]);
 
-            // Level 1: the tops. For placement that is a blank parent. For
-            // enrollment it is also a sponsor we cannot resolve inside this
-            // file — such a row's chain has to start somewhere, and the sponsor
-            // it names is not here to start it.
+            // Level 1: the tops. A blank column — for placement that is a leg
+            // top, for enrollment a row with no resolvable sponsor and no
+            // position above it either. The orWhereNotExists is belt and
+            // braces: after resolveEffectiveSponsors() nothing should name a
+            // row that is not here, and a row that somehow does still has to
+            // get a depth or the commit refuses to run.
             $import->rows()
                 ->where(fn ($q) => $q
                     ->whereNull($column)
