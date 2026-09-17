@@ -33,10 +33,15 @@ credentials in the link so your member arrives at a form that is already filled 
 https://app.q3.life/partner/<your slug>?uid=<external_user_id>&code=<activation_code>
 ```
 
-Both parameters are URL-encoded as usual. `uid` also accepts `user_id` or
-`external_user_id`; `code` also accepts `activation_code`. The page immediately
-redirects to the clean URL, so the code is out of the address bar before anything
-renders — it is not in what they screenshot, bookmark or forward on.
+Parameter names are matched loosely: case, underscores and hyphens are ignored, so
+`activation_code`, `activate_code`, `activationCode` and `ACTIVATE-CODE` are all the
+same parameter. For the ID we accept `uid`, `user_id`, `member_id` and similar; for
+the code, `code`, `activation_code`, `activate_code`, `access_code` and similar.
+Anything we do not recognise — tracking parameters and the like — is ignored.
+
+Both values are URL-encoded as usual. The page immediately redirects to the clean
+URL, so the code is out of the address bar before anything renders — it is not in
+what they screenshot, bookmark or forward on.
 
 Nothing is claimed by following the link: it only fills the boxes. A link scanner or
 prefetcher cannot take somebody's position, and cannot use up an attempt.

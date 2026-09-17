@@ -143,15 +143,44 @@ class SpotClaimTest extends TestCase
             ->assertHeader('Referrer-Policy', 'no-referrer');
     }
 
-    public function test_the_partner_can_spell_the_parameters_how_they_like(): void
+    /**
+     * Their code generates the link, not ours. Listing spellings by hand loses
+     * that bet eventually — it lost it on iHub's `activate_code`, which filled
+     * nothing and reported no error — so names are normalised before matching.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('linkSpellings')]
+    public function test_the_partner_can_spell_the_parameters_how_they_like(string $query): void
     {
-        // Their code generates the link, not ours, and a round trip over
-        // whether it is `uid` or `user_id` costs a day for nothing.
-        $this->get(route('partner.claim', 'acme') . '?user_id=A-1&activation_code=CODE-ALPHA');
+        $this->get(route('partner.claim', 'acme') . '?' . $query);
 
         $this->get(route('partner.claim', 'acme'))
             ->assertSee('value="A-1"', false)
             ->assertSee('value="CODE-ALPHA"', false);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function linkSpellings(): array
+    {
+        return [
+            'ours'            => ['uid=A-1&code=CODE-ALPHA'],
+            'iHub'            => ['uid=A-1&activate_code=CODE-ALPHA'],
+            'snake case'      => ['user_id=A-1&activation_code=CODE-ALPHA'],
+            'camel case'      => ['userId=A-1&activationCode=CODE-ALPHA'],
+            'hyphens'         => ['user-id=A-1&activate-code=CODE-ALPHA'],
+            'shouting'        => ['USERID=A-1&ACTIVATE_CODE=CODE-ALPHA'],
+            'their own words' => ['memberId=A-1&accessCode=CODE-ALPHA'],
+        ];
+    }
+
+    public function test_a_parameter_we_do_not_recognise_is_simply_ignored(): void
+    {
+        $this->get(route('partner.claim', 'acme') . '?uid=A-1&utm_source=mailer&ref=abc');
+
+        // A tracking parameter on the partner's link must not be mistaken for a
+        // credential, and must not stop the ones we do understand working.
+        $this->get(route('partner.claim', 'acme'))
+            ->assertOk()
+            ->assertSee('value="A-1"', false);
     }
 
     public function test_a_link_never_claims_anything_on_its_own(): void
