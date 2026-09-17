@@ -36,7 +36,11 @@
                     <span class="badge bg-info qtree-badge">You enrolled</span>
                 @endif
 
-                @if(! $isRoot && ! $node['is_active'])
+                @if($node['is_holding'] ?? false)
+                    {{-- Only reachable when an admin opens the tree from a
+                         holding spot; partners never see one here. --}}
+                    <span class="badge bg-warning text-dark qtree-badge">Unclaimed spot</span>
+                @elseif(! $isRoot && ! $node['is_active'])
                     <span class="badge bg-secondary qtree-badge">Inactive</span>
                 @endif
             </div>

@@ -84,6 +84,31 @@
                         </ul>
                     </li>
 
+                    {{-- Partner Spots — imported positions and the lists they came
+                         from. Super admin only: committing an import writes
+                         permanent genealogy, and reissuing a code hands over a
+                         position. --}}
+                    @if(auth()->check() && auth()->user()->isSuperAdmin())
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.partners.*') ? 'active' : '' }}" href="#">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-user') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-user') }}"></use></svg>
+                            <span>Partner Spots</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{{ route('admin.partners.spots') }}"
+                                   class="{{ request()->routeIs('admin.partners.spots') ? 'active' : '' }}">Claimed / Unclaimed</a></li>
+                            <li><a href="{{ route('admin.partners.imports.index') }}"
+                                   class="{{ request()->routeIs('admin.partners.imports.*') ? 'active' : '' }}">Imports</a></li>
+                            <li><a href="{{ route('admin.partners.companies.index') }}"
+                                   class="{{ request()->routeIs('admin.partners.companies.*') ? 'active' : '' }}">Companies</a></li>
+                            <li><a href="{{ route('admin.partners.webhooks.index') }}"
+                                   class="{{ request()->routeIs('admin.partners.webhooks.*') ? 'active' : '' }}">Webhooks</a></li>
+                        </ul>
+                    </li>
+                    @endif
+
                     {{-- CRM --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>

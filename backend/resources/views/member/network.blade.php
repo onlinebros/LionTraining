@@ -95,6 +95,30 @@
     </div>
 </div>
 
+{{-- ── Holding spots ──────────────────────────────────────── --}}
+{{-- Counted here, listed elsewhere. The tree below is people; an unclaimed
+     imported position is a place in the structure with nobody in it, and
+     mixing the two would make every number on this page mean two things. --}}
+@if($spots['unclaimed'] > 0)
+    <div class="card mb-3">
+        <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-1 fw-bold">
+                    {{ number_format($spots['unclaimed']) }} position{{ $spots['unclaimed'] === 1 ? '' : 's' }}
+                    in your organisation not claimed yet
+                </h6>
+                <p class="mb-0 small text-muted">
+                    Imported from a partner company. They hold their place in your downline and join
+                    your team the moment their owner activates them.
+                </p>
+            </div>
+            <a href="{{ route('member.network.spots') }}" class="btn btn-sm btn-outline-primary">
+                View holding spots
+            </a>
+        </div>
+    </div>
+@endif
+
 {{-- ── Upline ─────────────────────────────────────────────── --}}
 @if($upline->isNotEmpty())
     <div class="card mb-3">

@@ -11,7 +11,12 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
+        // Members only. Unclaimed holding spots have no email, no login and no
+        // owner — listing them here puts rows in front of staff that they will
+        // try to contact, and buries real accounts under them. They have their
+        // own screen: admin.partners.spots.
         $users = User::with('role')
+            ->activated()
             ->withCount(['sponsees', 'sponsors'])
             ->when($request->role, fn($q, $role) => $q->whereHas('role', fn($q2) => $q2->where('name', $role)))
             ->latest()

@@ -122,6 +122,58 @@ class GenealogyService
     }
 
     /**
+     * Place a partner at a position that is given rather than computed.
+     *
+     * Used by the partner-spot importer, and only by it. Everywhere else
+     * position is derived from the sponsor by the placement strategy; an
+     * imported list already *is* a structure, agreed with another company, and
+     * recomputing it would silently reshape somebody's organisation on the way
+     * in.
+     *
+     * The parent must already hold a position. The importer guarantees that by
+     * committing parents before children, and the check is here rather than
+     * left to fail on a null path because a path built from a null parent path
+     * silently produces a new root — a whole leg quietly detached from the
+     * partner it was meant to hang beneath.
+     */
+    public function placeUnder(User $user, User $parent): User
+    {
+        if ($user->placement_status === User::PLACEMENT_PLACED) {
+            return $user;
+        }
+
+        return DB::transaction(function () use ($user, $parent) {
+            $parent = User::query()->lockForUpdate()->find($parent->id);
+
+            if ($parent === null) {
+                throw new RuntimeException("Cannot place user {$user->id}: the parent no longer exists.");
+            }
+
+            if ($parent->placement_status === User::PLACEMENT_EXCLUDED) {
+                throw new RuntimeException(
+                    "Cannot place user {$user->id} beneath user {$parent->id}: that account is "
+                    .'excluded from placement, so it can never hold a position for anyone to sit under.'
+                );
+            }
+
+            if ($parent->placement_path === null) {
+                throw new RuntimeException(
+                    "Cannot place user {$user->id} beneath user {$parent->id}: that account has no "
+                    .'position yet. Imported positions must be committed parents-first.'
+                );
+            }
+
+            $user->placement_parent_id = $parent->id;
+            $user->placement_path = $this->childPath($parent->placement_path, $user->id);
+            $user->placement_status = User::PLACEMENT_PLACED;
+            $user->placed_at = Carbon::now();
+            $user->save();
+
+            return $user;
+        });
+    }
+
+    /**
      * Place everyone still queued, oldest first.
      *
      * Ordering is `placement_queued_at` then `id` — deterministic, and
@@ -152,38 +204,64 @@ class GenealogyService
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
+    //
+    // Everything here counts and returns activated accounts only. Unclaimed
+    // holding spots brought in from a partner company hold a position in the
+    // tree but are not members: counting them inflates every team number on
+    // every screen, and showing them puts rows with no owner in front of people
+    // who will try to contact them.
+    //
+    // Pass $includeHolding to see the structure as it physically is. Two
+    // callers want that — the spots screens, and the importer — and they say so
+    // explicitly.
 
     /** Everyone below $user in the placement tree, excluding $user. */
-    public function descendants(User $user): Builder
+    public function descendants(User $user, bool $includeHolding = false): Builder
     {
-        return $this->descendantsOfPath($user->placement_path)
+        $query = $this->descendantsOfPath($user->placement_path)
             ->where('users.id', '!=', $user->id);
+
+        return $includeHolding ? $query : $query->activated();
     }
 
     /** Everyone below $user in the enrollment tree, excluding $user. */
-    public function enrollmentDescendants(User $user): Builder
+    public function enrollmentDescendants(User $user, bool $includeHolding = false): Builder
     {
         if ($user->enrollment_path === null) {
             return User::query()->whereRaw('1 = 0');
         }
 
-        return User::query()
+        $query = User::query()
             ->whereRaw('enrollment_path <@ ?::ltree', [$user->enrollment_path])
             ->where('users.id', '!=', $user->id);
+
+        return $includeHolding ? $query : $query->activated();
     }
 
-    /** $user's direct placements — one level down. */
-    public function directs(User $user): Builder
+    /**
+     * $user's direct placements — one level down, literally.
+     *
+     * "Literally" matters: this is the physical child set, so with holding
+     * excluded it does NOT include an activated partner sitting under an
+     * unclaimed spot. For the number a partner should be shown as their first
+     * level, use teamCountsByLevel(), which compresses.
+     */
+    public function directs(User $user, bool $includeHolding = false): Builder
     {
-        return User::query()->where('placement_parent_id', $user->id);
+        $query = User::query()->where('placement_parent_id', $user->id);
+
+        return $includeHolding ? $query : $query->activated();
     }
 
     /**
      * $user's upline, nearest ancestor first.
      *
      * Read straight off the path, so it costs one query regardless of depth.
+     * Unclaimed spots are dropped, which is the same compression the rest of
+     * this class applies looking downwards: the person above you is the nearest
+     * one who is actually there.
      */
-    public function upline(User $user): Collection
+    public function upline(User $user, bool $includeHolding = false): Collection
     {
         $ids = $this->pathIds($user->placement_path);
 
@@ -194,7 +272,13 @@ class GenealogyService
             return collect();
         }
 
-        $ancestors = User::query()->whereIn('id', $ids)->get()->keyBy('id');
+        $query = User::query()->whereIn('id', $ids);
+
+        if (! $includeHolding) {
+            $query->activated();
+        }
+
+        $ancestors = $query->get()->keyBy('id');
 
         // Restore path order, then reverse so the direct upline comes first.
         return collect(array_reverse($ids))
@@ -204,9 +288,28 @@ class GenealogyService
     }
 
     /**
-     * Team size per level below $user, keyed by depth (1 = directs).
+     * The nearest ancestor who is a real member.
      *
-     * One grouped query over the GIST index rather than a walk per level.
+     * This is compression, and it is what a commission walk should climb rather
+     * than placement_parent_id: an unclaimed spot has no owner and no payout
+     * account, so an amount that lands on one is an amount nobody receives.
+     * Skipping it pays the nearest partner who is actually there, which is also
+     * the answer that stops an activated partner being penalised for a downline
+     * that has not finished claiming.
+     */
+    public function nearestActivatedAncestor(User $user): ?User
+    {
+        return $this->upline($user)->first();
+    }
+
+    /**
+     * Team size per level below $user, keyed by level (1 = their first level).
+     *
+     * Levels are compressed: an unclaimed spot occupies no level, so a partner
+     * who claimed beneath one counts on the level their nearest activated
+     * upline sees them on. Without that, a leg whose head has not claimed yet
+     * reports everybody below it one level deeper than they will be the day it
+     * does — the level ladder would shift under people as claims came in.
      */
     public function teamCountsByLevel(User $user, ?int $maxDepth = null): Collection
     {
@@ -215,25 +318,60 @@ class GenealogyService
         }
 
         $maxDepth ??= (int) config('genealogy.tree_depth', 5);
-        $ownDepth = $this->depthOf($user->placement_path);
+        $compression = $this->compressionMap($user);
 
-        return $this->descendantsOfPath($user->placement_path)
-            ->where('users.id', '!=', $user->id)
-            ->whereRaw('nlevel(placement_path) <= ?', [$ownDepth + $maxDepth])
-            ->selectRaw('nlevel(placement_path) - ? AS level, count(*) AS total', [$ownDepth])
-            ->groupByRaw('nlevel(placement_path)')
-            ->orderByRaw('nlevel(placement_path)')
-            ->pluck('total', 'level');
+        $counts = [];
+
+        foreach ($compression['depth'] as $depth) {
+            if ($depth >= 1 && $depth <= $maxDepth) {
+                $counts[$depth] = ($counts[$depth] ?? 0) + 1;
+            }
+        }
+
+        ksort($counts);
+
+        return collect($counts);
     }
 
     /** Total placed team size below $user, at any depth. */
-    public function teamSize(User $user): int
+    public function teamSize(User $user, bool $includeHolding = false): int
     {
         if ($user->placement_path === null) {
             return 0;
         }
 
-        return $this->descendants($user)->count();
+        return $this->descendants($user, $includeHolding)->count();
+    }
+
+    /**
+     * Claimed and unclaimed spot counts anywhere below $user.
+     *
+     * The numbers behind the spots screen: how much of this organisation is
+     * still waiting on somebody to activate it.
+     *
+     * @return array{claimed:int, unclaimed:int, total:int}
+     */
+    public function spotCounts(User $user): array
+    {
+        if ($user->placement_path === null) {
+            return ['claimed' => 0, 'unclaimed' => 0, 'total' => 0];
+        }
+
+        $row = $this->descendantsOfPath($user->placement_path)
+            ->where('users.id', '!=', $user->id)
+            ->whereNotNull('partner_company_id')
+            ->selectRaw('count(*) AS total')
+            ->selectRaw('count(*) FILTER (WHERE account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])
+            ->first();
+
+        $total     = (int) ($row->total ?? 0);
+        $unclaimed = (int) ($row->unclaimed ?? 0);
+
+        return [
+            'claimed'   => $total - $unclaimed,
+            'unclaimed' => $unclaimed,
+            'total'     => $total,
+        ];
     }
 
     // ── Tree building ─────────────────────────────────────────────────────────
@@ -245,6 +383,14 @@ class GenealogyService
      * derived from the paths in PHP. The obvious implementation — a count query
      * per node — is O(nodes) round trips and falls over on the exact screen this
      * exists for, a partner watching a large team.
+     *
+     * Unclaimed holding spots are removed and their activated descendants
+     * re-hung on the nearest ancestor who is a real member. That re-hanging is
+     * not cosmetic: simply filtering the rows out would orphan every partner
+     * sitting under an unclaimed spot, and they would vanish from the tree of
+     * the person whose team they are in. Which is precisely the arrangement a
+     * partial claim produces — an imported leg head has not claimed yet, but
+     * three people under them have.
      *
      * Nodes deeper than $maxDepth are counted but not returned; their parent is
      * marked `truncated` so the view can offer to re-root there.
@@ -258,39 +404,48 @@ class GenealogyService
         }
 
         $maxDepth ??= (int) config('genealogy.tree_depth', 5);
-        $rootDepth = $this->depthOf($root->placement_path);
 
         $rows = User::query()
             ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
             ->orderByRaw('nlevel(placement_path)')
             ->orderBy('id')
-            ->get(['id', 'name', 'email', 'phone', 'is_active', 'sponsor_id',
+            ->get(['id', 'name', 'email', 'phone', 'is_active', 'account_status', 'sponsor_id',
                    'placement_parent_id', 'placement_path', 'placed_at', 'created_at']);
 
-        // Team size per node, accumulated by walking each row's ancestors once.
-        // O(rows × depth) rather than a query per node.
+        $compression = $this->compress($rows, $root);
+
+        // Only rows that are members get rendered. The root is kept whatever it
+        // is, so an admin can open the tree from a holding spot.
+        $visible = $rows->filter(
+            fn (User $row) => $row->id === $root->id || $row->account_status === User::ACCOUNT_ACTIVE,
+        );
+
+        // Team size per node, accumulated by walking each visible row's
+        // activated ancestors once. O(rows × depth) rather than a query per
+        // node, and it counts the same population the tree draws.
         $teamCounts = [];
 
-        foreach ($rows as $row) {
-            $ids = $this->pathIds($row->placement_path);
-            array_pop($ids); // exclude self
+        foreach ($visible as $row) {
+            if ($row->id === $root->id) {
+                continue;
+            }
 
-            foreach ($ids as $ancestorId) {
+            foreach ($compression['ancestors'][$row->id] ?? [] as $ancestorId) {
                 $teamCounts[$ancestorId] = ($teamCounts[$ancestorId] ?? 0) + 1;
             }
         }
 
         $childrenOf = [];
 
-        foreach ($rows as $row) {
+        foreach ($visible as $row) {
             if ($row->id !== $root->id) {
-                $childrenOf[$row->placement_parent_id][] = $row;
+                $childrenOf[$compression['parent'][$row->id]][] = $row;
             }
         }
 
-        $build = function (User $node, int $depth) use (&$build, $childrenOf, $teamCounts, $root, $maxDepth, $rootDepth): array {
+        $build = function (User $node, int $depth) use (&$build, $childrenOf, $teamCounts, $compression, $root, $maxDepth): array {
             $children = $childrenOf[$node->id] ?? [];
-            $relativeDepth = $this->depthOf($node->placement_path) - $rootDepth;
+            $relativeDepth = $node->id === $root->id ? 0 : ($compression['depth'][$node->id] ?? 0);
             $truncated = $children !== [] && $relativeDepth >= $maxDepth;
 
             return [
@@ -299,11 +454,12 @@ class GenealogyService
                 'email'        => $node->email,
                 'phone'        => $node->phone,
                 'is_active'    => (bool) $node->is_active,
+                'is_holding'   => $node->account_status === User::ACCOUNT_HOLDING,
                 // Personally enrolled by the partner viewing the tree — the
                 // distinction that matters to them, and the only rows whose
                 // contact details they are shown.
                 'is_direct'    => $node->sponsor_id === $root->id,
-                'direct_count' => count($childrenOf[$node->id] ?? []),
+                'direct_count' => count($children),
                 'team_count'   => $teamCounts[$node->id] ?? 0,
                 'joined_at'    => $node->placed_at ?? $node->created_at,
                 'depth'        => $relativeDepth,
@@ -318,6 +474,78 @@ class GenealogyService
         $rootRow = $rows->firstWhere('id', $root->id) ?? $root;
 
         return $build($rootRow, 0);
+    }
+
+    // ── Compression ───────────────────────────────────────────────────────────
+
+    /**
+     * Where each activated descendant sits once unclaimed spots are ignored.
+     *
+     * For every row below $root this returns the nearest activated ancestor
+     * (falling back to $root), how many activated ancestors stand between the
+     * two, and the full list of activated ancestors so a caller can accumulate
+     * team counts in one pass.
+     *
+     * @param  \Illuminate\Support\Collection<int, User>  $rows  The whole subtree, root included.
+     * @return array{parent: array<int,int>, depth: array<int,int>, ancestors: array<int,list<int>>}
+     */
+    private function compress($rows, User $root): array
+    {
+        $activated = [];
+
+        foreach ($rows as $row) {
+            $activated[$row->id] = $row->account_status === User::ACCOUNT_ACTIVE;
+        }
+
+        $parent = $depth = $ancestors = [];
+
+        foreach ($rows as $row) {
+            if ($row->id === $root->id) {
+                continue;
+            }
+
+            $ids = $this->pathIds($row->placement_path);
+
+            // Keep only what lies strictly between the root and this row.
+            $rootAt = array_search($root->id, $ids, true);
+            $between = $rootAt === false
+                ? array_slice($ids, 0, -1)
+                : array_slice($ids, $rootAt + 1, count($ids) - $rootAt - 2);
+
+            $chain = array_values(array_filter($between, fn (int $id) => $activated[$id] ?? false));
+
+            $ancestors[$row->id] = array_merge($chain, [$root->id]);
+            $parent[$row->id]    = $chain === [] ? $root->id : end($chain);
+            $depth[$row->id]     = count($chain) + 1;
+        }
+
+        return ['parent' => $parent, 'depth' => $depth, 'ancestors' => $ancestors];
+    }
+
+    /**
+     * compress() for a user whose subtree has not already been loaded.
+     *
+     * Reads the three columns compression needs and nothing else, and drops
+     * unclaimed spots from the result — callers want levels for members.
+     *
+     * @return array{parent: array<int,int>, depth: array<int,int>, ancestors: array<int,list<int>>}
+     */
+    private function compressionMap(User $root): array
+    {
+        $rows = User::query()
+            ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
+            ->orderByRaw('nlevel(placement_path)')
+            ->get(['id', 'account_status', 'placement_path']);
+
+        $map = $this->compress($rows, $root);
+
+        foreach ($rows as $row) {
+            if ($row->account_status !== User::ACCOUNT_ACTIVE) {
+                unset($map['parent'][$row->id], $map['depth'][$row->id], $map['ancestors'][$row->id]);
+            }
+        }
+
+        return $map;
     }
 
     // ── Path helpers ──────────────────────────────────────────────────────────

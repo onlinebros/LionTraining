@@ -63,6 +63,47 @@ class MemberController extends Controller
             'teamSize' => $genealogy->teamSize($user),
             'depth'    => $genealogy->depthOf($user->placement_path),
             'isReRooted' => $root->id !== $user->id,
+            'spots'      => $genealogy->spotCounts($user),
+        ]);
+    }
+
+    /**
+     * Holding spots in this partner's organisation: claimed and still waiting.
+     *
+     * Its own screen rather than rows in the tree. An unclaimed spot is a
+     * position with nobody in it — showing them inline would mean a partner's
+     * team page listed people who cannot be contacted and are not yet members,
+     * and the count at the top of that page would stop meaning "my team".
+     *
+     * What a partner sees here is a count and, for spots they personally
+     * enrolled or that head one of their own legs, the identifier the partner
+     * company knows them by. Never a name or an email of somebody who has not
+     * joined us: that data came from another company's database and belongs to
+     * the person it describes, not to the upline waiting on them.
+     */
+    public function spots(GenealogyService $genealogy)
+    {
+        $user = auth()->user()->load('role');
+
+        $counts = $genealogy->spotCounts($user);
+
+        $waiting = $genealogy->descendants($user, includeHolding: true)
+            ->holding()
+            ->with('partnerCompany:id,name')
+            ->orderBy('placement_path')
+            ->paginate(50);
+
+        $recentlyClaimed = $genealogy->descendants($user)
+            ->whereNotNull('claimed_at')
+            ->latest('claimed_at')
+            ->limit(10)
+            ->get(['id', 'name', 'claimed_at', 'partner_company_id']);
+
+        return view('member.spots', [
+            'user'            => $user,
+            'counts'          => $counts,
+            'waiting'         => $waiting,
+            'recentlyClaimed' => $recentlyClaimed,
         ]);
     }
 

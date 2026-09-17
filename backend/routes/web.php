@@ -13,6 +13,10 @@ use App\Http\Controllers\Admin\ErrorLogController;
 use App\Http\Controllers\Admin\KartraImportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteSettingController;
+use App\Http\Controllers\Admin\HoldingSpotController;
+use App\Http\Controllers\Admin\PartnerCompanyController;
+use App\Http\Controllers\Admin\PartnerWebhookController;
+use App\Http\Controllers\Admin\SpotImportController;
 use App\Http\Controllers\Admin\SponsorController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\TrainingCategoryController;
@@ -27,6 +31,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberCrmController;
 use App\Http\Controllers\MemberPayoutController;
 use App\Http\Controllers\MemberSupportController;
+use App\Http\Controllers\PartnerClaimController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\VendorStorefrontController;
 use App\Http\Controllers\MemberVendorLeadController;
@@ -40,6 +45,29 @@ Route::get('/', fn() => view('public.home'))->name('home');
 // Referral sign-up (public, no auth required, before guest middleware)
 Route::get('/join/{code}', [UserAuthController::class, 'showReferral'])->name('join');
 Route::post('/join/{code}', [UserAuthController::class, 'registerViaReferral'])->name('join.post');
+
+// ── Partner spot claim (public, co-branded) ───────────────────────────────────
+//
+// Where a partner company's existing members take ownership of the position
+// imported for them. Outside the `guest` group on purpose: somebody already
+// signed in on a shared machine still has to be able to open the link their
+// company emailed them, and bouncing them to a dashboard is a support call.
+//
+// Both POSTs are throttled hard. The verify step is an unauthenticated guess at
+// a credential, and the ids it is guessed against are public knowledge — see
+// SpotClaimService for why the per-spot lockout matters more than this does.
+Route::prefix('partner')->name('partner.')->group(function () {
+    Route::get('/{slug}',          [PartnerClaimController::class, 'show'])->name('claim');
+    Route::post('/{slug}/verify',  [PartnerClaimController::class, 'verify'])
+        ->middleware('throttle:10,1')->name('claim.verify');
+    Route::get('/{slug}/details',  [PartnerClaimController::class, 'details'])->name('claim.details');
+    Route::post('/{slug}/details', [PartnerClaimController::class, 'store'])
+        ->middleware('throttle:10,1')->name('claim.store');
+    // Somebody already signed in folding this position into the account they
+    // have. Requires a verified session on both sides — see the controller.
+    Route::post('/{slug}/merge',   [PartnerClaimController::class, 'merge'])
+        ->middleware(['auth', 'throttle:10,1'])->name('claim.merge');
+});
 
 // ── Vendor storefront (public, member-coded) ──────────────────────────────────
 //
@@ -135,6 +163,9 @@ Route::prefix('member')->name('member.')->middleware('auth')->group(function () 
 Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->group(function () {
     Route::get('/dashboard',         [MemberController::class, 'dashboard'])->name('dashboard');
     Route::get('/network',           [MemberController::class, 'network'])->name('network');
+    // Imported positions in this partner's organisation that are still waiting
+    // on their owner. Kept off the team page for the reason in the action.
+    Route::get('/network/spots',     [MemberController::class, 'spots'])->name('network.spots');
     // Partners waiting on commissions before paying don't get training yet.
     Route::middleware('training.unlocked')->group(function () {
         Route::get('/training',                  [MemberController::class, 'trainingIndex'])->name('training');
@@ -216,6 +247,50 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('sponsors')->name('sponsors.')->group(function () {
             Route::get('/', [SponsorController::class, 'index'])->name('index');
             Route::get('relationships', [SponsorController::class, 'relationships'])->name('relationships');
+        });
+
+        // ── Partner companies, their imports, and the spot board ──────────────
+        //
+        // Committing an import writes permanent genealogy, and reissuing an
+        // activation code hands over control of a position, so the whole
+        // section is super-admin only. Support admins get the read-only board
+        // through the same screens once there is a reason to split it.
+        Route::prefix('partners')->name('partners.')->middleware('super_admin')->group(function () {
+            Route::get('/', [HoldingSpotController::class, 'index'])->name('spots');
+            Route::post('/spots/{spot}/reissue', [HoldingSpotController::class, 'reissue'])->name('spots.reissue');
+            // Rearranges a live genealogy. The only action in this module that
+            // does — see SpotMergeService.
+            Route::post('/spots/{spot}/merge',   [HoldingSpotController::class, 'merge'])->name('spots.merge');
+
+            Route::prefix('companies')->name('companies.')->group(function () {
+                Route::get('/',               [PartnerCompanyController::class, 'index'])->name('index');
+                Route::get('/create',         [PartnerCompanyController::class, 'create'])->name('create');
+                Route::post('/',              [PartnerCompanyController::class, 'store'])->name('store');
+                Route::get('/{company}/edit', [PartnerCompanyController::class, 'edit'])->name('edit');
+                Route::put('/{company}',      [PartnerCompanyController::class, 'update'])->name('update');
+                Route::post('/{company}/ping', [PartnerWebhookController::class, 'ping'])->name('ping');
+            });
+
+            // What we told each partner, and what they said back.
+            Route::prefix('webhooks')->name('webhooks.')->group(function () {
+                Route::get('/',                    [PartnerWebhookController::class, 'index'])->name('index');
+                // Before /{delivery} so "guide" cannot be read as an id.
+                Route::get('/guide',               [PartnerWebhookController::class, 'guide'])->name('guide');
+                Route::get('/{delivery}',          [PartnerWebhookController::class, 'show'])->name('show');
+                Route::post('/{delivery}/replay',  [PartnerWebhookController::class, 'replay'])->name('replay');
+            });
+
+            Route::prefix('imports')->name('imports.')->group(function () {
+                // Declared before /{import} so the word "template" can never be
+                // read as an import id.
+                Route::get('/template',   [SpotImportController::class, 'template'])->name('template');
+                Route::get('/',           [SpotImportController::class, 'index'])->name('index');
+                Route::post('/',          [SpotImportController::class, 'store'])->name('store');
+                Route::get('/{import}',   [SpotImportController::class, 'show'])->name('show');
+                Route::post('/{import}/rows/{row}/link', [SpotImportController::class, 'link'])->name('link');
+                Route::post('/{import}/revalidate',      [SpotImportController::class, 'revalidate'])->name('revalidate');
+                Route::post('/{import}/commit',          [SpotImportController::class, 'commit'])->name('commit');
+            });
         });
 
         Route::prefix('error-logs')->name('error-logs.')->group(function () {

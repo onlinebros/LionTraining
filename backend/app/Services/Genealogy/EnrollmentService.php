@@ -59,6 +59,41 @@ class EnrollmentService
     }
 
     /**
+     * Enroll a partner at a position that came from somewhere else.
+     *
+     * Used by the partner-spot importer. It differs from enroll() in one way
+     * that matters: position is taken from the file, not computed by the
+     * placement strategy. A partner company's list already describes a
+     * structure, and running it back through our strategy would reshape their
+     * organisation on the way in — legs that were side by side there would come
+     * out stacked here.
+     *
+     * $sponsor defaults to the placement parent, which is what a unilevel means
+     * anyway. It is a separate argument because a partner company that tracks
+     * recruitment apart from position hands us both, and the enrollment tree is
+     * the one that stays true forever.
+     */
+    public function enrollImported(User $user, User $placementParent, ?User $sponsor = null): User
+    {
+        return DB::transaction(function () use ($user, $placementParent, $sponsor) {
+            $sponsor ??= $placementParent;
+
+            $this->genealogy->enroll($user, $sponsor);
+
+            Sponsorship::updateOrCreate(
+                ['sponsor_id' => $sponsor->id, 'sponsored_id' => $user->id],
+                [
+                    'status'      => 'active',
+                    'notes'       => 'Imported from ' . ($user->partnerCompany?->name ?? 'a partner company') . '.',
+                    'accepted_at' => Carbon::now(),
+                ],
+            );
+
+            return $this->genealogy->placeUnder($user->refresh(), $placementParent);
+        });
+    }
+
+    /**
      * The house account unreferred signups are placed under, if configured.
      *
      * Without one they become roots of their own tree, which is the right

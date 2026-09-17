@@ -10,7 +10,10 @@ class SponsorController extends Controller
 {
     public function index()
     {
-        $sponsors = User::has('sponsees')->withCount('sponsees')->latest()->paginate(20);
+        // Activated accounts only — an unclaimed holding spot can be the parent
+        // of an imported leg, which makes it look like a sponsor here.
+        $sponsors = User::query()->activated()->has('sponsees')
+            ->withCount('sponsees')->latest()->paginate(20);
         return view('admin.sponsors.index', compact('sponsors'));
     }
 

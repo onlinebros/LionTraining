@@ -66,6 +66,20 @@
                         </a>
                     </li>
 
+                    {{-- Holding Spots — only for partners who actually have some
+                         below them, so the sidebar stays about this member. --}}
+                    @if(auth()->check() && auth()->user()->hasHoldingSpotsBelow())
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.network.spots') ? 'active' : '' }}"
+                           href="{{ route('member.network.spots') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-user') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-user') }}"></use></svg>
+                            <span>Holding Spots</span>
+                        </a>
+                    </li>
+                    @endif
+
                     {{-- Referrals --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>

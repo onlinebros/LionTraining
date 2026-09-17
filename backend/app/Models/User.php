@@ -27,6 +27,22 @@ class User extends Authenticatable
     public const PLACEMENT_PLACED   = 'placed';
     public const PLACEMENT_EXCLUDED = 'excluded';
 
+    // ── Account state ─────────────────────────────────────────────────────────
+    //
+    // 'holding' is an imported position nobody has claimed yet: a real row,
+    // really placed, with no owner, no password and no login. It is not a
+    // person, and nothing that counts or displays partners may include one
+    // without saying so. Use scopeActivated() — see the note on it.
+    public const ACCOUNT_ACTIVE  = 'active';
+    public const ACCOUNT_HOLDING = 'holding';
+
+    // 'merged' is a position that was absorbed into another account — the
+    // founder case, where somebody's imported position and their existing one
+    // become a single account with a single team. The row is kept, out of the
+    // tree and unable to log in, because the partner will quote its identifier
+    // at us for years. See SpotMergeService.
+    public const ACCOUNT_MERGED  = 'merged';
+
     protected $fillable = [
         'name',
         'email',
@@ -46,6 +62,35 @@ class User extends Authenticatable
         'postal_code',
         'country',
     ];
+
+    /**
+     * Rows that represent a person.
+     *
+     * The default for anything partner-facing or admin-facing that lists,
+     * counts or pages over users. Unclaimed holding spots are structure, not
+     * membership: showing them inflates a partner's team, inflates the admin
+     * user list, and puts rows with no email in front of staff who will try to
+     * contact them.
+     *
+     * Holding spots are reached deliberately, through the spots screens and
+     * through the claim flow, never by forgetting this scope.
+     */
+    public function scopeActivated(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->where($query->qualifyColumn('account_status'), self::ACCOUNT_ACTIVE);
+    }
+
+    /** Imported positions nobody has claimed yet. */
+    public function scopeHolding(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->where($query->qualifyColumn('account_status'), self::ACCOUNT_HOLDING);
+    }
+
+    /** Positions that were absorbed into another account. */
+    public function scopeMerged(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->where($query->qualifyColumn('account_status'), self::ACCOUNT_MERGED);
+    }
 
     protected static function booted(): void
     {
@@ -104,6 +149,9 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // A credential in its own right: it is what lets somebody take
+        // ownership of a position.
+        'activation_code_hash',
     ];
 
     protected function casts(): array
@@ -117,6 +165,11 @@ class User extends Authenticatable
             'placement_queued_at' => 'datetime',
             'placed_at'           => 'datetime',
             'billing_exempt'      => 'boolean',
+
+            'claimed_at'          => 'datetime',
+            'merged_at'           => 'datetime',
+            'imported_at'         => 'datetime',
+            'claim_locked_until'  => 'datetime',
 
             'connect_charges_enabled'   => 'boolean',
             'connect_payouts_enabled'   => 'boolean',
@@ -155,6 +208,72 @@ class User extends Authenticatable
     public function isPlaced(): bool
     {
         return $this->placement_status === self::PLACEMENT_PLACED;
+    }
+
+    // ── Holding spots ─────────────────────────────────────────────────────────
+
+    public function partnerCompany(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(PartnerCompany::class, 'partner_company_id');
+    }
+
+    public function partnerImport(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(PartnerImport::class, 'partner_import_id');
+    }
+
+    /** An imported position with no owner yet. */
+    public function isHolding(): bool
+    {
+        return $this->account_status === self::ACCOUNT_HOLDING;
+    }
+
+    /** Absorbed into another account, and no longer in the structure. */
+    public function isMerged(): bool
+    {
+        return $this->account_status === self::ACCOUNT_MERGED;
+    }
+
+    /** The account this one was folded into, if it was. */
+    public function mergedInto(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'merged_into_user_id');
+    }
+
+    /** A real member account — the state every normally-registered user is in. */
+    public function isActivated(): bool
+    {
+        return $this->account_status !== self::ACCOUNT_HOLDING;
+    }
+
+    /** Was this position brought in from a partner company's list? */
+    public function isImported(): bool
+    {
+        return $this->partner_company_id !== null;
+    }
+
+    /**
+     * Does this partner have unclaimed positions anywhere below them?
+     *
+     * Drives one sidebar link, so it runs on every member page render and is
+     * cached for a few minutes. A partner seeing the link appear a little late
+     * after a claim costs nothing; an uncached existence query on every request
+     * for every member is a real bill.
+     */
+    public function hasHoldingSpotsBelow(): bool
+    {
+        if ($this->placement_path === null) {
+            return false;
+        }
+
+        return \Cache::remember(
+            "user_{$this->id}_has_holding_spots",
+            now()->addMinutes(5),
+            fn () => static::query()
+                ->holding()
+                ->whereRaw('placement_path <@ ?::ltree', [$this->placement_path])
+                ->exists(),
+        );
     }
 
     // ── Billing ───────────────────────────────────────────────────────────────
