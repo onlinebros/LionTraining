@@ -13,38 +13,38 @@
     .pick-list { max-height: 460px; overflow-y: auto; }
     .pick-row {
         display: flex; align-items: center; gap: 10px; width: 100%;
-        padding: 10px 12px; border: 1px solid #e5e8f0; border-radius: 8px;
-        background: #fff; margin-bottom: 8px; text-align: left; cursor: pointer;
+        padding: 10px 12px; border: 1px solid var(--q3-border); border-radius: 8px;
+        background: var(--q3-surface); margin-bottom: 8px; text-align: left; cursor: pointer;
     }
     .pick-row:hover { border-color: var(--theme-default); }
     .pick-row[disabled] { opacity: .4; cursor: default; }
     .pick-row .thumb {
         width: 72px; height: 41px; border-radius: 4px; object-fit: cover;
-        background: #0b1020; flex: none;
+        background: var(--q3-black); flex: none;
     }
     .pick-row .grow { flex-grow: 1; min-width: 0; }
-    .pick-row .title { font-weight: 600; font-size: 13.5px; color: #111827; }
-    .pick-row .meta  { font-size: 11.5px; color: #6b7280; }
+    .pick-row .title { font-weight: 600; font-size: 13.5px; color: var(--q3-text); }
+    .pick-row .meta  { font-size: 11.5px; color: var(--q3-text-muted); }
 
     .seq-row {
         display: flex; align-items: center; gap: 10px;
-        padding: 10px 12px; border: 1px solid #d7dceb; border-radius: 8px;
-        background: #f8f9fc; margin-bottom: 8px;
+        padding: 10px 12px; border: 1px solid var(--q3-border); border-radius: 8px;
+        background: var(--q3-surface-2); margin-bottom: 8px;
     }
     .seq-num {
         width: 26px; height: 26px; border-radius: 50%; flex: none;
-        background: var(--theme-default); color: #fff;
+        background: var(--theme-default); color: var(--q3-gold-ink);
         display: flex; align-items: center; justify-content: center;
         font-size: 12px; font-weight: 700;
     }
     .seq-empty {
-        border: 2px dashed #d7dceb; border-radius: 8px; padding: 36px 16px;
-        text-align: center; color: #6b7280;
+        border: 2px dashed var(--q3-border); border-radius: 8px; padding: 36px 16px;
+        text-align: center; color: var(--q3-text-muted);
     }
     .step-badge {
         display: inline-flex; align-items: center; justify-content: center;
         width: 22px; height: 22px; border-radius: 50%;
-        background: var(--theme-default); color: #fff;
+        background: var(--theme-default); color: var(--q3-gold-ink);
         font-size: 12px; font-weight: 700; margin-right: 8px;
     }
 </style>

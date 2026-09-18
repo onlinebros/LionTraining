@@ -11,36 +11,36 @@
     /* Where the room is, for a showing everybody watches together. */
     .now-bar {
         display:flex; flex-wrap:wrap; gap:6px 18px; align-items:center;
-        background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+        background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:10px;
         padding:10px 14px; margin-bottom:14px; font-size:13px;
     }
-    .now-bar .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#64748b; }
-    .now-bar .pos { font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
-    .now-bar .rail { flex-basis:100%; height:4px; background:#eef2f7; border-radius:999px; overflow:hidden; }
-    .now-bar .rail__fill { height:100%; width:0; background:#dc2626; transition:width 1s linear; }
+    .now-bar .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--q3-text-muted); }
+    .now-bar .pos { font-weight:700; color:var(--q3-text); font-variant-numeric:tabular-nums; }
+    .now-bar .rail { flex-basis:100%; height:4px; background:var(--q3-surface-3); border-radius:999px; overflow:hidden; }
+    .now-bar .rail__fill { height:100%; width:0; background:var(--q3-danger); transition:width 1s linear; }
 
     /* One row per guest. Clicking one goes to Your Rooms, which is where every
        conversation lives — this page is about the showing, not the talking. */
     .guests { display:flex; flex-direction:column; }
     .guest {
         display:flex; gap:10px; align-items:flex-start; width:100%; text-align:left;
-        padding:11px 14px; border-bottom:1px solid #f1f5f9;
+        padding:11px 14px; border-bottom:1px solid var(--q3-border);
         background:transparent; color:inherit; text-decoration:none;
     }
     .guest:last-child { border-bottom:0; }
-    .guest:hover { background:#f8fafc; }
-    .guest__dot { width:8px; height:8px; border-radius:50%; background:#cbd5e1; margin-top:6px; flex:none; }
-    .guest__dot.is-on { background:#16a34a; }
+    .guest:hover { background:var(--q3-surface-2); }
+    .guest__dot { width:8px; height:8px; border-radius:50%; background:var(--q3-text-dim); margin-top:6px; flex:none; }
+    .guest__dot.is-on { background:var(--q3-success); }
     .guest__body { flex:1; min-width:0; }
     .guest__top { display:flex; align-items:center; gap:8px; }
-    .guest__name { font-weight:600; color:#0f172a; font-size:14px; }
+    .guest__name { font-weight:600; color:var(--q3-text); font-size:14px; }
     .guest__badge {
-        background:#dc2626; color:#fff; border-radius:999px;
+        background:var(--q3-danger); color:#fff; border-radius:999px;
         font-size:11px; font-weight:700; padding:1px 7px;
     }
-    .guest__meta { font-size:12px; color:#64748b; }
-    .guest__preview { font-size:12.5px; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .guest__go { font-size:12px; color:#2563eb; white-space:nowrap; align-self:center; }
+    .guest__meta { font-size:12px; color:var(--q3-text-muted); }
+    .guest__preview { font-size:12.5px; color:var(--q3-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .guest__go { font-size:12px; color:var(--q3-gold-high); white-space:nowrap; align-self:center; }
 </style>
 @endpush
 

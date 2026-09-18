@@ -12,8 +12,8 @@
 <style>
     .day-picker { display:flex; flex-wrap:wrap; gap:8px; }
     .day-picker label {
-        border:1px solid #d7dceb; border-radius:8px; padding:8px 14px;
-        cursor:pointer; font-size:14px; user-select:none; background:#fff;
+        border:1px solid var(--q3-border); border-radius:8px; padding:8px 14px;
+        cursor:pointer; font-size:14px; user-select:none; background:var(--q3-surface);
     }
     .day-picker input { display:none; }
     .day-picker input:checked + span { color:var(--theme-default); font-weight:600; }

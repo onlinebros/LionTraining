@@ -10,9 +10,9 @@
 
 @push('styles')
 <style>
-    .player-shell { background:#0b1020; border-radius:10px; overflow:hidden; }
-    .player-shell video { width:100%; display:block; max-height:70vh; background:#0b1020; }
-    .meta-list dt { font-weight:500; color:#6b7280; font-size:12px; }
+    .player-shell { background:var(--q3-black); border-radius:10px; overflow:hidden; }
+    .player-shell video { width:100%; display:block; max-height:70vh; background:var(--q3-black); }
+    .meta-list dt { font-weight:500; color:var(--q3-text-muted); font-size:12px; }
     .meta-list dd { margin-bottom:10px; }
     .copy-field { font-family: monospace; font-size:12px; }
 </style>

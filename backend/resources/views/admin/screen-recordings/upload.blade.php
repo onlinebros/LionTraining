@@ -11,17 +11,17 @@
 @push('styles')
 <style>
     .drop {
-        border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc;
+        border: 2px dashed var(--q3-border-strong); border-radius: 12px; background: var(--q3-surface-2);
         padding: 44px 24px; text-align: center; cursor: pointer;
         transition: border-color .12s, background .12s;
     }
     .drop:hover, .drop.is-over { border-color: var(--theme-default); background: rgba(var(--rgb-primary), .05); }
-    .drop svg { width: 34px; height: 34px; color: #94a3b8; margin-bottom: 10px; }
-    .drop__title { font-weight: 600; color: #111827; }
-    .drop__hint { font-size: 13px; color: #6b7280; margin-top: 4px; }
-    .picked { display: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+    .drop svg { width: 34px; height: 34px; color: var(--q3-text-dim); margin-bottom: 10px; }
+    .drop__title { font-weight: 600; color: var(--q3-text); }
+    .drop__hint { font-size: 13px; color: var(--q3-text-muted); margin-top: 4px; }
+    .picked { display: none; background: var(--q3-surface); border: 1px solid var(--q3-border); border-radius: 10px; padding: 16px; }
     .picked__name { font-weight: 600; word-break: break-all; }
-    .bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 10px; }
+    .bar { height: 8px; background: var(--q3-surface-3); border-radius: 999px; overflow: hidden; margin-top: 10px; }
     .bar__fill { height: 100%; width: 0; background: var(--theme-default); transition: width .25s; }
 </style>
 @endpush

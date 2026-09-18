@@ -5,22 +5,22 @@
 @push('styles')
 <style>
     .stat-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
-    .stat { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:13px 15px; }
-    .stat__n { font-size:22px; font-weight:700; color:#0f172a; line-height:1.1; font-variant-numeric:tabular-nums; }
-    .stat__l { font-size:11.5px; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+    .stat { background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:10px; padding:13px 15px; }
+    .stat__n { font-size:22px; font-weight:700; color:var(--q3-text); line-height:1.1; font-variant-numeric:tabular-nums; }
+    .stat__l { font-size:11.5px; color:var(--q3-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
 
-    .p-name { font-weight:600; color:#0f172a; }
-    .p-sub { font-size:12px; color:#64748b; }
+    .p-name { font-weight:600; color:var(--q3-text); }
+    .p-sub { font-size:12px; color:var(--q3-text-muted); }
     .tag {
         display:inline-block; border-radius:999px; padding:2px 9px;
         font-size:11px; font-weight:600; white-space:nowrap;
     }
-    .tag--won   { background:#dcfce7; color:#166534; }
-    .tag--warm  { background:#fef3c7; color:#92400e; }
-    .tag--cold  { background:#f1f5f9; color:#64748b; }
-    .tag--alias { background:#ede9fe; color:#5b21b6; }
+    .tag--won   { background:var(--q3-success-tint); color:#6ec49b; }
+    .tag--warm  { background:var(--q3-warning-tint); color:#dcb262; }
+    .tag--cold  { background:var(--q3-surface-3); color:var(--q3-text-muted); }
+    .tag--alias { background:var(--q3-info-tint); color:#a2adb4; }
 
-    .watched-list { font-size:12px; color:#475569; }
+    .watched-list { font-size:12px; color:var(--q3-text-muted); }
     .watched-list li { margin-bottom:2px; }
 </style>
 @endpush

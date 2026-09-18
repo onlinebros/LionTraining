@@ -11,10 +11,10 @@
 <style>
     .rec-thumb {
         width: 104px; height: 58px; border-radius: 6px; object-fit: cover;
-        background: #0b1020; flex: none;
+        background: var(--q3-black); flex: none;
     }
     .rec-thumb-empty {
-        display: flex; align-items: center; justify-content: center; color: #6b7280;
+        display: flex; align-items: center; justify-content: center; color: var(--q3-text-muted);
     }
 </style>
 @endpush

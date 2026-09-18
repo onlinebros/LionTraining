@@ -11,23 +11,23 @@
 @push('styles')
 <style>
     .stat-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
-    .stat { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:13px 15px; }
-    .stat__n { font-size:22px; font-weight:700; color:#0f172a; line-height:1.1; font-variant-numeric:tabular-nums; }
-    .stat__l { font-size:11.5px; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+    .stat { background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:10px; padding:13px 15px; }
+    .stat__n { font-size:22px; font-weight:700; color:var(--q3-text); line-height:1.1; font-variant-numeric:tabular-nums; }
+    .stat__l { font-size:11.5px; color:var(--q3-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
 
-    .path { font-size:12px; color:#475569; }
+    .path { font-size:12px; color:var(--q3-text-muted); }
     .path span { white-space:nowrap; }
     .tag { display:inline-block; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:600; }
-    .tag--won  { background:#dcfce7; color:#166534; }
-    .tag--live { background:#fee2e2; color:#991b1b; }
-    .tag--cold { background:#f1f5f9; color:#64748b; }
+    .tag--won  { background:var(--q3-success-tint); color:#6ec49b; }
+    .tag--live { background:var(--q3-danger-tint); color:#d1766e; }
+    .tag--cold { background:var(--q3-surface-3); color:var(--q3-text-muted); }
 
     /* A share bar behind the count, so which branch wins is readable at a
        glance rather than by comparing numbers. */
-    .bar { position:relative; background:#f1f5f9; border-radius:6px; height:22px; min-width:120px; }
-    .bar__fill { position:absolute; inset:0 auto 0 0; background:#dbeafe; border-radius:6px; }
+    .bar { position:relative; background:var(--q3-surface-3); border-radius:6px; height:22px; min-width:120px; }
+    .bar__fill { position:absolute; inset:0 auto 0 0; background:var(--q3-gold-tint-2); border-radius:6px; }
     .bar__text {
-        position:relative; font-size:12px; font-weight:600; color:#0f172a;
+        position:relative; font-size:12px; font-weight:600; color:var(--q3-text);
         line-height:22px; padding:0 8px; font-variant-numeric:tabular-nums;
     }
 </style>

@@ -6,7 +6,7 @@
 <style>
     .new-room {
         display:none; align-items:center; justify-content:space-between; gap:12px;
-        background:#fef2f2; border:1px solid #fecaca; color:#991b1b;
+        background:var(--q3-danger-tint); border:1px solid rgba(180, 72, 63, 0.32); color:#d1766e;
         border-radius:10px; padding:11px 14px; margin-bottom:14px; font-size:14px;
     }
     .new-room.is-shown { display:flex; }
@@ -19,26 +19,26 @@
     .rooms { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
     .room-chip {
         display:flex; flex-direction:column; gap:2px; min-width:180px;
-        background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 13px;
+        background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:10px; padding:10px 13px;
     }
-    .room-chip.is-live { border-color:#fecaca; background:#fff5f5; }
+    .room-chip.is-live { border-color:rgba(180, 72, 63, 0.32); background:var(--q3-danger-tint); }
     /* A call that opened while the console was already sitting there. */
     .room-chip.is-new { animation:roomIn 1.6s ease-out 2; }
     @keyframes roomIn {
         0%, 100% { box-shadow:0 0 0 0 rgba(220,38,38,0); }
         50%      { box-shadow:0 0 0 4px rgba(220,38,38,.18); }
     }
-    @media (prefers-reduced-motion: reduce) { .room-chip.is-new { animation:none; border-color:#dc2626; } }
-    .room-chip__title { font-weight:600; font-size:13.5px; color:#0f172a; }
-    .room-chip__meta { font-size:11.5px; color:#64748b; font-variant-numeric:tabular-nums; }
+    @media (prefers-reduced-motion: reduce) { .room-chip.is-new { animation:none; border-color:var(--q3-danger); } }
+    .room-chip__title { font-weight:600; font-size:13.5px; color:var(--q3-text); }
+    .room-chip__meta { font-size:11.5px; color:var(--q3-text-muted); font-variant-numeric:tabular-nums; }
 
     /* Watch-along panel. Collapsed by default: most of the time a member is
        reading and answering, and a video would just eat the screen. */
     .watch { margin-bottom:14px; }
     .watch__toggle {
         display:inline-flex; align-items:center; gap:8px; margin-bottom:10px;
-        border:1px solid #cbd5e1; background:#fff; border-radius:8px;
-        padding:7px 13px; font-size:13px; cursor:pointer;
+        border:1px solid var(--q3-border-strong); background:var(--q3-surface); border-radius:8px;
+        padding:7px 13px; font-size:13px; cursor:pointer; color:var(--q3-text);
     }
     .watch__body { display:none; }
     .watch.is-open .watch__body { display:block; }
@@ -47,109 +47,111 @@
        this video's play bar rather than as a separate widget sitting beside it. */
     .watch__col { max-width:min(100%, 960px); }
 
-    .watch__stage { background:#0b1020; border-radius:12px; overflow:hidden; aspect-ratio:16/9; width:100%; }
+    .watch__stage { background:var(--q3-black); border-radius:12px; overflow:hidden; aspect-ratio:16/9; width:100%; }
     .watch__controls {
         display:flex; flex-wrap:wrap; gap:10px; align-items:center;
-        margin-top:8px; font-size:12.5px; color:#64748b;
+        margin-top:8px; font-size:12.5px; color:var(--q3-text-muted);
     }
     .wctl {
-        border:1px solid #cbd5e1; background:#fff; color:#334155;
+        border:1px solid var(--q3-border-strong); background:var(--q3-surface); color:var(--q3-text);
         border-radius:8px; padding:5px 11px; font-size:12.5px; cursor:pointer;
     }
-    .wctl:hover { border-color:#6366f1; color:#4338ca; }
-    .watch__controls input[type=range] { accent-color:#4f46e5; width:110px; }
+    .wctl:hover { border-color:var(--q3-gold); color:var(--q3-gold-high); }
+    .watch__controls input[type=range] { accent-color:var(--q3-gold); width:110px; }
     .watch__pos { font-variant-numeric:tabular-nums; }
-    .watch__stage video { width:100%; height:100%; object-fit:contain; background:#0b1020; display:block; }
+    .watch__stage video { width:100%; height:100%; object-fit:contain; background:var(--q3-black); display:block; }
 
     /* Where everybody is. The room's playhead, with a mark for the point each
        guest came in — the number that actually differs between them. */
-    .track { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-top:12px; }
-    .track__title { font-size:13px; font-weight:600; color:#0f172a; margin-bottom:12px; }
-    .track__bar { position:relative; height:8px; background:#e2e8f0; border-radius:999px; margin:40px 0 8px; }
-    .track__fill { position:absolute; inset:0 auto 0 0; background:#6366f1; border-radius:999px; width:0; transition:width .5s linear; }
+    .track { background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:12px; padding:14px 16px; margin-top:12px; }
+    .track__title { font-size:13px; font-weight:600; color:var(--q3-text); margin-bottom:12px; }
+    .track__bar { position:relative; height:8px; background:var(--q3-surface-3); border-radius:999px; margin:40px 0 8px; }
+    .track__fill { position:absolute; inset:0 auto 0 0; background:var(--q3-gold); border-radius:999px; width:0; transition:width .5s linear; }
     .track__head {
         position:absolute; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px;
-        border-radius:50%; background:#4f46e5; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.3);
+        border-radius:50%; background:var(--q3-gold); border:2px solid var(--q3-surface); box-shadow:0 1px 4px rgba(0,0,0,.3);
     }
     .track__pin {
-        position:absolute; top:-16px; width:2px; height:22px; background:#94a3b8;
+        position:absolute; top:-16px; width:2px; height:22px; background:var(--q3-text-dim);
         transform:translateX(-1px);
     }
     .track__pin span {
         position:absolute; top:-15px; left:50%; transform:translateX(-50%);
-        font-size:10px; color:#475569; white-space:nowrap; background:#fff; padding:0 3px;
+        font-size:10px; color:var(--q3-text-muted); white-space:nowrap; background:var(--q3-surface); padding:0 3px;
     }
-    .track__ends { display:flex; justify-content:space-between; font-size:11px; color:#94a3b8;
+    .track__ends { display:flex; justify-content:space-between; font-size:11px; color:var(--q3-text-dim);
                    font-variant-numeric:tabular-nums; }
-    .track__empty { font-size:12.5px; color:#94a3b8; }
+    .track__empty { font-size:12.5px; color:var(--q3-text-dim); }
 
     .console {
         display:grid; grid-template-columns:330px minmax(0,1fr);
-        border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;
-        background:#fff; height:min(74vh, 700px);
+        border:1px solid var(--q3-border); border-radius:12px; overflow:hidden;
+        background:var(--q3-surface); height:min(74vh, 700px);
     }
-    .console__list { border-right:1px solid #e2e8f0; display:flex; flex-direction:column; min-height:0; }
-    .console__filter { padding:10px 12px; border-bottom:1px solid #e2e8f0; display:flex; gap:8px; }
-    .console__filter input { flex:1; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; font-size:13px; }
+    .console__list { border-right:1px solid var(--q3-border); display:flex; flex-direction:column; min-height:0; }
+    .console__filter { padding:10px 12px; border-bottom:1px solid var(--q3-border); display:flex; gap:8px; }
+    .console__filter input { flex:1; background:var(--q3-surface-2); color:var(--q3-text); border:1px solid var(--q3-border-strong); border-radius:8px; padding:6px 10px; font-size:13px; }
     .console__scroll { overflow-y:auto; flex:1; min-height:0; }
 
     .room-head {
-        position:sticky; top:0; z-index:1; background:#f8fafc;
-        border-bottom:1px solid #e2e8f0; padding:7px 13px;
-        font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b;
+        display:block; position:sticky; top:0; z-index:1; background:var(--q3-surface-2);
+        border-bottom:1px solid var(--q3-border); padding:7px 13px;
+        font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--q3-text-muted);
     }
 
     .guest {
         display:flex; gap:10px; align-items:flex-start; width:100%; text-align:left;
-        padding:11px 13px; border:0; border-bottom:1px solid #f1f5f9; background:none; cursor:pointer;
+        padding:11px 13px; border:0; border-bottom:1px solid var(--q3-border); background:none; cursor:pointer; color:var(--q3-text-body);
     }
-    .guest:hover { background:#f8fafc; }
-    .guest.is-active { background:#eef2ff; box-shadow:inset 3px 0 0 #6366f1; }
-    .guest__dot { width:8px; height:8px; border-radius:50%; margin-top:6px; flex:none; background:#cbd5e1; }
-    .guest__dot.is-on { background:#16a34a; }
+    .guest:hover { background:var(--q3-surface-2); }
+    .guest.is-active { background:var(--q3-gold-tint-2); box-shadow:inset 3px 0 0 var(--q3-gold); }
+    .guest__dot { width:8px; height:8px; border-radius:50%; margin-top:6px; flex:none; background:var(--q3-text-dim); }
+    .guest__dot.is-on { background:var(--q3-success); }
     .guest__body { flex:1; min-width:0; }
     .guest__top { display:flex; align-items:baseline; gap:6px; }
-    .guest__name { font-weight:600; font-size:14px; color:#0f172a; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .guest__meta { font-size:11.5px; color:#94a3b8; }
-    .guest__preview { font-size:12.5px; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .guest__name { font-weight:600; font-size:14px; color:var(--q3-text); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .guest__meta { font-size:11.5px; color:var(--q3-text-dim); }
+    .guest__preview { font-size:12.5px; color:var(--q3-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     /* What they last picked, or what they ended up asking for. Coloured
        because it is the line that tells a member there is something to do. */
     .guest__flow {
-        font-size:12px; color:#0d7a4f; font-weight:600;
+        font-size:12px; color:#6ec49b; font-weight:600;
         overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
-    .guest__badge { background:#4f46e5; color:#fff; border-radius:10px; font-size:10.5px; font-weight:700; padding:1px 7px; }
+    .guest__badge { background:var(--q3-gold); color: var(--q3-gold-ink); border-radius:10px; font-size:10.5px; font-weight:700; padding:1px 7px; }
 
     .console__pane { display:flex; flex-direction:column; min-height:0; }
-    .pane__head { padding:12px 16px; border-bottom:1px solid #e2e8f0; display:flex; gap:10px; align-items:center; }
-    .pane__log { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; background:#fbfcfe; min-height:0; }
-    .pane__empty { flex:1; display:flex; align-items:center; justify-content:center; color:#94a3b8; text-align:center; padding:32px; }
+    .pane__head { padding:12px 16px; border-bottom:1px solid var(--q3-border); display:flex; gap:10px; align-items:center; }
+    .pane__log { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; background:var(--q3-surface-2); min-height:0; }
+    .pane__empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--q3-text-dim); text-align:center; padding:32px; }
 
     .msg { max-width:75%; padding:9px 12px; border-radius:12px; font-size:14px;
            line-height:1.45; display:flex; flex-direction:column; gap:3px; }
-    .msg--them { background:#fff; border:1px solid #e2e8f0; color:#0f172a; align-self:flex-start; }
-    .msg--mine { background:#4f46e5; color:#fff; align-self:flex-end; }
+    .msg--them { background:var(--q3-surface); border:1px solid var(--q3-border); color:var(--q3-text); align-self:flex-start; }
+    .msg--mine { background:var(--q3-gold); color: var(--q3-gold-ink); align-self:flex-end; }
     .msg__who { font-size:10.5px; opacity:.7; display:block; }
     .msg__body { display:block; white-space:pre-wrap; word-break:break-word; }
 
-    .pane__form { display:flex; gap:8px; padding:12px; border-top:1px solid #e2e8f0; align-items:flex-end; }
-    .pane__form textarea { flex:1; resize:none; border:1px solid #cbd5e1; border-radius:10px; padding:9px 12px; font-size:14px; max-height:120px; }
-    .pane__hint { font-size:11px; color:#94a3b8; padding:0 12px 10px; }
+    .pane__form { display:flex; gap:8px; padding:12px; border-top:1px solid var(--q3-border); align-items:flex-end; }
+    .pane__form textarea { flex:1; resize:none; background:var(--q3-surface-2); color:var(--q3-text); border:1px solid var(--q3-border-strong); border-radius:10px; padding:9px 12px; font-size:14px; max-height:120px; }
+    .console__filter input::placeholder, .pane__form textarea::placeholder { color:var(--q3-text-dim); }
+    .console__filter input:focus, .pane__form textarea:focus { outline:none; border-color:var(--q3-gold); box-shadow:0 0 0 3px var(--q3-gold-ring); }
+    .pane__hint { font-size:11px; color:var(--q3-text-dim); padding:0 12px 10px; }
 
     /* Same reasoning as the single-room console: on a phone the list and the
        conversation are two full screens, because a member is switching between
        people — and now between rooms — while calls are running. */
     @media (max-width: 900px) {
         .console { grid-template-columns:1fr; height:auto; border:0; border-radius:0; background:transparent; margin:0 -12px; }
-        .console__list, .console__pane { border:1px solid #e2e8f0; border-radius:12px; background:#fff; }
+        .console__list, .console__pane { border:1px solid var(--q3-border); border-radius:12px; background:var(--q3-surface); }
         .console.is-open .console__list { display:none; }
         .console:not(.is-open) .console__pane { display:none; }
         .console.is-open .console__pane {
             position:fixed; inset:0; z-index:1040; border:0; border-radius:0;
             height:100dvh; display:flex; flex-direction:column;
         }
-        .console.is-open .pane__head { position:sticky; top:0; z-index:2; background:#fff; padding-top:max(12px, env(safe-area-inset-top)); }
-        .console.is-open .pane__form { position:sticky; bottom:0; background:#fff; padding-bottom:max(12px, env(safe-area-inset-bottom)); }
+        .console.is-open .pane__head { position:sticky; top:0; z-index:2; background:var(--q3-surface); padding-top:max(12px, env(safe-area-inset-top)); }
+        .console.is-open .pane__form { position:sticky; bottom:0; background:var(--q3-surface); padding-bottom:max(12px, env(safe-area-inset-bottom)); }
         .console.is-open .pane__hint { display:none; }
         .guest { padding:14px; }
         .pane__form textarea { font-size:16px; }
@@ -157,7 +159,7 @@
         .mobile-switch { display:flex !important; }
     }
     .mobile-switch { display:none; align-items:center; gap:8px; }
-    .mobile-switch__count { background:#4f46e5; color:#fff; border-radius:999px; font-size:11px; font-weight:700; padding:2px 8px; }
+    .mobile-switch__count { white-space:nowrap; background:var(--q3-gold); color: var(--q3-gold-ink); border-radius:999px; font-size:11px; font-weight:700; padding:2px 8px; }
 </style>
 @endpush
 

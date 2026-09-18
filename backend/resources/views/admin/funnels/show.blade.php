@@ -10,39 +10,39 @@
 @push('styles')
 <style>
     .stat-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
-    .stat { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:13px 15px; }
-    .stat__n { font-size:22px; font-weight:700; color:#0f172a; line-height:1.1; font-variant-numeric:tabular-nums; }
-    .stat__l { font-size:11.5px; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+    .stat { background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:10px; padding:13px 15px; }
+    .stat__n { font-size:22px; font-weight:700; color:var(--q3-text); line-height:1.1; font-variant-numeric:tabular-nums; }
+    .stat__l { font-size:11.5px; color:var(--q3-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
 
     /* A step and the choices hanging off it, so the shape of the flow is
        readable down the page rather than assembled in your head. */
-    .step { border:1px solid #e2e8f0; border-radius:12px; margin-bottom:14px; background:#fff; }
+    .step { border:1px solid var(--q3-border); border-radius:12px; margin-bottom:14px; background:var(--q3-surface); }
     .step__head {
         display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
-        padding:13px 16px; border-bottom:1px solid #eef2f7;
+        padding:13px 16px; border-bottom:1px solid var(--q3-border);
     }
     .step__n {
         display:inline-flex; align-items:center; justify-content:center;
         width:26px; height:26px; border-radius:50%; margin-right:9px; flex:none;
-        background:#f1f5f9; color:#475569; font-size:12px; font-weight:700;
+        background:var(--q3-surface-3); color:var(--q3-text-muted); font-size:12px; font-weight:700;
     }
-    .step__title { font-weight:600; color:#0f172a; }
-    .step__meta { font-size:12px; color:#64748b; }
+    .step__title { font-weight:600; color:var(--q3-text); }
+    .step__meta { font-size:12px; color:var(--q3-text-muted); }
     .step__body { padding:14px 16px; }
 
     .cue {
         display:flex; flex-wrap:wrap; gap:10px; align-items:center;
-        padding:9px 12px; border:1px solid #eef2f7; border-radius:9px; margin-bottom:8px;
-        background:#f8fafc;
+        padding:9px 12px; border:1px solid var(--q3-border); border-radius:9px; margin-bottom:8px;
+        background:var(--q3-surface-2);
     }
     .cue--off { opacity:.55; }
     .cue__at {
-        font-variant-numeric:tabular-nums; font-weight:700; color:#0f172a;
-        background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:2px 8px; font-size:12.5px;
+        font-variant-numeric:tabular-nums; font-weight:700; color:var(--q3-text);
+        background:var(--q3-surface); border:1px solid var(--q3-border); border-radius:6px; padding:2px 8px; font-size:12.5px;
     }
-    .cue__label { font-weight:600; color:#0f172a; font-size:13.5px; }
-    .cue__to { font-size:12px; color:#64748b; }
-    .cue__warn { font-size:12px; color:#b45309; }
+    .cue__label { font-weight:600; color:var(--q3-text); font-size:13.5px; }
+    .cue__to { font-size:12px; color:var(--q3-text-muted); }
+    .cue__warn { font-size:12px; color:#dcb262; }
 </style>
 @endpush
 

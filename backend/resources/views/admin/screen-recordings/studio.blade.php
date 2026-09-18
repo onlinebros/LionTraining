@@ -12,21 +12,21 @@
 <style>
     .stage {
         position: relative;
-        background: #0b1020;
+        background: var(--q3-black);
         border-radius: 10px;
         overflow: hidden;
         aspect-ratio: 16 / 9;
     }
     .stage canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
-    .stage .placeholder {
+    .stage .stage__placeholder {
         position: absolute; inset: 0;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: #9aa4c4; text-align: center; padding: 24px; gap: 8px;
+        color: var(--q3-text-muted); text-align: center; padding: 24px; gap: 8px;
     }
     .stage .countdown {
         position: absolute; inset: 0; display: none;
         align-items: center; justify-content: center;
-        background: rgba(11,16,32,.72); color: #fff;
+        background: rgba(5, 5, 5, 0.72); color: #fff;
         font-size: clamp(48px, 12vw, 140px); font-weight: 700;
     }
     .rec-dot {
@@ -38,12 +38,12 @@
     /* Corner picker — a miniature of the frame, so the choice is literal. */
     .corner-picker {
         display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-        aspect-ratio: 16 / 9; background: #eef1f7; border-radius: 8px; padding: 8px;
+        aspect-ratio: 16 / 9; background: var(--q3-surface-2); border-radius: 8px; padding: 8px;
     }
     .corner-picker button {
-        border: 1px dashed #b9c2d6; background: #fff; border-radius: 6px;
+        border: 1px dashed var(--q3-border-strong); background: var(--q3-surface); border-radius: 6px;
         display: flex; align-items: center; justify-content: center;
-        font-size: 11px; color: #6b7280; cursor: pointer; transition: all .12s;
+        font-size: 11px; color: var(--q3-text-muted); cursor: pointer; transition: all .12s;
     }
     .corner-picker button:hover { border-color: var(--theme-default); color: var(--theme-default); }
     .corner-picker button.active {
@@ -59,12 +59,12 @@
     .mode-btn {
         display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
         padding: 12px 14px; text-align: left; cursor: pointer;
-        border: 1px solid #d7dceb; border-radius: 8px; background: #fff;
+        border: 1px solid var(--q3-border); border-radius: 8px; background: var(--q3-surface);
         transition: border-color .12s, background .12s, box-shadow .12s;
     }
-    .mode-btn svg { width: 18px; height: 18px; margin-bottom: 4px; color: #6b7280; }
-    .mode-btn span { font-weight: 600; color: #111827; font-size: 14px; }
-    .mode-btn small { color: #6b7280; font-size: 11.5px; line-height: 1.3; }
+    .mode-btn svg { width: 18px; height: 18px; margin-bottom: 4px; color: var(--q3-text-muted); }
+    .mode-btn span { font-weight: 600; color: var(--q3-text); font-size: 14px; }
+    .mode-btn small { color: var(--q3-text-muted); font-size: 11.5px; line-height: 1.3; }
     .mode-btn:hover:not(:disabled) { border-color: var(--theme-default); }
     .mode-btn.active {
         border-color: var(--theme-default);
@@ -110,7 +110,7 @@
 
                 <div class="stage mb-3">
                     <canvas id="recorder-canvas" width="1280" height="720"></canvas>
-                    <div class="placeholder" id="recorder-placeholder">
+                    <div class="stage__placeholder" id="recorder-placeholder">
                         <i data-feather="monitor" style="width:38px;height:38px;"></i>
                         <div class="fw-semibold">Pick what to record</div>
                         <div style="max-width:360px;font-size:13px;">
@@ -222,7 +222,7 @@
                 <div class="mb-2">
                     <label class="form-label" for="field-title">Title</label>
                     <input type="text" id="field-title" class="form-control" maxlength="200"
-                           placeholder="How to add a property">
+                           placeholder="How to share your invite link">
                 </div>
                 <div class="mb-2">
                     <label class="form-label" for="field-category">Training category</label>
