@@ -41,8 +41,8 @@ User-Agent:    Quantum3Solution-Webhooks/1
       "parent_is_partner_spot": true,
       "depth": 4,
       "placed_at": "2026-09-20T09:12:44+00:00",
-      "team_size": 12,
-      "unclaimed_below": 37
+      "directs_claimed": 3,
+      "directs_unclaimed": 9
     },
 
     "membership": {
@@ -68,10 +68,16 @@ User-Agent:    Quantum3Solution-Webhooks/1
 | `data.position.parent_is_partner_spot` | `true` when the position above also came from your list. When `false`, `external_parent_id` is `null` and this is a leg top. |
 | `data.position.depth` | How deep the position sits in the whole structure, counting from the root. |
 | `data.position.placed_at` | When the position was put into the structure — the import, not the claim. |
-| `data.position.team_size` | Claimed members below them. Unclaimed positions are **not** counted. |
-| `data.position.unclaimed_below` | Imported positions below them still waiting on their owner. |
+| `data.position.directs_claimed` | Claimed members sitting **directly** beneath them — their first level, not their whole downline. |
+| `data.position.directs_unclaimed` | Imported positions on that first level still waiting on their owner. |
 | `data.membership.active` | Whether they have completed enrollment. **A claim and a paying member are not the same event** — somebody can claim their position and choose to be billed later. If you are counting conversions, this is the field you want, not the event itself. |
 | `data.membership.billing_pending` | They chose to start paying once their commissions reach the threshold, rather than now. |
+
+**Both counts are the first level only, not the whole downline.** Totalling a
+downline means aggregating a million rows inside the transaction that is
+claiming the position, with the member waiting on the form. You already have the
+tree — you sent it to us — so you can total it yourself. What only we know is
+that this position just activated, and that is what this event is for.
 
 ### `data.member` — only by agreement
 
@@ -142,7 +148,7 @@ same bytes.** Key your idempotency on that ID. If you have seen it, answer 2xx
 and discard — a replay is us saying "here it is again", never a second claim.
 
 The event body is frozen when the claim happens. If we replay it a week later,
-the `team_size` in it is the one from the moment of the claim, not today's.
+the counts in it are the ones from the moment of the claim, not today's.
 
 ## 5. Personal data
 

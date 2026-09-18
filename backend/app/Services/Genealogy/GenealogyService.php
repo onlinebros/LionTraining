@@ -360,36 +360,23 @@ class GenealogyService
     }
 
     /**
-     * Claimed and unclaimed spot counts anywhere below $user.
+     * Imported positions sitting *directly* beneath $user, claimed and not.
      *
-     * The numbers behind the spots screen: how much of this organisation is
-     * still waiting on somebody to activate it.
+     * Directly, not anywhere below. A partner does not need — and should not be
+     * handed — a list of every unclaimed position in an organisation of a
+     * million: their own first level is what they can act on, and the partner
+     * company is the one chasing the rest, from their own system, using the
+     * activations we send them.
+     *
+     * It is also the difference between an indexed lookup on
+     * `placement_parent_id` and an aggregate over a million-row ltree range.
      *
      * @return array{claimed:int, unclaimed:int, total:int}
      */
-    public function spotCounts(User $user): array
+    public function directSpotCounts(User $user): array
     {
-        if ($user->placement_path === null) {
-            return ['claimed' => 0, 'unclaimed' => 0, 'total' => 0];
-        }
-
-        // Cached, because this is on the team page and counting the imported
-        // positions below somebody near the top of a partner organisation means
-        // aggregating over a million rows on every page load. It is a headline
-        // number on a card, not anything that is acted on, and it moves only
-        // when somebody claims.
-        return \Cache::remember(
-            "user_{$user->id}_spot_counts",
-            now()->addMinutes(5),
-            fn () => $this->countSpotsBelow($user),
-        );
-    }
-
-    /** @return array{claimed:int, unclaimed:int, total:int} */
-    private function countSpotsBelow(User $user): array
-    {
-        $row = $this->descendantsOfPath($user->placement_path)
-            ->where('users.id', '!=', $user->id)
+        $row = User::query()
+            ->where('placement_parent_id', $user->id)
             ->whereNotNull('partner_company_id')
             ->selectRaw('count(*) AS total')
             ->selectRaw('count(*) FILTER (WHERE account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])

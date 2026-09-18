@@ -315,9 +315,7 @@ class SpotMergeTest extends TestCase
         // that was claimed rather than the hole it left. After the merge this
         // position has no path at all, so a payload built afterwards would
         // report nothing below it.
-        $this->assertSame(1, $payload['position']['unclaimed_below']);
-        // And no claimed members below it yet — the one position under it is
-        // still an unclaimed spot, which is not a member.
-        $this->assertSame(0, $payload['position']['team_size']);
+        $this->assertSame(1, $payload['position']['directs_unclaimed']);
+        $this->assertSame(0, $payload['position']['directs_claimed']);
     }
 }

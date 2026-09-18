@@ -241,7 +241,8 @@ class PartnerWebhookDispatcher
      */
     private function spotClaimedPayload(PartnerCompany $company, User $spot, ?User $mergedInto = null): array
     {
-        $parent = $spot->placementParent;
+        $parent  = $spot->placementParent;
+        $directs = $this->genealogy->directSpotCounts($spot);
 
         $payload = [
             // Their identifier first: it is the key they will join on.
@@ -266,9 +267,18 @@ class PartnerWebhookDispatcher
                 'parent_is_partner_spot' => $parent?->isImported() ?? false,
                 'depth'                  => $this->genealogy->depthOf($spot->placement_path),
                 'placed_at'              => $spot->placed_at?->toIso8601String(),
-                // Counted the way we count everywhere: claimed members only.
-                'team_size'              => $this->genealogy->teamSize($spot),
-                'unclaimed_below'        => $this->genealogy->spotCounts($spot)['unclaimed'],
+
+                // The first level only, and counted that way on purpose.
+                //
+                // Totalling a whole downline means an aggregate over an ltree
+                // range that, for a position near the top of an organisation
+                // this size, is a million rows and seconds of work — inside the
+                // transaction that is claiming the position, with the member
+                // waiting on the form. The partner has their own copy of the
+                // tree and can total it themselves; what only we know is that
+                // this position just activated.
+                'directs_claimed'        => $directs['claimed'],
+                'directs_unclaimed'      => $directs['unclaimed'],
             ],
 
             'membership' => [

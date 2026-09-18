@@ -63,49 +63,49 @@ class MemberController extends Controller
             'teamSize' => $genealogy->teamSize($user),
             'depth'    => $genealogy->depthOf($user->placement_path),
             'isReRooted' => $root->id !== $user->id,
-            'spots'      => $genealogy->spotCounts($user),
+            'spots'      => $genealogy->directSpotCounts($user),
         ]);
     }
 
     /**
-     * Holding spots in this partner's organisation: claimed and still waiting.
+     * The imported positions directly beneath this partner, claimed and not.
      *
      * Its own screen rather than rows in the tree. An unclaimed spot is a
      * position with nobody in it — showing them inline would mean a partner's
      * team page listed people who cannot be contacted and are not yet members,
      * and the count at the top of that page would stop meaning "my team".
      *
-     * What a partner sees here is a count and, for spots they personally
-     * enrolled or that head one of their own legs, the identifier the partner
-     * company knows them by. Never a name or an email of somebody who has not
-     * joined us: that data came from another company's database and belongs to
-     * the person it describes, not to the upline waiting on them.
+     * **Their first level only.** Not the whole downline. A partner given a
+     * list of every unclaimed position in an organisation of a million has been
+     * handed something they cannot act on; their own directs are the people
+     * they actually know. The partner company chases the rest from their own
+     * system, which is what the activation webhook is for — we tell them who
+     * activated, they work out who still needs a nudge.
+     *
+     * It is also the difference between an indexed lookup on
+     * placement_parent_id and paging through an ltree range of a million rows.
+     *
+     * What a partner sees is the identifier the partner company knows each
+     * position by, and nothing else. Never a name or an email of somebody who
+     * has not joined us: that data came from another company's database and
+     * belongs to the person it describes, not to the upline waiting on them.
      */
     public function spots(GenealogyService $genealogy)
     {
         $user = auth()->user()->load('role');
 
-        $counts = $genealogy->spotCounts($user);
+        $counts = $genealogy->directSpotCounts($user);
 
-        // Ordered by id and paginated without a total.
-        //
-        // `placement_path` is indexed with GIST, which cannot answer an ORDER
-        // BY — asking for one sorts the whole result set, and for a partner
-        // near the top of an imported organisation that is a million rows
-        // sorted to show fifty. Id is the same arbitrary-but-stable ordering as
-        // far as anybody reading this list is concerned, and it is the primary
-        // key.
-        //
-        // simplePaginate because paginate() runs a COUNT over the same million
-        // rows to work out how many pages there are, and the count that matters
-        // is already on the page above from spotCounts().
-        $waiting = $genealogy->descendants($user, includeHolding: true)
+        // simplePaginate rather than paginate: the count that matters is
+        // already on the card above, and asking for a second one to number the
+        // pages is the most expensive thing left on the screen.
+        $waiting = $genealogy->directs($user, includeHolding: true)
             ->holding()
             ->with('partnerCompany:id,name')
             ->orderBy('id')
             ->simplePaginate(50);
 
-        $recentlyClaimed = $genealogy->descendants($user)
+        $recentlyClaimed = $genealogy->directs($user)
             ->whereNotNull('claimed_at')
             ->latest('claimed_at')
             ->limit(10)

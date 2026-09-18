@@ -118,6 +118,7 @@
             <div class="card-header py-3"><h5 class="mb-0">How your own purchase is credited</h5></div>
             <div class="card-body small">
                 <ul class="mb-0 ps-3">
+                    @php $terms = \App\Services\Vendor\PromotionBonuses::terms($promotion); @endphp
                     <li class="mb-2">
                         @if ($promotion)
                             It counts as your sale, including toward <strong>{{ $promotion['name'] }}</strong>.
@@ -125,13 +126,21 @@
                             It counts as your sale.
                         @endif
                     </li>
+                    @if ($terms)
+                        <li class="mb-2">
+                            While places remain, each system you buy earns <strong>you</strong> the
+                            ${{ number_format($terms['place_amount']) }} launch bonus and a share of the bonus pool,
+                            once the sale is confirmed.
+                        </li>
+                    @endif
                     <li class="mb-2">
+                        {{-- Sale commission, separate from the launch bonus above. --}}
                         @if ($sponsor)
-                            You do not earn commission on your own purchase. It goes to your sponsor,
-                            <strong>{{ $sponsor->name }}</strong>.
+                            The sale commission on your own purchase goes to your sponsor,
+                            <strong>{{ $sponsor->name }}</strong>, not to you.
                         @else
-                            You do not earn commission on your own purchase. Your account has no sponsor,
-                            so no commission is paid on it.
+                            No sale commission is paid on your own purchase: it would go to your sponsor,
+                            and your account has none. This is shown to accounts at the top of the team.
                         @endif
                     </li>
                     <li>

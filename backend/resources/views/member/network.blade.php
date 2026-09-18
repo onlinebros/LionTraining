@@ -105,11 +105,11 @@
             <div>
                 <h6 class="mb-1 fw-bold">
                     {{ number_format($spots['unclaimed']) }} position{{ $spots['unclaimed'] === 1 ? '' : 's' }}
-                    in your organisation not claimed yet
+                    directly below you not claimed yet
                 </h6>
                 <p class="mb-0 small text-muted">
-                    Imported from a partner company. They hold their place in your downline and join
-                    your team the moment their owner activates them.
+                    Imported from a partner company. They hold their place on your first level and
+                    join your team the moment their owner activates them.
                 </p>
             </div>
             <a href="{{ route('member.network.spots') }}" class="btn btn-sm btn-outline-primary">

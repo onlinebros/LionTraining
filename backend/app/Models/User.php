@@ -253,26 +253,24 @@ class User extends Authenticatable
     }
 
     /**
-     * Does this partner have unclaimed positions anywhere below them?
+     * Does this partner have unclaimed positions directly beneath them?
      *
-     * Drives one sidebar link, so it runs on every member page render and is
-     * cached for a few minutes. A partner seeing the link appear a little late
-     * after a claim costs nothing; an uncached existence query on every request
-     * for every member is a real bill.
+     * Directly, because that is all the spots screen shows — see
+     * GenealogyService::directSpotCounts(). It also makes this an indexed
+     * lookup on placement_parent_id rather than an ltree range scan, which
+     * matters because it drives a sidebar link and so runs on every member page
+     * render.
+     *
+     * Still cached: a partner seeing the link appear a little late after a
+     * claim costs nothing, and an existence query on every request for every
+     * member is a real bill.
      */
     public function hasHoldingSpotsBelow(): bool
     {
-        if ($this->placement_path === null) {
-            return false;
-        }
-
         return \Cache::remember(
             "user_{$this->id}_has_holding_spots",
             now()->addMinutes(5),
-            fn () => static::query()
-                ->holding()
-                ->whereRaw('placement_path <@ ?::ltree', [$this->placement_path])
-                ->exists(),
+            fn () => static::query()->holding()->where('placement_parent_id', $this->id)->exists(),
         );
     }
 

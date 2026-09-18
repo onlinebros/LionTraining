@@ -83,10 +83,11 @@ class HoldingSpotVisibilityTest extends TestCase
         $this->assertSame(3, $this->genealogy()->teamSize($this->founder, includeHolding: true));
     }
 
-    public function test_the_spot_counts_split_claimed_from_unclaimed(): void
+    public function test_the_spot_counts_cover_the_first_level_and_stop_there(): void
     {
-        $head = $this->spot('A-1', $this->founder);
-        $this->spot('A-2', $head);
+        $head    = $this->spot('A-1', $this->founder);
+        $sibling = $this->spot('A-2', $this->founder);
+        $deeper  = $this->spot('A-3', $head);
 
         // Claiming one flips it into the claimed column without moving it.
         $head->forceFill([
@@ -96,10 +97,27 @@ class HoldingSpotVisibilityTest extends TestCase
             'email'          => 'dana@example.com',
         ])->save();
 
+        // Two positions directly below the founder, one now claimed. A-3 sits
+        // under A-1 and is deliberately not counted: a partner is shown their
+        // own first level, which is what they can act on, and the partner
+        // company chases the rest from their own system.
         $this->assertSame(
             ['claimed' => 1, 'unclaimed' => 1, 'total' => 2],
-            $this->genealogy()->spotCounts($this->founder),
+            $this->genealogy()->directSpotCounts($this->founder),
         );
+    }
+
+    public function test_the_spots_page_lists_only_the_first_level(): void
+    {
+        $head = $this->spot('A-1', $this->founder);
+        $this->spot('A-2', $head);
+
+        $this->actingAs($this->founder)
+            ->get(route('member.network.spots'))
+            ->assertOk()
+            ->assertSee('A-1')
+            // Two levels down, and somebody else's to follow up.
+            ->assertDontSee('A-2');
     }
 
     // ── The tree ──────────────────────────────────────────────────────────────
