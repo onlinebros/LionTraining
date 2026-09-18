@@ -159,6 +159,36 @@ class SpotMergeTest extends TestCase
         $this->assertFalse(User::query()->activated()->whereKey($head->id)->exists());
     }
 
+    public function test_a_merged_position_stops_being_able_to_sponsor_anybody(): void
+    {
+        $head = $this->claimed($this->spot('IHUB-1', $this->founder), 'head@example.com');
+        $code = $head->referral_code;
+
+        $this->assertNotNull($code, 'a claimed position should have a referral code to lose');
+
+        $this->merges()->merge($head, $this->founder);
+
+        // The link is still printed in whatever they shared before the merge.
+        // It has to be dead: the position is out of the structure, so enrolling
+        // somebody beneath it fails deep in the genealogy rather than politely.
+        $this->assertNull($head->refresh()->referral_code);
+        $this->get(route('join', $code))->assertNotFound();
+    }
+
+    public function test_an_unclaimed_position_can_never_be_a_sponsor(): void
+    {
+        // Really-imported positions have no referral code at all: the committer
+        // bulk-inserts, which skips the model event that hands them out, and
+        // all 1,304,352 of iHub's came through with it null. This helper builds
+        // them through Eloquent, so it gets one — which makes it the stricter
+        // test. Relying on a null column to keep a door shut is not the same as
+        // locking the door.
+        $spot = $this->spot('IHUB-1', $this->founder);
+        $spot->forceFill(['referral_code' => 'TESTCODE'])->save();
+
+        $this->get(route('join', 'TESTCODE'))->assertNotFound();
+    }
+
     // ── What it refuses ───────────────────────────────────────────────────────
 
     public function test_an_unclaimed_position_cannot_be_merged_by_an_administrator(): void

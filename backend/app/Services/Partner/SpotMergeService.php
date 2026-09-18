@@ -245,6 +245,14 @@ class SpotMergeService
             'email'               => null,
             'password'            => null,
             'remember_token'      => null,
+
+            // Released with the login. A retired position's invitation link
+            // must stop working: it is still printed in whatever the person
+            // shared before the merge, and following it would try to enroll
+            // somebody beneath an account that is no longer in the structure.
+            // The account that absorbed this one has its own code, which is the
+            // one they should be sharing now.
+            'referral_code'       => null,
         ])->save();
     }
 

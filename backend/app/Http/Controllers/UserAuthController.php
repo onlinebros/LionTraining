@@ -77,13 +77,27 @@ class UserAuthController extends Controller
 
     public function showReferral(string $code)
     {
-        $sponsor = User::where('referral_code', $code)->firstOrFail();
-        return view('public.auth.referral', compact('sponsor'));
+        return view('public.auth.referral', ['sponsor' => $this->sponsorFor($code)]);
+    }
+
+    /**
+     * The partner behind a referral code.
+     *
+     * Activated accounts only. Two kinds of row now hold a position without
+     * being a person who can sponsor anybody: an unclaimed partner-company spot,
+     * and a position that has been merged into another account. Neither should
+     * ever be found here — an unclaimed spot has no owner, and a merged one is
+     * out of the structure, so placing a signup beneath either fails deep in
+     * the genealogy with a 500 instead of a 404 on a link that is simply dead.
+     */
+    private function sponsorFor(string $code): User
+    {
+        return User::query()->activated()->where('referral_code', $code)->firstOrFail();
     }
 
     public function registerViaReferral(Request $request, string $code)
     {
-        $sponsor = User::where('referral_code', $code)->firstOrFail();
+        $sponsor = $this->sponsorFor($code);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
