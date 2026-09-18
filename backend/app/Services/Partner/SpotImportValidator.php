@@ -86,10 +86,20 @@ class SpotImportValidator
         DB::transaction(function () use ($import) {
             // Start from a clean slate every run: an error fixed by connecting
             // a leg has to actually disappear.
+            //
+            // One statement, not four. Every one of these is a full rewrite of
+            // the staging table — 1.5GB and ten minutes each on iHub's list —
+            // and they were spread across the reset, the sponsor fallback and
+            // both depth passes. Postgres rewrites the row whether you change
+            // one column or six, so the columns are cleared together and the
+            // sponsor fallback starts from the parent in the same pass.
             $import->rows()->update([
-                'status'   => PartnerImportRow::STATUS_VALID,
-                'errors'   => null,
-                'warnings' => null,
+                'status'               => PartnerImportRow::STATUS_VALID,
+                'errors'               => null,
+                'warnings'             => null,
+                'placement_depth'      => null,
+                'enrollment_depth'     => null,
+                'effective_sponsor_id' => DB::raw('external_parent_id'),
             ]);
 
             $this->flagBlankIds($import);
@@ -283,8 +293,9 @@ class SpotImportValidator
      */
     private function resolveEffectiveSponsors(PartnerImport $import): void
     {
-        $import->rows()->update(['effective_sponsor_id' => DB::raw('external_parent_id')]);
-
+        // The fallback to the parent was already applied by the reset above.
+        // Only the rows whose sponsor the file does contain need touching, and
+        // there is no reason to rewrite the other 1.3 million to find out.
         DB::statement(
             'UPDATE partner_import_rows AS child
                 SET effective_sponsor_id = child.external_sponsor_id
@@ -303,7 +314,9 @@ class SpotImportValidator
         foreach (['placement' => 'external_parent_id', 'enrollment' => 'effective_sponsor_id'] as $tree => $column) {
             $depthColumn = "{$tree}_depth";
 
-            $import->rows()->update([$depthColumn => null]);
+            // Both depth columns were cleared by the reset at the top of
+            // validate(); clearing them again here is another full rewrite for
+            // nothing.
 
             // Level 1: the tops. A blank column — for placement that is a leg
             // top, for enrollment a row with no resolvable sponsor and no
