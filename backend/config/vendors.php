@@ -91,6 +91,14 @@ return [
             'website'      => 'https://plasmaguard.com/',
             'support_email' => env('PLASMAGUARD_SUPPORT_EMAIL', 'info@plasmaguard.com'),
 
+            /*
+            | Their order desk, emailed the details of every confirmed sale so
+            | they can fulfil it (VendorOrderPlaced). Sent only while the
+            | vendor's Stripe is in live mode: a sandbox order reaching a real
+            | order desk is a $6,000 system shipped for free. Empty disables it.
+            */
+            'order_email'  => env('PLASMAGUARD_ORDER_EMAIL', 'orders@plasmaguard.com'),
+
             // Whether partners can share these pages at all. A vendor whose
             // terms are still being negotiated is registered but switched off,
             // so the pages exist to demo without being publicly shareable.

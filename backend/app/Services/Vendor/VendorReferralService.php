@@ -2,6 +2,7 @@
 
 namespace App\Services\Vendor;
 
+use App\Mail\VendorOrderPlaced;
 use App\Models\CommissionLedger;
 use App\Models\CrmContact;
 use App\Models\User;
@@ -10,8 +11,10 @@ use App\Support\Vendors;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Capture, handoff, and reconciliation for sales made on someone else's checkout.
@@ -240,12 +243,16 @@ class VendorReferralService
      */
     public function convert(VendorLead $lead, array $confirmation, string $via = VendorLead::VIA_WEBHOOK, ?User $actor = null): VendorLead
     {
-        $result = DB::transaction(function () use ($lead, $confirmation, $via, $actor) {
+        $converted = false;
+
+        $result = DB::transaction(function () use ($lead, $confirmation, $via, $actor, &$converted) {
             $lead = VendorLead::lockForUpdate()->find($lead->id);
 
             if ($lead === null || $lead->isConverted()) {
                 return $lead;
             }
+
+            $converted = true;
 
             $lead->forceFill([
                 'status'                     => VendorLead::STATUS_CONVERTED,
@@ -276,7 +283,39 @@ class VendorReferralService
             $this->bonuses->reconcileFor($result);
         }
 
+        // Once per sale, and only after it has committed: a redelivered
+        // webhook finds the lead already converted and sends nothing.
+        if ($converted) {
+            $this->notifyVendor($result);
+        }
+
         return $result;
+    }
+
+    /**
+     * Email the vendor's order desk so they can fulfil the sale.
+     *
+     * Live mode only — see `order_email` in config/vendors.php. A failure here
+     * is logged and swallowed: the sale is already recorded and the commission
+     * raised, and a mail outage must not turn a webhook into a retry loop.
+     */
+    private function notifyVendor(VendorLead $lead): void
+    {
+        $vendor = Vendors::find((string) $lead->vendor);
+        $to     = $vendor['order_email'] ?? null;
+
+        if (! filled($to) || ($vendor['stripe']['mode'] ?? 'test') !== 'live') {
+            return;
+        }
+
+        try {
+            Mail::to($to)->queue(new VendorOrderPlaced($lead));
+        } catch (Throwable $e) {
+            Log::error('Could not queue the vendor order email', [
+                'lead'  => $lead->public_ref,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
