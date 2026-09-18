@@ -8,7 +8,10 @@
 @endsection
 
 @section('content')
-@php $referralUrl = url('/join/' . $user->referral_code); @endphp
+@php
+    $referralUrl = url('/join/' . $user->referral_code);
+    $siteUrl = rtrim(config('registration.site_url'), '/') . '/' . $user->referral_code;
+@endphp
 
 <div class="row g-3">
 
@@ -60,6 +63,19 @@
                                 })">
                         <i data-feather="copy" style="width:14px;height:14px;" class="me-1"></i>Copy Link
                     </button>
+                </div>
+
+                <h6 class="fw-bold mb-1">Your Website</h6>
+                <p class="text-muted small mb-3">
+                    Your own copy of the company website. It shows visitors that you invited them, and its Join buttons use your referral link.
+                </p>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-4">
+                    <input type="text" class="form-control" value="{{ $siteUrl }}" readonly
+                           style="font-family:monospace;font-size:.85rem;max-width:500px;">
+                    <button class="btn btn-outline-primary"
+                            onclick="navigator.clipboard.writeText('{{ $siteUrl }}').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy Website'; }, 2500); })">Copy Website</button>
+                    <a href="{{ $siteUrl }}" target="_blank" rel="noopener" class="btn btn-link">Open</a>
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap">

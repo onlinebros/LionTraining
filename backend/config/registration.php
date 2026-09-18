@@ -84,4 +84,18 @@ return [
 
     'privacy_url' => env('QL_PRIVACY_URL', 'https://q3.life/privacy'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Partner websites
+    |--------------------------------------------------------------------------
+    |
+    | Every partner's personal copy of the company site is {site_url}/{code}:
+    | the same pages, with an "invited by" bar and Join buttons that go to their
+    | /join/{code}. See sites/q3.life/src/assets/ref.js. The dev server sets
+    | this to its /site/ copy so the links members see there can be tested.
+    |
+    */
+
+    'site_url' => env('QL_SITE_URL', 'https://q3.life'),
+
 ];

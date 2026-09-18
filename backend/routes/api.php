@@ -57,6 +57,18 @@ Route::post('/support/requests', [\App\Http\Controllers\Api\PublicSupportRequest
     ->middleware('throttle:support-requests')
     ->name('api.support.requests.store');
 
+// Partner's personal website (q3.life/{code}) → the sponsor's name.
+//
+// Stateless for the same reason as the contact form. The code is constrained to
+// the shape referral codes are generated in, so nothing else is looked up. Its
+// own limiter, as above: the site calls it on page load, and sharing the auth
+// bucket would let browsing lock someone out of logging in.
+Route::get('/sponsors/{code}', [\App\Http\Controllers\Api\PublicSponsorController::class, 'show'])
+    ->where('code', '[A-Za-z0-9]{8}')
+    ->withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class])
+    ->middleware('throttle:sponsor-lookup')
+    ->name('api.sponsors.show');
+
 // Authenticated endpoints — Sanctum's stateful middleware (prepended in
 // bootstrap/app.php) attaches the web session when the request comes from a
 // configured stateful domain, so `auth:sanctum` here resolves the user from

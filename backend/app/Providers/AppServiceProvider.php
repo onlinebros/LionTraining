@@ -84,5 +84,11 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\RateLimiter::for('support-requests', function (\Illuminate\Http\Request $request) {
             return \Illuminate\Cache\RateLimiting\Limit::perMinutes(10, 10)->by('support-requests|'.$request->ip());
         });
+
+        // Partner website sponsor lookup: one call per visit that arrives on a
+        // referral link. Generous for a person, slow for walking the code space.
+        \Illuminate\Support\Facades\RateLimiter::for('sponsor-lookup', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(30)->by('sponsor-lookup|'.$request->ip());
+        });
     }
 }

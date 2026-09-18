@@ -196,3 +196,16 @@ tbody th { color: var(--text); font-weight: 600; min-width: 150px; }
 @media (max-width: 420px) {
   .footer-grid { grid-template-columns: 1fr; }
 }
+
+/* Partner's personal site (q3.life/CODE): see ref.js */
+[hidden] { display: none !important; }
+.ref-bar { background: var(--surface-3); border-bottom: 1px solid var(--border-gold); font-size: 0.92rem; }
+.ref-bar-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding-block: 10px; }
+.ref-bar p { margin: 0; color: var(--muted); }
+.ref-bar strong { color: var(--text); }
+.btn[data-join] { gap: 0.3em; } /* flex drops the space before the name */
+.ref-bar .btn { min-height: 38px; padding: 6px 18px; font-size: 0.88rem; }
+.site-nav .nav-login { color: var(--text); box-shadow: inset 0 0 0 1px var(--border-gold); }
+@media (max-width: 680px) {
+  .ref-bar-inner { justify-content: center; text-align: center; }
+}

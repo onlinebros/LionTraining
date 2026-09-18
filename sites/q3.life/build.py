@@ -42,9 +42,12 @@ LINK = re.compile(r'<(?:a|link|img|script)\b[^>]*?\s(?:href|src)="([^"]*)"')
 
 def load_facts(api_url: str | None = None) -> dict:
     facts = json.loads((ROOT / "site.json").read_text())
-    # The contact form posts to the member app. Only the endpoint changes per
-    # environment; the member platform URL printed on the pages never does.
-    facts["support"]["endpoint"] = (api_url or facts["site"]["app_url"]).rstrip("/") + facts["support"]["endpoint_path"]
+    # The contact form, the sponsor lookup and the Log in / Join links all go to
+    # the member app. Only where they point changes per environment; the member
+    # platform URL printed on the pages never does.
+    app_base = (api_url or facts["site"]["app_url"]).rstrip("/")
+    facts["site"]["app_base"] = app_base
+    facts["support"]["endpoint"] = app_base + facts["support"]["endpoint_path"]
     m = facts["membership"]
     m["price_display"] = f"${m['amount_cents'] / 100:,.2f} {m['currency'].upper()}"
     m["interval_phrase"], m["interval_adverb"], m["interval_noun"] = {

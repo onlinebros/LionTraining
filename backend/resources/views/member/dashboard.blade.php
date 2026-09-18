@@ -6,6 +6,7 @@
 @section('content')
 @php
     $referralUrl = url('/join/' . $user->referral_code);
+    $siteUrl = rtrim(config('registration.site_url'), '/') . '/' . $user->referral_code;
     $roleColors  = ['free_member'=>'info','paid_member'=>'success','support_admin'=>'warning','super_admin'=>'danger'];
 @endphp
 
@@ -115,6 +116,9 @@
                                 <i data-feather="copy" style="width:13px;height:13px;"></i> Copy
                             </button>
                         </div>
+                        <p class="text-muted mt-2 mb-0" style="font-size:.85rem;">
+                            Your website: <a href="{{ $siteUrl }}" target="_blank" rel="noopener">{{ $siteUrl }}</a>
+                        </p>
                     </div>
                     <div class="col-md-4 text-md-end">
                         <a href="{{ route('member.referrals') }}" class="btn btn-sm btn-primary">

@@ -6,7 +6,9 @@
     <p class="lede">{{ business.legal_name }} offers the {{ membership.name }}: {{ course.name }}, a private back office, and the option to earn commissions through our Partner Program.</p>
     <p class="price-line"><strong>{{ membership.price_display }} {{ membership.interval_phrase }}</strong><span>No charge until your billing starts · Cancel any time before your first charge · Renews {{ membership.interval_adverb }}</span></p>
     <div class="actions">
-      <a class="btn btn-gold" href="membership">Membership &amp; pricing</a>
+      <a class="btn btn-gold" data-ref data-join href="membership" hidden>Join with <span data-ref-first>them</span></a>
+      <a class="btn btn-gold" data-ref-hide href="membership">Membership &amp; pricing</a>
+      <a class="btn btn-ghost" data-ref href="membership" hidden>Membership &amp; pricing</a>
       <a class="btn btn-ghost" href="partners">How the Partner Program works</a>
     </div>
   </div>

@@ -19,10 +19,18 @@
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset:img/apple-touch-icon.png }}">
 <link rel="stylesheet" href="{{ asset:fonts.css }}">
 <link rel="stylesheet" href="{{ asset:site.css }}">
+<script src="{{ asset:ref.js }}" defer></script>
 </head>
-<body class="page-{{ page.slug }}">
+<body class="page-{{ page.slug }}" data-app="{{ attr:site.app_base }}">
 {{ preview_banner }}
 <a class="skip" href="{{ page.path }}#main">Skip to content</a>
+
+<div class="ref-bar" role="note" data-ref hidden>
+  <div class="wrap ref-bar-inner">
+    <p>You were invited by <strong data-ref-name>a partner</strong>, an independent {{ site.brand_short }} partner.</p>
+    <a class="btn btn-gold" data-join href="membership">Join with <span data-ref-first>them</span></a>
+  </div>
+</div>
 
 <header class="site-header">
   <div class="wrap header-inner">
@@ -35,7 +43,9 @@
         <li><a data-nav="membership" href="membership">Membership</a></li>
         <li><a data-nav="partners" href="partners">Partner Program</a></li>
         <li><a data-nav="about" href="about">About</a></li>
-        <li><a data-nav="contact" class="nav-cta" href="contact">Contact</a></li>
+        <li><a data-nav="contact" href="contact">Contact</a></li>
+        <li><a class="nav-login" href="{{ attr:site.app_base }}/login">Log in</a></li>
+        <li data-ref hidden><a class="nav-cta" data-join href="membership">Join</a></li>
       </ul>
     </nav>
   </div>
@@ -67,6 +77,7 @@
         <li><a href="partners">Partner Program</a></li>
         <li><a href="about">About us</a></li>
         <li><a href="contact">Contact us</a></li>
+        <li><a href="{{ attr:site.app_base }}/login">Member log in</a></li>
       </ul>
     </nav>
     <nav aria-labelledby="footer-policies">

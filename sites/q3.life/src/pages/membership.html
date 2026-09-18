@@ -20,7 +20,11 @@
         <li>Support through our contact form and back office</li>
         <li>Cancel online at any time. You keep access until the end of the {{ membership.interval_noun }} you paid for.</li>
       </ul>
-      <p class="small muted">Membership is by invitation. You need a referral link from an existing partner to join.</p>
+      <p class="small muted" data-ref-hide>Membership is by invitation. You need a referral link from an existing partner to join.</p>
+      <div class="actions" data-ref hidden>
+        <a class="btn btn-gold" data-join href="membership">Join with <span data-ref-first>them</span></a>
+      </div>
+      <p class="small muted" data-ref hidden>You'll create your account on the next page, with <span data-ref-name>the partner who invited you</span> as your sponsor, then choose your enrollment option.</p>
     </article>
     <article class="card">
       <h2>About {{ course.name }}</h2>
