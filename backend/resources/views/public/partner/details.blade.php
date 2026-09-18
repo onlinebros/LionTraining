@@ -164,7 +164,7 @@
 
             <div class="q3-auth-rule">Almost there</div>
 
-            <div class="form-check mb-4">
+            <div class="form-check q3-consent mb-4">
                 <input class="form-check-input @error('terms') is-invalid @enderror"
                        type="checkbox" id="terms" name="terms" value="1" {{ old('terms') ? 'checked' : '' }}>
                 <label class="form-check-label" for="terms">

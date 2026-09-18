@@ -784,17 +784,42 @@ body.q3-theme .page-wrapper .page-body-wrapper .footer,
 .q3-theme .form-select.is-invalid { border-color: var(--q3-danger); }
 .q3-theme .invalid-feedback { color: #d1766e; }
 
-/* Checkboxes, radios, switches */
+/* Checkboxes, radios, switches. The unchecked edge uses the muted text colour,
+   not a hairline token: a dark box on a dark card is only visible by its border,
+   and a control needs 3:1 against its background (WCAG 1.4.11). */
 .q3-theme .form-check-input {
     background-color: var(--q3-surface-2);
-    border: 1px solid var(--q3-border-strong);
+    border: 1.5px solid var(--q3-text-muted);
 }
+.q3-theme .form-check-input:hover:not(:disabled) { border-color: var(--q3-gold); }
 .q3-theme .form-check-input:checked {
     background-color: var(--q3-gold);
     border-color: var(--q3-gold);
 }
 .q3-theme .form-check-input:focus { box-shadow: 0 0 0 3px var(--q3-gold-ring); border-color: var(--q3-gold-soft); }
 .q3-theme .form-check-label { color: var(--q3-text-body); }
+
+/* The Terms/Privacy agreement on the sign-up forms: a required step that
+   people kept missing, so it gets a larger box in a gold outline and a
+   clickable panel around it. */
+.q3-theme .q3-consent {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-gold);
+    border-radius: var(--q3-radius-sm);
+}
+.q3-theme .q3-consent .form-check-input {
+    float: none; flex-shrink: 0;
+    width: 1.35em; height: 1.35em;
+    margin: 0;
+    border: 2px solid var(--q3-gold);
+    cursor: pointer;
+}
+.q3-theme .q3-consent .form-check-input.is-invalid { border-color: var(--q3-danger); }
+.q3-theme .q3-consent .form-check-label { cursor: pointer; line-height: 1.45; }
+.q3-theme .q3-consent .invalid-feedback { flex-basis: 100%; }
+.q3-theme .q3-consent:has(.is-invalid) { border-color: var(--q3-danger); }
 
 .q3-theme .switch .switch-state { background-color: var(--q3-surface-3); }
 .q3-theme .switch input:checked + .switch-state { background-color: var(--q3-gold); }
