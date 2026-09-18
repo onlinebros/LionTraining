@@ -102,8 +102,30 @@ class SpotImportCommitter
 
             $created = $this->createSpots($import, $roleId, $now);
 
+            // Tell the planner what just happened. Everything below reads the
+            // rows we have only now written, and until this runs the statistics
+            // on `users` are whatever they were before the import — on a fresh
+            // production database, five rows.
+            //
+            // This is not a micro-optimisation. Planning the level passes
+            // against a five-row estimate picks a sequential scan of 1.3
+            // million rows per level: measured on production at 13.5 minutes a
+            // level, 144 levels, about 31 hours. With statistics it uses the
+            // index and the same work takes seconds.
+            //
+            // ANALYZE is allowed inside a transaction and sees the rows this
+            // transaction has written; autovacuum cannot, because it only
+            // samples committed tuples, which is why nothing corrected this on
+            // its own.
+            $this->analyse();
+
             $this->resolvePlacementParents($import);
             $this->resolveSponsors($import);
+
+            // Again, now that placement_parent_id and sponsor_id are populated.
+            // The path passes join on both, and a column the planner believes
+            // is entirely null is a column it will happily scan the table for.
+            $this->analyse();
 
             $this->buildPaths($import, 'placement');
             $this->buildPaths($import, 'enrollment');
@@ -120,6 +142,17 @@ class SpotImportCommitter
 
             return $created;
         });
+    }
+
+    /**
+     * Refresh the planner's statistics for `users` mid-transaction.
+     *
+     * Cheap — a sample, not a scan — and the difference between the path passes
+     * taking seconds and taking hours.
+     */
+    private function analyse(): void
+    {
+        DB::statement('ANALYZE users');
     }
 
     // ── 1. The positions ──────────────────────────────────────────────────────
