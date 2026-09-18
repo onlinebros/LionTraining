@@ -53,7 +53,7 @@
     </div>
 </div>
 
-@if($byCompany->isNotEmpty())
+@if($byCompany !== [])
 <div class="card mb-3">
     <div class="card-header py-3"><h6 class="mb-0 fw-bold">By partner company</h6></div>
     <div class="table-responsive">
@@ -65,19 +65,19 @@
             </tr></thead>
             <tbody>
             @foreach($byCompany as $row)
-                @php $claimed = $row->total - $row->unclaimed; @endphp
+                @php $claimed = $row['total'] - $row['unclaimed']; @endphp
                 <tr>
-                    <td class="fw-semibold">{{ $row->name }}</td>
-                    <td class="text-end">{{ number_format($row->unclaimed) }}</td>
+                    <td class="fw-semibold">{{ $row['name'] }}</td>
+                    <td class="text-end">{{ number_format($row['unclaimed']) }}</td>
                     <td class="text-end">{{ number_format($claimed) }}</td>
-                    <td class="text-end">{{ number_format($row->total) }}</td>
+                    <td class="text-end">{{ number_format($row['total']) }}</td>
                     <td>
                         <div class="progress" style="height:6px;">
                             <div class="progress-bar bg-success"
-                                 style="width: {{ $row->total > 0 ? ($claimed / $row->total * 100) : 0 }}%"></div>
+                                 style="width: {{ $row['total'] > 0 ? ($claimed / $row['total'] * 100) : 0 }}%"></div>
                         </div>
                     </td>
-                    <td class="small text-muted">/partner/{{ $row->slug }}</td>
+                    <td class="small text-muted">/partner/{{ $row['slug'] }}</td>
                 </tr>
             @endforeach
             </tbody>

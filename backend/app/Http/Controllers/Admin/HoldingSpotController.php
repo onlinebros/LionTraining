@@ -165,7 +165,23 @@ class HoldingSpotController extends Controller
      *
      * @return \Illuminate\Support\Collection<int, object>
      */
-    private function byCompany()
+    /**
+     * The split per company.
+     *
+     * Cached as plain arrays, never as objects. The first version of this
+     * cached the query's Collection of stdClass rows straight out of the
+     * builder, and reading it back from the database cache store produced
+     * `__PHP_Incomplete_Class` — a 500 on the admin board, live, within two
+     * minutes of the deploy.
+     *
+     * Arrays are the thing to put in a cache: they survive serialisation
+     * without needing a class to be loadable at exactly the right moment, and
+     * they survive a deploy that changes the class they came from. The view
+     * reads them with array access for the same reason.
+     *
+     * @return array<int, array{id:int, name:string, slug:string, total:int, unclaimed:int}>
+     */
+    private function byCompany(): array
     {
         return \Cache::remember(
             'partner_spot_by_company',
@@ -174,8 +190,8 @@ class HoldingSpotController extends Controller
         );
     }
 
-    /** @return \Illuminate\Support\Collection<int, object> */
-    private function countByCompany()
+    /** @return array<int, array{id:int, name:string, slug:string, total:int, unclaimed:int}> */
+    private function countByCompany(): array
     {
         return DB::table('users')
             ->join('partner_companies', 'partner_companies.id', '=', 'users.partner_company_id')
@@ -184,6 +200,14 @@ class HoldingSpotController extends Controller
             ->selectRaw('count(*) AS total')
             ->selectRaw('count(*) FILTER (WHERE users.account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])
             ->orderBy('partner_companies.name')
-            ->get();
+            ->get()
+            ->map(fn ($row) => [
+                'id'        => (int) $row->id,
+                'name'      => (string) $row->name,
+                'slug'      => (string) $row->slug,
+                'total'     => (int) $row->total,
+                'unclaimed' => (int) $row->unclaimed,
+            ])
+            ->all();
     }
 }

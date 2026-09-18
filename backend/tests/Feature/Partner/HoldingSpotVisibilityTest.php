@@ -35,7 +35,7 @@ class HoldingSpotVisibilityTest extends TestCase
         Role::create(['name' => Role::FREE_MEMBER, 'display_name' => 'Free Member', 'is_admin' => false, 'level' => 1]);
         Role::create(['name' => Role::SUPER_ADMIN, 'display_name' => 'Super Admin', 'is_admin' => true, 'level' => 9]);
 
-        $this->company = PartnerCompany::create(['slug' => 'acme', 'name' => 'Acme Group']);
+        $this->company = PartnerCompany::create(['slug' => 'acme', 'name' => 'iHub Global']);
 
         // billing_exempt so the member screens are reachable: the subscription
         // gate is not what these tests are about.
@@ -238,6 +238,28 @@ class HoldingSpotVisibilityTest extends TestCase
             ->get(route('admin.users.index'))
             ->assertOk()
             ->assertDontSee($spot->name);
+    }
+
+    public function test_the_admin_spots_board_survives_its_own_cache(): void
+    {
+        // The board caches its per-company totals. The first version cached the
+        // query builder's Collection of stdClass rows, which came back out of
+        // the database cache store as __PHP_Incomplete_Class — a 500 on a live
+        // admin page within two minutes of deploying it.
+        //
+        // Tests ran against the array cache driver and never round-tripped, so
+        // nothing caught it. This loads the page twice against a store that
+        // really serialises: the second load is the one that reads the cache.
+        config(['cache.default' => 'database']);
+
+        $this->spot('A-1', $this->founder);
+
+        $admin = User::factory()->create(['role_id' => Role::where('name', Role::SUPER_ADMIN)->value('id')]);
+
+        $this->actingAs($admin)->get(route('admin.partners.spots'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.partners.spots'))
+            ->assertOk()
+            ->assertSee('iHub Global');
     }
 
     public function test_the_admin_spots_board_is_where_they_do_appear(): void
