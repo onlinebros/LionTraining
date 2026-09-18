@@ -119,7 +119,17 @@ assume much better.
 |---|---|---|
 | Parse (`--stage`) | ~7 min | Streams the file, 2,000 rows per insert |
 | Validate | ~14 min | 144 depth passes, two trees × 72 levels |
-| Commit | ~1 hr on dev | One transaction. **See the warning below.** |
+| Commit | 102 min on dev | One transaction. **See the warning below.** |
+
+The dev rehearsal completed on 2026-09-18: **1,304,352 positions created in
+6,149 seconds**. Verified afterwards —
+
+| | |
+|---|---|
+| Positions with a placement path | 1,304,352 — none null |
+| Deepest level | 73 (the leg root, plus iHub's 72) |
+| Positions outside the root's subtree | 0 |
+| `sponsorships` rows | 1,304,356 |
 
 **The commit timing above was measured without the index that makes it fast.**
 The dev rehearsal ran before `2026_09_18_000001_index_imported_users_for_commit`
@@ -142,6 +152,33 @@ during.
 
 Plan for the commit taking tens of minutes and hold the window open longer than
 you think you need. It is not a job you start and walk away from.
+
+## 3a. Things that went wrong in rehearsal, so they do not surprise you
+
+**A cluster resize mid-import kills it.** DigitalOcean applies a resize by
+failing the cluster over, and a staging run in flight dies with *"the database
+system is shutting down"*. Harmless — staging is disposable — but do the resize
+first and confirm it has landed (`shared_buffers` and `max_connections` change)
+before starting anything.
+
+**A long-running import blocks migrations.** Validation holds locks on
+`partner_import_rows`, and the commit holds them on `users`, so any
+`ALTER TABLE` behind it waits — and then everything else queues behind the
+waiting ALTER. Run `php artisan migrate --force` and let it finish **before**
+starting an import, never during. If you get stuck in that state, stop the
+import (the staged rows survive) and let the migration through.
+
+**One bug came out of this rehearsal and is worth knowing about.** iHub's
+sponsor column names 4,581 people who are not in the file. The commit fell back
+to the position directly above, correctly; the depth pass treated them as tops
+of enrollment chains. The result was 4,565 positions built as roots of the
+enrollment tree instead of sitting under their upline. Fixed by
+`effective_sponsor_id` — the fallback is now written down once and both passes
+read it.
+
+The placement tree, which is the one that pays, was never affected. **Dev's copy
+of the data was committed before the fix**, so do not use dev to check the
+enrollment tree; production was committed with it.
 
 ## 4. Stage and check
 
