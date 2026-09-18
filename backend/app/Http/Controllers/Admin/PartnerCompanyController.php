@@ -21,7 +21,7 @@ class PartnerCompanyController extends Controller
             'companies' => $companies,
             // One query for every company's split rather than one per card.
             'counts'    => $companies->mapWithKeys(
-                fn (PartnerCompany $c) => [$c->id => $c->spotCounts()],
+                fn (PartnerCompany $c) => [$c->id => $c->spotCounts(fresh: true)],
             ),
         ]);
     }

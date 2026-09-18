@@ -185,6 +185,16 @@
                 <a href="{{ route('member.referrals') }}" class="btn btn-primary btn-sm">Get my referral link</a>
             </div>
         @else
+            @if($tree['overflowed'] ?? false)
+                {{-- An organisation of this size cannot be drawn in one page, and
+                     quietly drawing part of it is worse than saying so. --}}
+                <div class="alert alert-info py-2 small">
+                    Your organisation is too large to draw in full here, so this shows the
+                    top of it. Use the &#8857; on any partner to open the tree from their
+                    position, or search by name above.
+                </div>
+            @endif
+
             <ul class="qtree">
                 @include('member._tree-node', ['node' => $tree, 'isRoot' => true])
             </ul>

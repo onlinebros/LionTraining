@@ -90,6 +90,31 @@ class TeamTreeTest extends TestCase
         $this->assertLessThanOrEqual(2, $queries, "subtree() ran {$queries} queries; it should run one.");
     }
 
+    public function test_an_organisation_too_large_to_draw_still_renders(): void
+    {
+        // A partner company's list can be millions of positions — iHub's is 1.3
+        // million under one account. Before the ceiling, opening this page near
+        // the top of that tree fetched every descendant into PHP and died on
+        // the memory limit. The ceiling is lowered here so the fallback can be
+        // exercised without building a million rows.
+        config(['genealogy.max_tree_rows' => 3]);
+
+        $root = $this->enroll(null, ['name' => 'Root Partner']);
+
+        foreach (range(1, 6) as $i) {
+            $this->enroll($root, ['name' => "Child {$i}"]);
+        }
+
+        $tree = app(GenealogyService::class)->subtree($root->refresh());
+
+        $this->assertTrue($tree['overflowed'], 'the render should report that it could not draw everything');
+        $this->assertNotEmpty($tree['children'], 'it should still draw what it could');
+
+        // The node the member is actually looking at keeps its true total, even
+        // though the rows behind it were not all loaded.
+        $this->assertSame(6, $tree['team_count']);
+    }
+
     public function test_deep_branches_are_truncated_but_still_counted(): void
     {
         config(['genealogy.tree_depth' => 2]);

@@ -43,6 +43,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tree render ceiling
+    |--------------------------------------------------------------------------
+    |
+    | The most rows one render of the team tree will pull into memory. Not a
+    | display limit — tree_depth above does that — but a ceiling on what a
+    | single request can cost.
+    |
+    | It exists because an organisation imported from a partner company can be
+    | millions of positions: iHub's is 1.3 million under one account, and its
+    | widest node has 6,035 direct children, so neither depth nor width bounds
+    | the row count on its own. Below the ceiling nothing changes and every
+    | count is exact; above it the render falls back to the levels that are
+    | actually drawn and says so.
+    |
+    */
+
+    'max_tree_rows' => (int) env('QL_MAX_TREE_ROWS', \App\Services\Genealogy\GenealogyService::MAX_TREE_ROWS),
+
+    /*
+    |--------------------------------------------------------------------------
     | Root node
     |--------------------------------------------------------------------------
     |

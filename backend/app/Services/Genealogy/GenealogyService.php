@@ -28,7 +28,23 @@ use RuntimeException;
  */
 class GenealogyService
 {
+    /**
+     * The most rows one tree render will pull.
+     *
+     * Not a display limit — the view already truncates by depth — but a ceiling
+     * on what a single request will put in memory. An organisation of a million
+     * positions is now a thing this application holds, and a partner near the
+     * top of one should get a usable page rather than an out-of-memory error.
+     */
+    public const MAX_TREE_ROWS = 3000;
+
     public function __construct(private PlacementStrategy $strategy) {}
+
+    /** The ceiling in force, so a test can exercise the fallback cheaply. */
+    private function maxTreeRows(): int
+    {
+        return (int) config('genealogy.max_tree_rows', self::MAX_TREE_ROWS);
+    }
 
     // ── Enrollment ────────────────────────────────────────────────────────────
 
@@ -405,12 +421,32 @@ class GenealogyService
 
         $maxDepth ??= (int) config('genealogy.tree_depth', 5);
 
-        $rows = User::query()
-            ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
-            ->orderByRaw('nlevel(placement_path)')
-            ->orderBy('id')
-            ->get(['id', 'name', 'email', 'phone', 'is_active', 'account_status', 'sponsor_id',
-                   'placement_parent_id', 'placement_path', 'placed_at', 'created_at']);
+        // Ask for one row more than the ceiling. Getting fewer means the whole
+        // subtree is in hand and every count below is exact — which is the case
+        // for essentially every partner, and the behaviour this method has
+        // always had.
+        $rows = $this->subtreeRows($root)->limit($this->maxTreeRows() + 1)->get();
+
+        $overflowed = $rows->count() > $this->maxTreeRows();
+
+        if ($overflowed) {
+            // An organisation too large to hold in one request. The iHub import
+            // put 1.3 million positions under one account, and its widest node
+            // has 6,035 direct children, so this is not hypothetical: before
+            // the ceiling, opening My Team near the top of that tree fetched
+            // 1,304,353 models against a 256MB limit. That is not a slow page,
+            // it is a 500.
+            //
+            // Fall back to the levels that actually render. The counts on the
+            // nodes below then describe what was loaded rather than everything
+            // beneath them, so the view is told, and the root — the one node
+            // the member is really looking at — gets its true total from a
+            // single indexed count.
+            $rows = $this->subtreeRows($root)
+                ->whereRaw('nlevel(placement_path) <= ?', [$this->depthOf($root->placement_path) + $maxDepth])
+                ->limit($this->maxTreeRows())
+                ->get();
+        }
 
         $compression = $this->compress($rows, $root);
 
@@ -473,7 +509,33 @@ class GenealogyService
 
         $rootRow = $rows->firstWhere('id', $root->id) ?? $root;
 
-        return $build($rootRow, 0);
+        $tree = $build($rootRow, 0);
+        $tree['overflowed'] = $overflowed;
+
+        if ($overflowed) {
+            $tree['team_count'] = $this->teamSize($root);
+        }
+
+        return $tree;
+    }
+
+    /**
+     * The rows a tree render reads, in the order it needs them.
+     *
+     * Shared between the ordinary path and the bounded fallback so the two
+     * cannot select different columns or order differently — the build step
+     * depends on parents arriving before children.
+     *
+     * @return Builder<User>
+     */
+    private function subtreeRows(User $root): Builder
+    {
+        return User::query()
+            ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
+            ->orderByRaw('nlevel(placement_path)')
+            ->orderBy('id')
+            ->select(['id', 'name', 'email', 'phone', 'is_active', 'account_status', 'sponsor_id',
+                      'placement_parent_id', 'placement_path', 'placed_at', 'created_at']);
     }
 
     // ── Compression ───────────────────────────────────────────────────────────
