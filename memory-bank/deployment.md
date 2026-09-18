@@ -104,4 +104,6 @@ The site is static files. To publish, copy the built site into the docroot:
 rsync -av --delete <site-dir>/ liontraining-prod:/var/www/q3.life/public/
 ```
 
+Partner websites (`q3.life/CODE`) need the hand-added `location ~ "^/[A-Za-z0-9]{8}/?$"` block in `/etc/nginx/sites-available/q3.life` (added 2026-09-18, backup `.bak-2026-09-18-ref`). See `sites/q3.life/README.md`.
+
 No reload is needed for content changes. After editing nginx config, run `sudo nginx -t && sudo systemctl reload nginx`.
