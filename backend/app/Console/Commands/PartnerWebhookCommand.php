@@ -33,7 +33,8 @@ class PartnerWebhookCommand extends Command
                             {--ping : Send a test event}
                             {--resend-claims : Create events for claims that never produced one}
                             {--show= : Print the exact request for one delivery id, for the partner to compare against}
-                            {--test-vector : Print a worked example with a throwaway secret, to check their algorithm}';
+                            {--test-vector : Print a worked example with a throwaway secret, to check their algorithm}
+                            {--retry : Re-queue every event this company has not had accepted}';
 
     protected $description = 'Configure or exercise a partner company claim webhook';
 
@@ -62,6 +63,10 @@ class PartnerWebhookCommand extends Command
             $this->resendClaims($company, $dispatcher);
         }
 
+        if ($this->option('retry')) {
+            $this->retry($company);
+        }
+
         if ($this->option('test-vector')) {
             $this->testVector($dispatcher, $company);
 
@@ -84,6 +89,38 @@ class PartnerWebhookCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Re-queue everything this company has not accepted.
+     *
+     * For after the thing that was wrong gets fixed. The delivery keeps its
+     * event id and its frozen body, so the partner sees the same event again
+     * rather than a new one — which is the whole point of keying idempotency on
+     * that id.
+     */
+    private function retry(PartnerCompany $company): void
+    {
+        $stuck = PartnerWebhookDelivery::where('partner_company_id', $company->id)
+            ->where('status', '!=', PartnerWebhookDelivery::STATUS_DELIVERED)
+            ->orderBy('id')
+            ->get();
+
+        if ($stuck->isEmpty()) {
+            $this->line('Nothing to retry — every event has been accepted.');
+
+            return;
+        }
+
+        foreach ($stuck as $delivery) {
+            $delivery->update(['status' => PartnerWebhookDelivery::STATUS_PENDING, 'error' => null]);
+            \App\Jobs\DeliverPartnerWebhookJob::dispatch($delivery->id);
+
+            $this->line("  re-queued {$delivery->event_id}"
+                . ($delivery->external_user_id ? " ({$delivery->external_user_id})" : ''));
+        }
+
+        $this->info("{$stuck->count()} event(s) re-queued.");
     }
 
     /**
