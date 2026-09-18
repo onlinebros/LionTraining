@@ -107,6 +107,7 @@ class SpotImportCommitter
 
             $this->buildPaths($import, 'placement');
             $this->buildPaths($import, 'enrollment');
+            $this->assertEveryPositionIsInTheTree($import);
 
             $this->writeSponsorships($import, $now);
             $this->closeRows($import);
@@ -302,6 +303,53 @@ class SpotImportCommitter
 
             if ($affected === 0) {
                 break;
+            }
+        }
+    }
+
+    /**
+     * Refuse to finish if anything came out unplaced or re-rooted.
+     *
+     * buildPaths() walks by level and reads each row's parent path. If a parent
+     * has no path when its child is reached — the order was wrong — the child
+     * either gets no path, or, worse, gets treated as a root of its own tree.
+     * The first is visible; the second is not, and is exactly the shape of the
+     * bug that put 4,565 of iHub's positions outside the enrollment tree in
+     * rehearsal.
+     *
+     * So both are checked here, inside the transaction, where throwing rolls
+     * the whole thing back and costs nothing. An import is permanent; the time
+     * to find out it built the wrong shape is before it commits, not from a
+     * partner asking why their downline looks odd.
+     */
+    private function assertEveryPositionIsInTheTree(PartnerImport $import): void
+    {
+        foreach (['placement_path', 'enrollment_path'] as $column) {
+            $unplaced = User::where('partner_import_id', $import->id)
+                ->whereNull($column)->count();
+
+            if ($unplaced > 0) {
+                throw new RuntimeException(
+                    "{$unplaced} position(s) ended with no {$column}. Their parents had no path "
+                    .'when they were reached, which means the levels were built out of order. '
+                    .'Nothing was imported.'
+                );
+            }
+
+            // A root is a path of one label: the row's own id, nobody above it.
+            // Every imported position hangs off something — a leg top off the
+            // Quantum partner it was connected to, everything else off the row
+            // above — so there should be none at all.
+            $roots = (int) DB::scalar(
+                "select count(*) from users where partner_import_id = ? and nlevel({$column}) = 1",
+                [$import->id],
+            );
+
+            if ($roots > 0) {
+                throw new RuntimeException(
+                    "{$roots} position(s) came out as roots of their own {$column} tree rather "
+                    .'than beneath the position above them. Nothing was imported.'
+                );
             }
         }
     }
