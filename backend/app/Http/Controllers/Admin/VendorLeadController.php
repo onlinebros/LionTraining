@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\VendorLead;
 use App\Services\Vendor\AddressCheck;
+use App\Services\Vendor\PromotionBonuses;
 use App\Services\Vendor\PromotionTracker;
 use App\Services\Vendor\VendorReferralService;
 use App\Support\Vendors;
@@ -113,14 +114,15 @@ class VendorLeadController extends Controller
     }
 
     /** Every order holding a place in the running promotion, with the detail to check it. */
-    public function promotion(Request $request)
+    public function promotion(Request $request, PromotionBonuses $bonuses)
     {
-        $key = (string) ($request->query('promotion') ?: $this->promotions->currentKey());
+        $key   = (string) ($request->query('promotion') ?: $this->promotions->currentKey());
+        $known = $key !== '' && $this->promotions->find($key) !== null;
 
         return view('admin.vendor.promotion', [
-            'standings' => $key !== '' && $this->promotions->find($key) !== null
-                ? $this->promotions->standings($key)
-                : null,
+            'standings' => $known ? $this->promotions->standings($key) : null,
+            'overview'  => $known ? $bonuses->overview($key) : null,
+            'earnings'  => $known ? $bonuses->totalsByEarner($key) : [],
         ]);
     }
 

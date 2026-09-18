@@ -38,14 +38,18 @@ class VendorWebhookProcessor
             $payload = json_decode($event->payload, true, 512, JSON_THROW_ON_ERROR);
             $object  = $payload['data']['object'] ?? [];
 
+            // An event recovered from the vendor's event log says so on the
+            // order, so a sale confirmed that way shows the webhook missed it.
+            $via = $event->wasFetchedFromApi() ? VendorLead::VIA_RECONCILIATION : VendorLead::VIA_WEBHOOK;
+
             match ($event->type) {
                 'checkout.session.completed',
-                'checkout.session.async_payment_succeeded' => $this->handleCheckoutCompleted($vendor, $object),
+                'checkout.session.async_payment_succeeded' => $this->handleCheckoutCompleted($vendor, $object, $via),
 
                 // Direct-charge mode: we build the PaymentIntent ourselves on the
                 // vendor's account, so the sale arrives as a PaymentIntent event
                 // rather than a Checkout Session.
-                'payment_intent.succeeded' => $this->handlePaymentIntentSucceeded($vendor, $object),
+                'payment_intent.succeeded' => $this->handlePaymentIntentSucceeded($vendor, $object, $via),
 
                 /*
                  * The only place the receipt URL is reachable.
@@ -92,7 +96,7 @@ class VendorWebhookProcessor
     /**
      * @param  array<string,mixed>  $object  A Stripe Checkout Session.
      */
-    private function handleCheckoutCompleted(string $vendor, array $object): void
+    private function handleCheckoutCompleted(string $vendor, array $object, string $via): void
     {
         // An async payment method that has not cleared is not a sale yet.
         // Paying commission on it means clawing it back when it fails.
@@ -129,7 +133,7 @@ class VendorWebhookProcessor
             // Their number, always. See VendorReferralService::convert().
             'amount_total'      => isset($object['amount_total']) ? (int) $object['amount_total'] : null,
             'currency'          => isset($object['currency']) ? strtoupper((string) $object['currency']) : null,
-        ], VendorLead::VIA_WEBHOOK);
+        ], $via);
     }
 
     /**
@@ -137,7 +141,7 @@ class VendorWebhookProcessor
      *
      * @param  array<string,mixed>  $object  A Stripe PaymentIntent.
      */
-    private function handlePaymentIntentSucceeded(string $vendor, array $object): void
+    private function handlePaymentIntentSucceeded(string $vendor, array $object, string $via): void
     {
         $reference = $object['metadata']['order_reference'] ?? null;
 
@@ -190,7 +194,7 @@ class VendorWebhookProcessor
             // was actually due between our quote and their charge.
             'amount_total'      => isset($object['amount_received']) ? (int) $object['amount_received'] : null,
             'currency'          => isset($object['currency']) ? strtoupper((string) $object['currency']) : null,
-        ], VendorLead::VIA_WEBHOOK);
+        ], $via);
     }
 
     /**

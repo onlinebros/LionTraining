@@ -130,83 +130,44 @@ class HoldingSpotController extends Controller
     }
 
     /**
+     * The totals across companies, or one of them.
+     *
+     * Summed from the maintained counters. Aggregating the positions
+     * themselves is the query these columns exist to avoid — fifteen seconds
+     * for iHub alone — and this is the top of a page an admin refreshes all day.
+     *
      * @return array{claimed:int, unclaimed:int, total:int}
      */
     private function totals(?int $companyId): array
     {
-        // Cached for a minute. Aggregating a million imported positions takes
-        // seconds, and this is three cards at the top of a page an admin will
-        // refresh all day during a claim period. A minute stale is invisible.
-        return \Cache::remember(
-            'partner_spot_totals_' . ($companyId ?? 'all'),
-            now()->addMinute(),
-            fn () => $this->countTotals($companyId),
-        );
-    }
-
-    /** @return array{claimed:int, unclaimed:int, total:int} */
-    private function countTotals(?int $companyId): array
-    {
-        $row = User::query()
-            ->whereNotNull('partner_company_id')
-            ->when($companyId, fn ($q) => $q->where('partner_company_id', $companyId))
-            ->selectRaw('count(*) AS total')
-            ->selectRaw('count(*) FILTER (WHERE account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])
+        $row = PartnerCompany::query()
+            ->when($companyId, fn ($q) => $q->whereKey($companyId))
+            ->selectRaw('coalesce(sum(total_spots), 0) AS total')
+            ->selectRaw('coalesce(sum(unclaimed_spots), 0) AS unclaimed')
             ->first();
 
         $total     = (int) ($row->total ?? 0);
         $unclaimed = (int) ($row->unclaimed ?? 0);
 
-        return ['claimed' => $total - $unclaimed, 'unclaimed' => $unclaimed, 'total' => $total];
+        return ['claimed' => max(0, $total - $unclaimed), 'unclaimed' => $unclaimed, 'total' => $total];
     }
 
     /**
-     * The split per company, in one query.
-     *
-     * @return \Illuminate\Support\Collection<int, object>
-     */
-    /**
-     * The split per company.
-     *
-     * Cached as plain arrays, never as objects. The first version of this
-     * cached the query's Collection of stdClass rows straight out of the
-     * builder, and reading it back from the database cache store produced
-     * `__PHP_Incomplete_Class` — a 500 on the admin board, live, within two
-     * minutes of the deploy.
-     *
-     * Arrays are the thing to put in a cache: they survive serialisation
-     * without needing a class to be loadable at exactly the right moment, and
-     * they survive a deploy that changes the class they came from. The view
-     * reads them with array access for the same reason.
+     * The split per company, from the same counters.
      *
      * @return array<int, array{id:int, name:string, slug:string, total:int, unclaimed:int}>
      */
     private function byCompany(): array
     {
-        return \Cache::remember(
-            'partner_spot_by_company',
-            now()->addMinute(),
-            fn () => $this->countByCompany(),
-        );
-    }
-
-    /** @return array<int, array{id:int, name:string, slug:string, total:int, unclaimed:int}> */
-    private function countByCompany(): array
-    {
-        return DB::table('users')
-            ->join('partner_companies', 'partner_companies.id', '=', 'users.partner_company_id')
-            ->groupBy('partner_companies.id', 'partner_companies.name', 'partner_companies.slug')
-            ->selectRaw('partner_companies.id, partner_companies.name, partner_companies.slug')
-            ->selectRaw('count(*) AS total')
-            ->selectRaw('count(*) FILTER (WHERE users.account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])
-            ->orderBy('partner_companies.name')
-            ->get()
-            ->map(fn ($row) => [
-                'id'        => (int) $row->id,
-                'name'      => (string) $row->name,
-                'slug'      => (string) $row->slug,
-                'total'     => (int) $row->total,
-                'unclaimed' => (int) $row->unclaimed,
+        return PartnerCompany::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'total_spots', 'unclaimed_spots'])
+            ->map(fn (PartnerCompany $c) => [
+                'id'        => $c->id,
+                'name'      => $c->name,
+                'slug'      => $c->slug,
+                'total'     => (int) $c->total_spots,
+                'unclaimed' => (int) $c->unclaimed_spots,
             ])
             ->all();
     }

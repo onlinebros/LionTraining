@@ -24,6 +24,8 @@ class PartnerCompany extends Model
         'identifier_label',
         'activation_label',
         'is_active',
+        'total_spots',
+        'unclaimed_spots',
         'webhook_url',
         'webhook_secret',
         'webhook_signature_style',
@@ -56,6 +58,8 @@ class PartnerCompany extends Model
     {
         return [
             'is_active'               => 'boolean',
+            'total_spots'             => 'integer',
+            'unclaimed_spots'         => 'integer',
             'webhook_enabled'         => 'boolean',
             'webhook_include_contact' => 'boolean',
             // Encrypted at rest: it is what lets the partner prove a delivery
@@ -132,43 +136,65 @@ class PartnerCompany extends Model
     }
 
     /**
-     * Claimed and unclaimed counts.
+     * Claimed and unclaimed counts, read straight off the row.
      *
-     * Cached, because this is on the public claim page and the page is about to
-     * be linked in a mailing to everybody on the partner's list. Counting
-     * iHub's 1.3 million positions takes 2.4 seconds — measured, not guessed —
-     * and a public page that spends 2.4 seconds of database time per visitor
-     * falls over the moment that mailing goes out.
+     * Maintained, not counted. `count(*) where partner_company_id = ?` matches
+     * every row for a company that has imported a million positions, so no
+     * index avoids reading all of them — 14.7 seconds measured on production,
+     * 29 under concurrency. Caching a fifteen-second query does not help
+     * either: it means several requests miss together every time it expires and
+     * all start the same scan.
      *
-     * Five minutes stale is fine for what it is: a line of copy saying roughly
-     * how many positions are still waiting. Nothing depends on it being exact,
-     * and the number moves slowly. Pass $fresh where it has to be exact — the
-     * admin board, which is one person looking rather than a mailing list.
+     * Set when an import commits, decremented when somebody claims, and rebuilt
+     * by `partners:recount` if they ever drift.
      *
      * @return array{total:int, claimed:int, unclaimed:int}
      */
-    public function spotCounts(bool $fresh = false): array
+    public function spotCounts(): array
     {
-        $key = "partner_company_{$this->id}_spot_counts";
+        $total     = (int) $this->total_spots;
+        $unclaimed = (int) $this->unclaimed_spots;
 
-        if ($fresh) {
-            \Cache::forget($key);
-        }
+        return [
+            'total'     => $total,
+            'claimed'   => max(0, $total - $unclaimed),
+            'unclaimed' => $unclaimed,
+        ];
+    }
 
-        return \Cache::remember($key, now()->addMinutes(5), function () {
-            $row = $this->spots()
-                ->selectRaw('count(*) AS total')
-                ->selectRaw('count(*) FILTER (WHERE account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])
-                ->first();
+    /**
+     * One position was just claimed.
+     *
+     * Decremented in SQL, and guarded above zero, so two claims landing
+     * together cannot read the same value and a double call cannot underflow.
+     */
+    public function recordClaim(): void
+    {
+        static::whereKey($this->id)
+            ->where('unclaimed_spots', '>', 0)
+            ->decrement('unclaimed_spots');
+    }
 
-            $total     = (int) ($row->total ?? 0);
-            $unclaimed = (int) ($row->unclaimed ?? 0);
+    /**
+     * Rebuild the counters from the rows themselves.
+     *
+     * Slow by nature — it is the query the counters exist to avoid — so it is
+     * something somebody runs, not something a page does.
+     *
+     * @return array{total:int, claimed:int, unclaimed:int}
+     */
+    public function recount(): array
+    {
+        $row = $this->spots()
+            ->selectRaw('count(*) AS total')
+            ->selectRaw('count(*) FILTER (WHERE account_status = ?) AS unclaimed', [User::ACCOUNT_HOLDING])
+            ->first();
 
-            return [
-                'total'     => $total,
-                'claimed'   => $total - $unclaimed,
-                'unclaimed' => $unclaimed,
-            ];
-        });
+        $this->forceFill([
+            'total_spots'     => (int) ($row->total ?? 0),
+            'unclaimed_spots' => (int) ($row->unclaimed ?? 0),
+        ])->save();
+
+        return $this->spotCounts();
     }
 }

@@ -251,6 +251,37 @@ partners with a sponsor are told "Ask your sponsor about the launch bonus".
 It always states who is paid on an own purchase. Once the terms exist, update
 `member/vendor/partials/buy-yours.blade.php` to state them.
 
+**The launch special's money (owner, 2026-09-17).** Configured in
+`promotions.*.bonus` and paid by `App\Services\Vendor\PromotionBonuses`:
+
+- **Place bonus.** Each of the first 100 systems earns **$500** for the partner the
+  sale counts for (the link owner, or the buyer on an own purchase). It is per
+  system and on top of the normal $300 commission.
+- **Pool.** Each of the next **500** systems adds **$100** to a pool shared one share
+  per place ($1 a share), credited as each sale is confirmed. After system 600 the
+  special is over. The maximum is $50,000 in bonuses plus $50,000 in the pool.
+- **Payment.** Every credit is a pending `commission_ledger` row, so normal payout
+  runs pay it. `promotion_awards` records what each credit is for: a place
+  (order + unit) or a pool share (contributing order + earner).
+- **Reconcile.** `reconcile()` recomputes the standings and adds or voids credits to
+  match. It runs after every convert, refund and attribution decision, and by hand
+  with `php artisan promotions:reconcile-bonuses`. It is idempotent and holds a
+  Postgres advisory lock.
+- **Refunds.** Within `lock_days` (60), the refunded system's credits are voided and
+  the next sale moves up. After that the place is final, and a refunded order keeps
+  its place.
+- **Paid credits.** A credit that must go but was already approved or paid is not
+  reversed. It becomes `needs_clawback` on the admin promotion page.
+- **Held places.** A place waiting for an attribution review earns nothing, and its
+  pool share waits with it, until the review is decided.
+- **Tests.** `phpunit.xml` sets `PROMO_PG_PRO_100_BONUS=false`, so commission tests
+  count only commission credits. `PromotionBonusTest` switches it on.
+
+**CRM (owner, 2026-09-17).** A partner's own purchase is filed in their
+**sponsor's** CRM, linked to the buyer's account (`linked_user_id`). A partner
+with no sponsor buying for themselves is filed nowhere. A customer sale is filed
+with the link owner, as before.
+
 ## 13. Delivery address check (owner, 2026-09-15)
 
 Both order paths check the delivery address with **FedEx Address Validation**

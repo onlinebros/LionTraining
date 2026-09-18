@@ -320,6 +320,25 @@ class SpotClaimTest extends TestCase
         $this->assertAuthenticatedAs($claimed);
     }
 
+    public function test_claiming_moves_the_company_counter(): void
+    {
+        $this->company->forceFill(['total_spots' => 1, 'unclaimed_spots' => 1])->save();
+
+        $this->post(route('partner.claim.verify', 'acme'), [
+            'external_user_id' => 'A-1', 'activation_code' => 'CODE-ALPHA',
+        ]);
+        $this->post(route('partner.claim.store', 'acme'), [
+            'name' => 'Dana', 'email' => 'dana@example.com',
+            'password' => 'password123', 'password_confirmation' => 'password123',
+            'terms' => '1',
+        ]);
+
+        $this->assertSame(
+            ['total' => 1, 'claimed' => 1, 'unclaimed' => 0],
+            $this->company->refresh()->spotCounts(),
+        );
+    }
+
     public function test_the_code_cannot_be_replayed_once_the_position_has_an_owner(): void
     {
         $this->post(route('partner.claim.verify', 'acme'), [

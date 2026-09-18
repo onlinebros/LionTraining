@@ -78,13 +78,13 @@ class BuyYoursPromoTest extends TestCase
         $this->actingAs($this->partner)->get('/member/dashboard')
             ->assertOk()
             ->assertSee('Ask your sponsor for the details of the special.')
-            ->assertSee('The commission on your own purchase goes to your sponsor.');
+            ->assertSee('The sale commission on your own purchase goes to your sponsor.');
 
         // A partner with no sponsor is not told to ask one.
         $this->actingAs($this->sponsor)->get('/member/dashboard')
             ->assertOk()
             ->assertDontSee('Ask your sponsor')
-            ->assertSee('No commission is paid on your own purchase.');
+            ->assertSee('No sale commission is paid on your own purchase.');
     }
 
     public function test_the_offer_disappears_once_every_place_is_taken(): void

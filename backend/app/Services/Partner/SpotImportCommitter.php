@@ -2,6 +2,7 @@
 
 namespace App\Services\Partner;
 
+use App\Models\PartnerCompany;
 use App\Models\PartnerImport;
 use App\Models\PartnerImportRow;
 use App\Models\Role;
@@ -138,6 +139,14 @@ class SpotImportCommitter
                 'status'         => PartnerImport::STATUS_COMMITTED,
                 'committed_rows' => $created,
                 'committed_at'   => $now,
+            ]);
+
+            // The company's counters, which every screen reads instead of
+            // counting a million rows. Incremented rather than set, so a second
+            // import for the same company adds to the first.
+            PartnerCompany::whereKey($import->partner_company_id)->update([
+                'total_spots'     => DB::raw("total_spots + {$created}"),
+                'unclaimed_spots' => DB::raw("unclaimed_spots + {$created}"),
             ]);
 
             return $created;

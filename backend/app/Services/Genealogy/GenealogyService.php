@@ -587,29 +587,69 @@ class GenealogyService
     }
 
     /**
-     * compress() for a user whose subtree has not already been loaded.
+     * Where each activated descendant sits, without reading the whole subtree.
      *
-     * Reads the three columns compression needs and nothing else, and drops
-     * unclaimed spots from the result — callers want levels for members.
+     * The obvious implementation loads every row below the user and works it
+     * out in PHP. That is what this did, and it is fine until a partner company
+     * lands a million positions under one account — at which point the member
+     * dashboard, which calls this on every load, reads 1.3 million rows to
+     * answer a question about a handful of people.
+     *
+     * So it loads the population it is actually counting: activated
+     * descendants. That set grows with claims, not with imported positions, and
+     * starts at zero. Their ancestors are then looked up by id in one more
+     * query — distinct ids drawn from the paths already in hand — which is what
+     * compression needs and nothing more.
      *
      * @return array{parent: array<int,int>, depth: array<int,int>, ancestors: array<int,list<int>>}
      */
     private function compressionMap(User $root): array
     {
-        $rows = User::query()
+        $members = User::query()
+            ->activated()
             ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
-            ->orderByRaw('nlevel(placement_path)')
-            ->get(['id', 'account_status', 'placement_path']);
+            ->where('id', '!=', $root->id)
+            ->limit($this->maxTreeRows())
+            ->get(['id', 'placement_path']);
 
-        $map = $this->compress($rows, $root);
-
-        foreach ($rows as $row) {
-            if ($row->account_status !== User::ACCOUNT_ACTIVE) {
-                unset($map['parent'][$row->id], $map['depth'][$row->id], $map['ancestors'][$row->id]);
-            }
+        if ($members->isEmpty()) {
+            return ['parent' => [], 'depth' => [], 'ancestors' => []];
         }
 
-        return $map;
+        // Every id that appears between the root and one of those members.
+        $between = [];
+
+        foreach ($members as $member) {
+            $ids    = $this->pathIds($member->placement_path);
+            $rootAt = array_search($root->id, $ids, true);
+
+            $between[$member->id] = $rootAt === false
+                ? array_slice($ids, 0, -1)
+                : array_slice($ids, $rootAt + 1, count($ids) - $rootAt - 2);
+        }
+
+        $ancestorIds = array_unique(array_merge(...array_values($between))) ?: [];
+
+        $activated = $ancestorIds === []
+            ? []
+            : array_flip(
+                User::query()->activated()->whereIn('id', $ancestorIds)->pluck('id')->all()
+            );
+
+        $parent = $depth = $ancestors = [];
+
+        foreach ($members as $member) {
+            $chain = array_values(array_filter(
+                $between[$member->id],
+                fn (int $id) => isset($activated[$id]),
+            ));
+
+            $ancestors[$member->id] = array_merge($chain, [$root->id]);
+            $parent[$member->id]    = $chain === [] ? $root->id : end($chain);
+            $depth[$member->id]     = count($chain) + 1;
+        }
+
+        return ['parent' => $parent, 'depth' => $depth, 'ancestors' => $ancestors];
     }
 
     // ── Path helpers ──────────────────────────────────────────────────────────

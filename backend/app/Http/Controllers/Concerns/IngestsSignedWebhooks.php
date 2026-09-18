@@ -7,7 +7,6 @@ use App\Models\StripeWebhookEvent;
 use App\Services\StripeSignatureVerifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 /**
  * The landing-pad half of a Stripe-signed webhook endpoint.
@@ -102,22 +101,6 @@ trait IngestsSignedWebhooks
         string $endpoint,
         bool $signatureValid,
     ): int {
-        $now = Carbon::now();
-
-        return StripeWebhookEvent::query()->insertOrIgnore([
-            'stripe_event_id'  => $decoded['id'],
-            'type'             => (string) ($decoded['type'] ?? 'unknown'),
-            'api_version'      => isset($decoded['api_version']) ? (string) $decoded['api_version'] : null,
-            'event_created_at' => isset($decoded['created']) && is_int($decoded['created']) ? $decoded['created'] : null,
-            'livemode'         => (bool) ($decoded['livemode'] ?? false),
-            'payload'          => $rawPayload,
-            'signature'        => (string) $signatureHeader,
-            'signature_valid'  => $signatureValid,
-            'endpoint'         => $endpoint,
-            'status'           => StripeWebhookEvent::STATUS_RECEIVED,
-            'received_at'      => $now,
-            'created_at'       => $now,
-            'updated_at'       => $now,
-        ]);
+        return StripeWebhookEvent::record($decoded, $rawPayload, $signatureHeader, $endpoint, $signatureValid);
     }
 }

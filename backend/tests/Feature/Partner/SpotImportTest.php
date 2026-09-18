@@ -406,6 +406,45 @@ class SpotImportTest extends TestCase
         );
     }
 
+    public function test_committing_sets_the_company_counters(): void
+    {
+        $import = $this->stage($this->header()
+            . "A-1,CODE-ALPHA,,\n"
+            . "A-2,CODE-BETA,A-1,\n");
+
+        $this->validate($import);
+        $this->linkTop($import, 'A-1');
+        $this->validate($import->refresh());
+        $this->commit($import->refresh());
+
+        // Read off the row, never counted — counting them is a scan of every
+        // position the company has, which is fifteen seconds once a real import
+        // has landed.
+        $this->assertSame(
+            ['total' => 2, 'claimed' => 0, 'unclaimed' => 2],
+            $this->company->refresh()->spotCounts(),
+        );
+    }
+
+    public function test_recount_rebuilds_counters_that_have_drifted(): void
+    {
+        $import = $this->stage($this->header() . "A-1,CODE-ALPHA,,\n");
+        $this->validate($import);
+        $this->linkTop($import, 'A-1');
+        $this->commit($import->refresh());
+
+        // Maintained counters drift — a row edited by hand, a restore from a
+        // backup. The command is the answer whenever a number looks wrong.
+        $this->company->forceFill(['total_spots' => 99, 'unclaimed_spots' => 99])->save();
+
+        $this->artisan('partners:recount', ['company' => 'acme'])->assertSuccessful();
+
+        $this->assertSame(
+            ['total' => 1, 'claimed' => 0, 'unclaimed' => 1],
+            $this->company->refresh()->spotCounts(),
+        );
+    }
+
     public function test_committing_twice_is_refused(): void
     {
         $import = $this->stage($this->header() . "A-1,CODE-ALPHA,,\n");

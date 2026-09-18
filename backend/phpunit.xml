@@ -56,5 +56,9 @@
         <env name="FEDEX_TEST_SECRET_KEY" value=""/>
         <env name="FEDEX_LIVE_API_KEY" value=""/>
         <env name="FEDEX_LIVE_SECRET_KEY" value=""/>
+        <!-- The launch-special bonus is off by default in tests, so tests about
+             commissions count only commission credits. PromotionBonusTest and
+             the promotion copy tests switch it on themselves. -->
+        <env name="PROMO_PG_PRO_100_BONUS" value="false"/>
     </php>
 </phpunit>

@@ -96,8 +96,13 @@ class SelfPurchaseTest extends TestCase
         $this->assertSame($this->partner->id, $lead->buyer_user_id);
         $this->assertSame($this->partner->id, $lead->credited_member_id);
         $this->assertSame($this->sponsor->id, $lead->earner_id);
-        // A partner is not their own prospect.
-        $this->assertDatabaseCount('crm_contacts', 0);
+        // Filed with the sponsor, who earns on it, and linked to the buyer.
+        $this->assertDatabaseHas('crm_contacts', [
+            'owner_id'       => $this->sponsor->id,
+            'email'          => 'pat@example.com',
+            'linked_user_id' => $this->partner->id,
+        ]);
+        $this->assertDatabaseMissing('crm_contacts', ['owner_id' => $this->partner->id]);
 
         $this->confirm($lead);
 

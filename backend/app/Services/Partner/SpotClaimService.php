@@ -155,6 +155,10 @@ class SpotClaimService
 
             $fresh->save();
 
+            // One fewer waiting. Kept on the company row because counting them
+            // is a scan of every position it has.
+            $fresh->partnerCompany?->recordClaim();
+
             // Recorded here, so the payload is frozen against the state being
             // committed; the delivery job is queued afterCommit by the
             // dispatcher, so no worker can act on a claim that has not landed.

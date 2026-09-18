@@ -29,6 +29,25 @@ class FakeStripe implements ClientInterface
     /** A Stripe error code the next transfer create fails with. */
     public ?string $transferError = null;
 
+    /** @var list<array<string, mixed>> the account's event log */
+    public array $events = [];
+
+    /** An event in the account's log, as GET /v1/events returns it. */
+    public function event(string $id, string $type, array $object, \DateTimeInterface $created): string
+    {
+        $this->events[] = [
+            'id' => $id,
+            'object' => 'event',
+            'type' => $type,
+            'api_version' => '2026-08-26.dahlia',
+            'created' => $created->getTimestamp(),
+            'livemode' => false,
+            'data' => ['object' => $object],
+        ];
+
+        return $id;
+    }
+
     /** A card payment method, optionally already attached to a customer. */
     public function card(string $id, string $fingerprint, ?string $customer = null, array $card = []): string
     {
@@ -153,6 +172,21 @@ class FakeStripe implements ClientInterface
 
         if ($method === 'post' && preg_match('#^/v1/transfers/([^/]+)/reversals$#', $path, $m)) {
             return $this->respond(['id' => 'trr_fake', 'object' => 'transfer_reversal', 'transfer' => $m[1]]);
+        }
+
+        if ($method === 'get' && $path === '/v1/events') {
+            $types = (array) ($params['types'] ?? []);
+            $gte = $params['created']['gte'] ?? null;
+            $lte = $params['created']['lte'] ?? null;
+
+            $data = array_values(array_filter($this->events, fn ($event) => ($types === [] || in_array($event['type'], $types, true))
+                && ($gte === null || $event['created'] >= $gte)
+                && ($lte === null || $event['created'] <= $lte)));
+
+            // Newest first, as Stripe lists them.
+            usort($data, fn ($a, $b) => $b['created'] <=> $a['created']);
+
+            return $this->respond(['object' => 'list', 'url' => '/v1/events', 'has_more' => false, 'data' => $data]);
         }
 
         return $this->respond([

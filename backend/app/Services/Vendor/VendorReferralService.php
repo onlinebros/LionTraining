@@ -23,17 +23,20 @@ use RuntimeException;
  */
 class VendorReferralService
 {
-    public function __construct(private readonly PurchaseAttribution $attribution) {}
+    public function __construct(
+        private readonly PurchaseAttribution $attribution,
+        private readonly PromotionBonuses $bonuses,
+    ) {}
 
     /**
      * Record an interested customer and the partner who found them.
      *
-     * Also files them in the partner's CRM, because a lead that converts three
-     * weeks later needs to be somewhere the partner can work it in the meantime.
+     * Also files the buyer in a CRM, because a lead that converts three weeks
+     * later needs to be somewhere it can be worked in the meantime. Whose CRM
+     * follows the attribution: see fileContact().
      *
      * A partner ordering for themselves from the back office passes themselves as
-     * `buyer` in the context. That order is not filed in their CRM: they are not
-     * their own prospect.
+     * `buyer` in the context.
      *
      * @param  array<string,mixed>  $data     Validated customer fields.
      * @param  array<string,mixed>  $context  ip / user_agent / utm / source / buyer.
@@ -57,8 +60,6 @@ class VendorReferralService
         }
 
         return DB::transaction(function () use ($vendor, $productKey, $member, $data, $context, $ownOrder) {
-            $contact = $ownOrder ? null : $this->syncCrmContact($member, $data, $vendor, $productKey);
-
             $lead = VendorLead::create([
                 'public_ref'     => $this->generateReference(),
                 'vendor'         => $vendor,
@@ -66,7 +67,6 @@ class VendorReferralService
                 'member_id'      => $member->id,
                 // Snapshot, not a join — see the migration comment.
                 'referral_code'  => $member->referral_code,
-                'crm_contact_id' => $contact?->id,
 
                 'first_name'    => $data['first_name'],
                 'last_name'     => $data['last_name']    ?? null,
@@ -90,9 +90,11 @@ class VendorReferralService
                 'utm'        => $context['utm']        ?? null,
             ]);
 
-            // Worked out now so the partner's screens are right from the start,
-            // and again at conversion, once the shipping address is known.
-            $this->attribution->apply($lead)->save();
+            // Worked out first: whose CRM the buyer goes into depends on it.
+            // Done again at conversion, once the shipping address is known.
+            $this->attribution->apply($lead);
+            $this->fileContact($lead);
+            $lead->save();
 
             return $lead;
         });
@@ -231,11 +233,14 @@ class VendorReferralService
      * form is an estimate — quantity, shipping and tax are all decided on their
      * page after we lose sight of the customer.
      *
+     * The launch-special bonuses are reconciled afterwards, every time. That
+     * includes a redelivery, so a reconcile that failed once is retried.
+     *
      * @param  array<string,mixed>  $confirmation
      */
     public function convert(VendorLead $lead, array $confirmation, string $via = VendorLead::VIA_WEBHOOK, ?User $actor = null): VendorLead
     {
-        return DB::transaction(function () use ($lead, $confirmation, $via, $actor) {
+        $result = DB::transaction(function () use ($lead, $confirmation, $via, $actor) {
             $lead = VendorLead::lockForUpdate()->find($lead->id);
 
             if ($lead === null || $lead->isConverted()) {
@@ -257,13 +262,21 @@ class VendorReferralService
             // Decided at the moment of sale, from everything the order now
             // carries. This is what stops a partner being paid on their own
             // purchase, whichever share link they used.
-            $this->attribution->apply($lead)->save();
+            $this->attribution->apply($lead);
+            $this->fileContact($lead);
+            $lead->save();
 
             $this->syncContactStatus($lead, 'purchased');
             $this->raiseCommission($lead);
 
             return $lead;
         });
+
+        if ($result !== null) {
+            $this->bonuses->reconcileFor($result);
+        }
+
+        return $result;
     }
 
     /**
@@ -275,7 +288,7 @@ class VendorReferralService
      */
     public function resolveAttribution(VendorLead $lead, string $decision, User $admin): VendorLead
     {
-        return DB::transaction(function () use ($lead, $decision, $admin) {
+        $result = DB::transaction(function () use ($lead, $decision, $admin) {
             $lead = VendorLead::lockForUpdate()->findOrFail($lead->id);
 
             if ($lead->commission_ledger_id !== null) {
@@ -292,6 +305,7 @@ class VendorReferralService
             };
 
             $this->attribution->assign($lead, $decision, $buyer, $lead->attribution_reason);
+            $this->fileContact($lead);
 
             $lead->forceFill([
                 'attribution_resolved_by' => $admin->id,
@@ -299,11 +313,17 @@ class VendorReferralService
             ])->save();
 
             if ($lead->isConverted()) {
+                $this->syncContactStatus($lead, 'purchased');
                 $this->raiseCommission($lead);
             }
 
             return $lead;
         });
+
+        // Who the launch special pays for this order may have just changed.
+        $this->bonuses->reconcileFor($result);
+
+        return $result;
     }
 
     /**
@@ -315,7 +335,7 @@ class VendorReferralService
      */
     public function refund(VendorLead $lead): VendorLead
     {
-        return DB::transaction(function () use ($lead) {
+        $result = DB::transaction(function () use ($lead) {
             $lead = VendorLead::lockForUpdate()->find($lead->id);
 
             if ($lead === null || $lead->status === VendorLead::STATUS_REFUNDED) {
@@ -350,6 +370,14 @@ class VendorReferralService
 
             return $lead;
         });
+
+        // Inside the lock window the refund frees places and the next sales
+        // move up; the special's credits follow.
+        if ($result !== null) {
+            $this->bonuses->reconcileFor($result);
+        }
+
+        return $result;
     }
 
     /**
@@ -459,24 +487,63 @@ class VendorReferralService
     }
 
     /**
-     * File the customer in the partner's CRM.
+     * File the buyer in the CRM of the partner the sale belongs to. Does not save
+     * the lead.
      *
-     * Matched on email within the partner's own contacts, so a returning
+     * A customer goes to the partner whose link they used. A partner's own
+     * purchase goes to their sponsor, who earns on it and works the record
+     * (owner, 2026-09-17), and is linked to the buyer's account. A partner with
+     * no sponsor buying for themselves is filed nowhere. An order held for an
+     * attribution decision stays with the link owner until it is decided.
+     */
+    private function fileContact(VendorLead $lead): void
+    {
+        $buyer = $lead->isOwnPurchase() ? User::find($lead->buyer_user_id) : null;
+        $owner = $lead->isOwnPurchase()
+            ? ($buyer?->sponsor_id ? User::find($buyer->sponsor_id) : null)
+            : User::find($lead->member_id);
+
+        if ($owner === null) {
+            return;
+        }
+
+        if ($lead->crm_contact_id !== null
+            && CrmContact::whereKey($lead->crm_contact_id)->where('owner_id', $owner->id)->exists()) {
+            return;
+        }
+
+        $contact = $this->syncCrmContact($owner, $lead->only([
+            'first_name', 'last_name', 'email', 'phone', 'company',
+            'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country',
+        ]), (string) $lead->vendor, (string) $lead->product_key, $buyer);
+
+        if ($contact !== null) {
+            $lead->crm_contact_id = $contact->id;
+        }
+    }
+
+    /**
+     * File a buyer in one partner's CRM.
+     *
+     * Matched on email within that partner's own contacts, so a returning
      * customer updates one record instead of accumulating duplicates. Failure
      * here is logged and swallowed: a CRM write must never cost us the lead
      * capture, which is the part that carries the money.
      *
      * @param  array<string,mixed>  $data
+     * @param  User|null  $partnerBuyer  Set when the buyer is a partner making their own purchase.
      */
-    private function syncCrmContact(User $member, array $data, string $vendor, string $productKey): ?CrmContact
+    private function syncCrmContact(User $owner, array $data, string $vendor, string $productKey, ?User $partnerBuyer = null): ?CrmContact
     {
         try {
+            $product = (string) (Vendors::product($vendor, $productKey)['name'] ?? $productKey);
+
             $attributes = [
-                'owner_id'      => $member->id,
-                'created_by'    => $member->id,
+                'owner_id'      => $owner->id,
+                'created_by'    => $owner->id,
                 'contact_type'  => 'lead',
                 'lead_source'   => 'referral',
-                'referred_by_user_id' => $member->id,
+                'referred_by_user_id' => $owner->id,
                 'first_name'    => $data['first_name'],
                 'last_name'     => $data['last_name']     ?? null,
                 'phone'         => $data['phone']         ?? null,
@@ -487,38 +554,40 @@ class VendorReferralService
                 'state'         => $data['state']         ?? null,
                 'postal_code'   => $data['postal_code']   ?? null,
                 'country'       => $data['country']       ?? null,
-                'quick_note'    => sprintf(
-                    'Enquiry via %s — %s.',
-                    Vendors::name($vendor),
-                    (string) (Vendors::product($vendor, $productKey)['name'] ?? $productKey),
-                ),
+                'quick_note'    => $partnerBuyer
+                    ? sprintf('Own purchase by your partner %s via %s — %s.', $partnerBuyer->name, Vendors::name($vendor), $product)
+                    : sprintf('Enquiry via %s — %s.', Vendors::name($vendor), $product),
             ];
 
-            $existing = CrmContact::where('owner_id', $member->id)
-                ->whereRaw('LOWER(email) = ?', [Str::lower($data['email'])])
+            $contact = CrmContact::where('owner_id', $owner->id)
+                ->whereRaw('LOWER(email) = ?', [Str::lower((string) $data['email'])])
                 ->first();
 
-            if ($existing !== null) {
+            if ($contact !== null) {
                 // Status is deliberately not reset — a contact already marked
                 // 'purchased' must not be demoted to 'interested' by a second
                 // enquiry.
-                $existing->fill(array_filter(
+                $contact->fill(array_filter(
                     $attributes,
                     static fn ($v, $k) => $v !== null && ! in_array($k, ['owner_id', 'created_by'], true),
                     ARRAY_FILTER_USE_BOTH,
                 ))->save();
-
-                return $existing;
+            } else {
+                $contact = CrmContact::create($attributes + [
+                    'email'  => $data['email'],
+                    'status' => 'interested',
+                ]);
             }
 
-            return CrmContact::create($attributes + [
-                'email'  => $data['email'],
-                'status' => 'interested',
-            ]);
+            if ($partnerBuyer !== null) {
+                $contact->forceFill(['linked_user_id' => $partnerBuyer->id])->save();
+            }
+
+            return $contact;
         } catch (\Throwable $e) {
             Log::error('CRM sync failed for vendor lead', [
-                'member' => $member->id,
-                'error'  => $e->getMessage(),
+                'owner' => $owner->id,
+                'error' => $e->getMessage(),
             ]);
 
             return null;
@@ -527,7 +596,7 @@ class VendorReferralService
 
     private function syncContactStatus(VendorLead $lead, string $status): void
     {
-        $contact = $lead->crmContact;
+        $contact = $lead->crm_contact_id ? CrmContact::find($lead->crm_contact_id) : null;
 
         if ($contact === null) {
             return;

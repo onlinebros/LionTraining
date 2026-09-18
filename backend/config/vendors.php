@@ -206,6 +206,26 @@ return [
             'match_window_days' => (int) env('PLASMAGUARD_MATCH_WINDOW_DAYS', 30),
 
             /*
+            | The backstop for a webhook that never arrived. Every fifteen
+            | minutes the scheduler reads the vendor's event log with their key
+            | and records anything the endpoint missed — see VendorEventSync.
+            |
+            | `since` is required and nothing is fetched until it is set. It is
+            | the moment recovery is trusted from: set it to when the webhook
+            | went live, so an order paid before then (the $1 live test) is
+            | never replayed into a sale with a commission attached.
+            |
+            | `grace_minutes` leaves the newest events to the webhook, so an
+            | order confirmed by reconciliation means delivery really failed.
+            */
+            'event_sync' => [
+                'enabled'        => (bool) env('PLASMAGUARD_EVENT_SYNC', true),
+                'since'          => env('PLASMAGUARD_EVENT_SYNC_SINCE'),
+                'lookback_hours' => (int) env('PLASMAGUARD_EVENT_SYNC_LOOKBACK_HOURS', 72),
+                'grace_minutes'  => (int) env('PLASMAGUARD_EVENT_SYNC_GRACE_MINUTES', 10),
+            ],
+
+            /*
             |------------------------------------------------------------------
             | Revenue share — what the VENDOR pays US
             |------------------------------------------------------------------

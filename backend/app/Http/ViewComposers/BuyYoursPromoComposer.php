@@ -2,6 +2,7 @@
 
 namespace App\Http\ViewComposers;
 
+use App\Services\Vendor\PromotionBonuses;
 use App\Services\Vendor\PromotionTracker;
 use App\Support\Vendors;
 use Illuminate\Support\Facades\Cache;
@@ -27,7 +28,7 @@ class BuyYoursPromoComposer
     }
 
     /**
-     * @return array{name:string, product_name:string, cap:int, filled:int, remaining:int, percent:int, buy_url:string, has_sponsor:bool}|null
+     * @return array{name:string, product_name:string, cap:int, filled:int, remaining:int, percent:int, buy_url:string, has_sponsor:bool, terms:?array<string,mixed>}|null
      */
     private function offer(): ?array
     {
@@ -66,6 +67,8 @@ class BuyYoursPromoComposer
             'percent'      => (int) floor($places['filled'] / max(1, $places['cap']) * 100),
             'buy_url'      => route('member.sales.buy', [$vendor, (string) $promotion['product']]),
             'has_sponsor'  => auth()->user()?->sponsor_id !== null,
+            // The special's money, or null while the promotion has no bonus.
+            'terms'        => PromotionBonuses::terms($promotion),
         ];
     }
 }

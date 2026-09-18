@@ -6,6 +6,7 @@ use App\Models\CommissionLedger;
 use App\Models\VendorLead;
 use App\Rules\NotPoBox;
 use App\Services\Vendor\AddressCheck;
+use App\Services\Vendor\PromotionBonuses;
 use App\Services\Vendor\PromotionTracker;
 use App\Services\Vendor\VendorReferralService;
 use App\Support\Vendors;
@@ -154,13 +155,18 @@ class MemberVendorLeadController extends Controller
         return redirect()->route($mode === 'direct' ? 'vendor.order' : 'vendor.handoff', $lead->public_ref);
     }
 
-    public function promotion(Request $request)
+    public function promotion(Request $request, PromotionBonuses $bonuses)
     {
-        $key = $this->promotions->currentKey();
+        $key  = $this->promotions->currentKey();
+        $user = $request->user();
 
         return view('member.vendor.promotion', [
-            'user'      => $request->user(),
+            'user'      => $user,
             'standings' => $key !== null ? $this->promotions->standings($key) : null,
+            // Only the viewer's own earnings. Other partners' money is not shown.
+            'earnings'  => $key !== null
+                ? ($bonuses->totalsByEarner($key)[$user->id] ?? ['places' => 0, 'place' => 0.0, 'pool' => 0.0, 'total' => 0.0])
+                : null,
         ]);
     }
 

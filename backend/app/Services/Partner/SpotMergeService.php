@@ -106,6 +106,8 @@ class SpotMergeService
             'claim_attempts'       => 0,
             'claim_locked_until'   => null,
         ])->save();
+
+        $spot->partnerCompany?->recordClaim();
     }
 
     /**

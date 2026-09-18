@@ -51,9 +51,16 @@ class PartnerClaimController extends Controller
             return redirect()->route('partner.claim', $company->slug);
         }
 
+        // Deliberately no counts. This page used to show "N of M positions are
+        // still unclaimed", which meant counting a million rows on every visit:
+        // 14.7 seconds measured, 29 under any concurrency, and a cache only
+        // turned that into a stampede every time it expired.
+        //
+        // Nobody arriving here needs the number. They have an ID and a code and
+        // they want to get in. The page is now one indexed lookup when they
+        // submit, and nothing at all before that.
         return $this->withoutReferrer(view('public.partner.verify', [
             'company' => $company,
-            'counts'  => $company->spotCounts(),
             'prefill' => $request->session()->get($this->prefillKey($company), []),
         ]));
     }

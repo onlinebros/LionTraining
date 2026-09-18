@@ -32,12 +32,6 @@
     }
     .q3-claim-note--filled { border-left-color: var(--q3-success); }
 
-    .q3-claim-count {
-        text-align: center; font-size: .78rem; color: var(--q3-text-dim);
-        margin-top: 18px; letter-spacing: .03em;
-    }
-    .q3-claim-count strong { color: var(--q3-gold-high); font-variant-numeric: tabular-nums; }
-
     /* Codes are read off paper and typed. Monospace and wide tracking make a
        B / 8 mix-up visible before the form is submitted. */
     .q3-code-input {
@@ -114,13 +108,6 @@
 
             <button class="btn btn-primary w-100" type="submit">Continue</button>
         </form>
-
-        @if($counts['unclaimed'] > 0)
-            <div class="q3-claim-count">
-                <strong>{{ number_format($counts['unclaimed']) }}</strong>
-                of {{ number_format($counts['total']) }} {{ $company->name }} positions are still unclaimed
-            </div>
-        @endif
 
         <div class="q3-auth-footer">
             Already claimed your position?
