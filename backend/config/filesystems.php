@@ -60,6 +60,32 @@ return [
             'report' => false,
         ],
 
+        /*
+         * S3-compatible object storage (DigitalOcean Spaces) for the screen
+         * recording library — videos are too large for the droplet's disk.
+         * Objects are private: playback goes through a signed, time-limited
+         * URL minted after the app has checked who is asking. 'throw' is on so
+         * a failed write cannot leave a recording row pointing at nothing.
+         *
+         * Falls back to the AWS_* values, so one set of credentials serves
+         * both disks unless SPACES_* point recordings at a different bucket.
+         * With no bucket at all, config/screen-recordings.php uses the local
+         * public disk instead.
+         */
+        'spaces' => [
+            'driver' => 's3',
+            'key' => env('SPACES_KEY', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('SPACES_SECRET', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('SPACES_REGION', env('AWS_DEFAULT_REGION', 'nyc3')),
+            'bucket' => env('SPACES_BUCKET', env('AWS_BUCKET')),
+            'url' => env('SPACES_URL', env('AWS_URL')),
+            'endpoint' => env('SPACES_ENDPOINT', env('AWS_ENDPOINT')),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

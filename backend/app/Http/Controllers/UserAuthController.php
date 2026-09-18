@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\Genealogy\EnrollmentService;
+use App\Services\Presentations\ConversionTracker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,11 +27,12 @@ class UserAuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            // Admins who log in via the public login go to the admin panel
-            if (Auth::user()->isAdmin()) {
-                return redirect()->route('admin.dashboard');
-            }
-            return redirect()->intended(route('member.dashboard'));
+            // Back to the page that sent them to sign in, if there was one — a
+            // Your Rooms link to one guest's conversation is useless if it
+            // lands on the dashboard. Otherwise admins get the admin panel.
+            return redirect()->intended(
+                Auth::user()->isAdmin() ? route('admin.dashboard') : route('member.dashboard')
+            );
         }
 
         return back()->withErrors(['email' => 'Invalid email or password.'])->onlyInput('email');
@@ -75,8 +77,13 @@ class UserAuthController extends Controller
         return redirect($this->afterSignup($user));
     }
 
-    public function showReferral(string $code)
+    public function showReferral(Request $request, string $code)
     {
+        // Arrived from a presentation's call to action. Held in the session so
+        // the signup can be traced back to the guest who watched, whatever
+        // address they end up using.
+        app(ConversionTracker::class)->remember($request->query(ConversionTracker::PARAM));
+
         return view('public.auth.referral', ['sponsor' => $this->sponsorFor($code)]);
     }
 
@@ -119,6 +126,10 @@ class UserAuthController extends Controller
 
             return $this->enrollment->enroll($user, $sponsor);
         });
+
+        // If they came from a presentation, tie the account to the guest who
+        // watched it.
+        app(ConversionTracker::class)->attribute($user);
 
         Auth::login($user);
         $request->session()->regenerate();

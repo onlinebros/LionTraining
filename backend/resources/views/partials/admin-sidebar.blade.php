@@ -161,6 +161,51 @@
                         </ul>
                     </li>
 
+                    {{-- Screen recordings --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.screen-recordings.*') ? 'active' : '' }}" href="#">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-widget') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-widget') }}"></use></svg>
+                            <span>Recording Studio</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{{ route('admin.screen-recordings.studio') }}"
+                                   class="{{ request()->routeIs('admin.screen-recordings.studio') ? 'active' : '' }}">Record</a></li>
+                            <li><a href="{{ route('admin.screen-recordings.upload') }}"
+                                   class="{{ request()->routeIs('admin.screen-recordings.upload') ? 'active' : '' }}">Upload a Video</a></li>
+                            <li><a href="{{ route('admin.screen-recordings.combine') }}"
+                                   class="{{ request()->routeIs('admin.screen-recordings.combine') ? 'active' : '' }}">Combine Videos</a></li>
+                            <li><a href="{{ route('admin.screen-recordings.index') }}"
+                                   class="{{ request()->routeIs('admin.screen-recordings.index') || request()->routeIs('admin.screen-recordings.show') ? 'active' : '' }}">Video Library</a></li>
+                        </ul>
+                    </li>
+
+                    {{-- Presentations --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.presentations.*', 'admin.funnels.*', 'admin.cta-items.*') ? 'active' : '' }}" href="#">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-coming-soon') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-coming-soon') }}"></use></svg>
+                            <span>Presentations</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{{ route('admin.presentations.create') }}"
+                                   class="{{ request()->routeIs('admin.presentations.create') ? 'active' : '' }}">Schedule One</a></li>
+                            <li><a href="{{ route('admin.presentations.series.index') }}"
+                                   class="{{ request()->routeIs('admin.presentations.series.*') ? 'active' : '' }}">Repeating Schedules</a></li>
+                            <li><a href="{{ route('admin.presentations.prospects') }}"
+                                   class="{{ request()->routeIs('admin.presentations.prospects') ? 'active' : '' }}">Prospects</a></li>
+                            <li><a href="{{ route('admin.presentations.index') }}"
+                                   class="{{ request()->routeIs('admin.presentations.index') || request()->routeIs('admin.presentations.show') ? 'active' : '' }}">All Presentations</a></li>
+                            <li><a href="{{ route('admin.funnels.index') }}"
+                                   class="{{ request()->routeIs('admin.funnels.*') ? 'active' : '' }}">Funnels</a></li>
+                            <li><a href="{{ route('member.presentations.live') }}">Your Rooms</a></li>
+                            <li><a href="{{ route('admin.cta-items.index') }}"
+                                   class="{{ request()->routeIs('admin.cta-items.*') ? 'active' : '' }}">Calls To Action</a></li>
+                        </ul>
+                    </li>
+
                     {{-- Billing oversight (C3) --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>

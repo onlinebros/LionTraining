@@ -36,6 +36,16 @@ use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\VendorStorefrontController;
 use App\Http\Controllers\MemberVendorLeadController;
 use App\Http\Controllers\Admin\VendorLeadController;
+use App\Http\Controllers\Admin\CtaItemController as AdminCtaItemController;
+use App\Http\Controllers\Admin\PresentationController as AdminPresentationController;
+use App\Http\Controllers\Admin\PresentationFunnelController as AdminFunnelController;
+use App\Http\Controllers\Admin\PresentationSeriesController as AdminPresentationSeriesController;
+use App\Http\Controllers\Admin\ScreenRecordingController;
+use App\Http\Controllers\FunnelWatchController;
+use App\Http\Controllers\Member\FunnelController as MemberFunnelController;
+use App\Http\Controllers\Member\PresentationController as MemberPresentationController;
+use App\Http\Controllers\PresentationWatchController;
+use App\Http\Controllers\ScreenRecordingPlaybackController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ────────────────────────────────────────────────────────────────────
@@ -225,10 +235,86 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
         Route::post('/followups/{followup}/complete',         [MemberCrmController::class, 'completeFollowup'])->name('followups.complete');
         Route::delete('/followups/{followup}',                [MemberCrmController::class, 'destroyFollowup'])->name('followups.cancel');
     });
+
+    // Presentations and funnels from the host's side: Your Rooms, prospects,
+    // reports. Admin-only until PRESENTATIONS_OPEN_TO_MEMBERS=true — see
+    // RequirePresentationAccess. A funnel is presentations, so same gate.
+    Route::prefix('funnels')->name('funnels.')->middleware('presentations')->group(function () {
+        Route::get('/',          [MemberFunnelController::class, 'index'])->name('index');
+        Route::get('/{funnel}',  [MemberFunnelController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('presentations')->name('presentations.')->middleware('presentations')->group(function () {
+        Route::get('/', [MemberPresentationController::class, 'index'])->name('index');
+
+        // A member scheduling a released recording for their own team. Above
+        // the {presentation} routes so "create" is not read as a slug.
+        Route::get('/create', [MemberPresentationController::class, 'create'])->name('create');
+        Route::post('/', [MemberPresentationController::class, 'store'])->name('store');
+
+        // Every room at once. Above {presentation} so "live" is not a slug.
+        Route::get('/prospects', [MemberPresentationController::class, 'prospects'])->name('prospects');
+        Route::post('/prospects/{attendee}/crm', [MemberPresentationController::class, 'toCrm'])->name('prospects.crm');
+        Route::get('/live', [MemberPresentationController::class, 'live'])->name('live');
+        Route::get('/live/feed', [MemberPresentationController::class, 'liveFeed'])->name('live.feed');
+
+        // Threads are keyed by the guest alone, so both consoles share them.
+        Route::get('/thread/{attendee}', [MemberPresentationController::class, 'thread'])->name('thread');
+        Route::post('/thread/{attendee}', [MemberPresentationController::class, 'reply'])->name('reply');
+        Route::post('/thread/{attendee}/read', [MemberPresentationController::class, 'markRead'])->name('read');
+        Route::get('/{presentation}', [MemberPresentationController::class, 'show'])->name('show');
+        Route::get('/{presentation}/attendees', [MemberPresentationController::class, 'attendees'])->name('attendees');
+        Route::get('/{presentation}/export', [MemberPresentationController::class, 'export'])->name('export');
+        Route::get('/{presentation}/video', [MemberPresentationController::class, 'video'])->name('video');
+        Route::delete('/{presentation}', [MemberPresentationController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // Legacy /dashboard redirect
 Route::get('/dashboard', fn() => redirect()->route('member.dashboard'))->middleware('auth');
+
+// ── Recording playback ────────────────────────────────────────────────────────
+//
+// Deliberately outside the auth middleware: a recording set to "anyone with the
+// link" has to open for a signed-out prospect. Every action re-checks
+// ScreenRecording::viewableBy(), which treats a null user as the public, so the
+// gate lives with the recording rather than with the route.
+Route::prefix('recordings')->name('recordings.')->group(function () {
+    Route::get('/{recording}',        [ScreenRecordingPlaybackController::class, 'watch'])->name('watch');
+    Route::get('/{recording}/stream', [ScreenRecordingPlaybackController::class, 'stream'])->name('stream');
+    Route::get('/{recording}/poster', [ScreenRecordingPlaybackController::class, 'poster'])->name('poster');
+});
+
+// ── Scheduled presentations (guests) ──────────────────────────────────────────
+//
+// Public by necessity: a guest has no account and never gets one here. Their
+// identity is a token in a cookie, issued when they register. The optional
+// {code} is the inviting member's referral code and is the only thing that
+// attributes a guest to a member.
+Route::prefix('watch')->name('presentations.')->group(function () {
+    // Fixed segments first: {code?} is a catch-all and would otherwise swallow
+    // /state as if it were somebody's referral code.
+    Route::get('/{presentation}/state',     [PresentationWatchController::class, 'state'])->name('state');
+    Route::post('/{presentation}/register', [PresentationWatchController::class, 'register'])->name('register');
+    Route::post('/{presentation}/heartbeat',[PresentationWatchController::class, 'heartbeat'])->name('heartbeat');
+    Route::post('/{presentation}/cta',      [PresentationWatchController::class, 'cta'])->name('cta');
+    Route::post('/{presentation}/choose',   [PresentationWatchController::class, 'choose'])->name('choose');
+    Route::get('/{presentation}/video',     [PresentationWatchController::class, 'video'])->name('video');
+    Route::get('/{presentation}/messages',  [PresentationWatchController::class, 'messages'])->name('messages');
+    Route::post('/{presentation}/messages', [PresentationWatchController::class, 'sendMessage'])->name('messages.send');
+    Route::get('/{presentation}/{code?}',   [PresentationWatchController::class, 'show'])->name('watch');
+});
+
+// ── Funnel presentations (guests) ─────────────────────────────────────────────
+//
+// The way into a flow of videos. Public for the same reason /watch is: the
+// person coming through has no account. The {code} is not optional in practice
+// — a participant with no inviting member is refused — but it is optional in
+// the route so that a returning guest's cookie can carry them without it.
+Route::prefix('flow')->name('funnels.')->group(function () {
+    Route::post('/{funnel}/register', [FunnelWatchController::class, 'register'])->name('register');
+    Route::get('/{funnel}/{code?}',   [FunnelWatchController::class, 'enter'])->name('enter');
+});
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
@@ -438,6 +524,81 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{videoAsset}',                     [VideoAssetController::class, 'destroy'])->name('destroy');
             Route::post('/{videoAsset}/upload-vimeo',          [VideoAssetController::class, 'uploadToVimeo'])->name('upload-vimeo');
             Route::post('/{videoAsset}/assign-block',          [VideoAssetController::class, 'assignToBlock'])->name('assign-block');
+        });
+
+        // The library of calls to action, and the flows that place them.
+        Route::resource('cta-items', AdminCtaItemController::class)->except(['show']);
+
+        Route::prefix('funnels')->name('funnels.')->group(function () {
+            Route::get('/',                [AdminFunnelController::class, 'index'])->name('index');
+            Route::get('/create',          [AdminFunnelController::class, 'create'])->name('create');
+            Route::post('/',               [AdminFunnelController::class, 'store'])->name('store');
+
+            // Choices live on a video, not on the flow, so they are addressed
+            // by presentation. Above {funnel} so "cues" is not read as a slug.
+            Route::post('/cues/{presentation}',    [AdminFunnelController::class, 'addCue'])->name('cues.store');
+            Route::patch('/cues/{cue}/toggle',     [AdminFunnelController::class, 'toggleCue'])->name('cues.toggle');
+            Route::delete('/cues/{cue}',           [AdminFunnelController::class, 'destroyCue'])->name('cues.destroy');
+
+            Route::get('/{funnel}',        [AdminFunnelController::class, 'show'])->name('show');
+            Route::get('/{funnel}/prospects', [AdminFunnelController::class, 'prospects'])->name('prospects');
+            Route::get('/{funnel}/edit',   [AdminFunnelController::class, 'edit'])->name('edit');
+            Route::put('/{funnel}',        [AdminFunnelController::class, 'update'])->name('update');
+            Route::delete('/{funnel}',     [AdminFunnelController::class, 'destroy'])->name('destroy');
+            Route::post('/{funnel}/steps', [AdminFunnelController::class, 'addStep'])->name('steps.store');
+            Route::patch('/{funnel}/steps/{presentation}/entry',  [AdminFunnelController::class, 'setEntry'])->name('steps.entry');
+            Route::delete('/{funnel}/steps/{presentation}',       [AdminFunnelController::class, 'removeStep'])->name('steps.destroy');
+        });
+
+        // Scheduled presentations — showings of a library recording.
+        Route::prefix('presentations')->name('presentations.')->group(function () {
+            Route::get('/',                     [AdminPresentationController::class, 'index'])->name('index');
+            Route::get('/create',               [AdminPresentationController::class, 'create'])->name('create');
+            Route::get('/prospects',            [AdminPresentationController::class, 'prospects'])->name('prospects');
+
+            // Repeating schedules. Above the {presentation} routes so "series"
+            // is not swallowed as a slug.
+            Route::prefix('series')->name('series.')->group(function () {
+                Route::get('/',           [AdminPresentationSeriesController::class, 'index'])->name('index');
+                Route::get('/create',     [AdminPresentationSeriesController::class, 'create'])->name('create');
+                Route::post('/',          [AdminPresentationSeriesController::class, 'store'])->name('store');
+                Route::get('/{series}/edit', [AdminPresentationSeriesController::class, 'edit'])->name('edit');
+                Route::put('/{series}',   [AdminPresentationSeriesController::class, 'update'])->name('update');
+                Route::delete('/{series}',[AdminPresentationSeriesController::class, 'destroy'])->name('destroy');
+            });
+            Route::post('/',                    [AdminPresentationController::class, 'store'])->name('store');
+            Route::get('/{presentation}',       [AdminPresentationController::class, 'show'])->name('show');
+            Route::get('/{presentation}/edit',  [AdminPresentationController::class, 'edit'])->name('edit');
+            Route::put('/{presentation}',       [AdminPresentationController::class, 'update'])->name('update');
+            Route::post('/{presentation}/start',[AdminPresentationController::class, 'start'])->name('start');
+            Route::post('/{presentation}/end',  [AdminPresentationController::class, 'end'])->name('end');
+            Route::post('/{presentation}/announce', [AdminPresentationController::class, 'announce'])->name('announce');
+            Route::post('/{presentation}/chapters', [AdminPresentationController::class, 'saveChapters'])->name('chapters');
+            Route::delete('/{presentation}',    [AdminPresentationController::class, 'destroy'])->name('destroy');
+        });
+
+        // Screen recording studio + video library.
+        //
+        // The chunk endpoint is hit dozens of times per recording while the
+        // capture is still running, so it stays lean: no view, no eager loads.
+        Route::prefix('screen-recordings')->name('screen-recordings.')->group(function () {
+            Route::get('/',                          [ScreenRecordingController::class, 'index'])->name('index');
+            Route::get('/studio',                    [ScreenRecordingController::class, 'studio'])->name('studio');
+            Route::get('/upload',                    [ScreenRecordingController::class, 'uploadForm'])->name('upload');
+            Route::get('/combine',                   [ScreenRecordingController::class, 'composeForm'])->name('combine');
+            Route::post('/combine',                  [ScreenRecordingController::class, 'compose'])->name('combine.store');
+            Route::post('/',                         [ScreenRecordingController::class, 'store'])->name('store');
+            Route::post('/{recording}/chunk',        [ScreenRecordingController::class, 'chunk'])->name('chunk');
+            Route::post('/{recording}/finalize',     [ScreenRecordingController::class, 'finalize'])->name('finalize');
+            Route::post('/{recording}/abort',        [ScreenRecordingController::class, 'abort'])->name('abort');
+            Route::get('/{recording}',               [ScreenRecordingController::class, 'show'])->name('show');
+            Route::put('/{recording}',               [ScreenRecordingController::class, 'update'])->name('update');
+            Route::post('/{recording}/retry-store',  [ScreenRecordingController::class, 'retryStore'])->name('retry-store');
+            Route::post('/{recording}/trim',         [ScreenRecordingController::class, 'trim'])->name('trim');
+            Route::post('/{recording}/trim/revert',  [ScreenRecordingController::class, 'revertTrim'])->name('trim.revert');
+            Route::post('/{recording}/rebuild',      [ScreenRecordingController::class, 'rebuild'])->name('rebuild');
+            Route::post('/{recording}/publish',      [ScreenRecordingController::class, 'publish'])->name('publish');
+            Route::delete('/{recording}',            [ScreenRecordingController::class, 'destroy'])->name('destroy');
         });
 
         // Kartra import management

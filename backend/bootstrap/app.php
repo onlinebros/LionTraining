@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'invitation'  => \App\Http\Middleware\RequireInvitation::class,
             'subscribed'  => \App\Http\Middleware\RequireActiveSubscription::class,
             'training.unlocked' => \App\Http\Middleware\EnsureTrainingUnlocked::class,
+            'presentations' => \App\Http\Middleware\RequirePresentationAccess::class,
         ]);
 
         // Check is_active on every authenticated web request

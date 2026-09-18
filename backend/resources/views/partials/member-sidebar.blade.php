@@ -172,6 +172,50 @@
                     </li>
                     @endif
 
+                    {{-- Presentations. Admin-only until PRESENTATIONS_OPEN_TO_MEMBERS
+                         is switched on; RequirePresentationAccess closes the URLs by the
+                         same rule, so the menu never points at a 403. --}}
+                    @if(config('presentations.open_to_members') || auth()->user()->isAdmin())
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        {{-- Your Rooms lives under the same route prefix, so the
+                             wildcard would light both items up at once. --}}
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.presentations.*') && ! request()->routeIs('member.presentations.live*', 'member.presentations.prospects*') ? 'active' : '' }}"
+                           href="{{ route('member.presentations.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-coming-soon') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-coming-soon') }}"></use></svg>
+                            <span>Presentations</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.presentations.live*') ? 'active' : '' }}"
+                           href="{{ route('member.presentations.live') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-chat') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-chat') }}"></use></svg>
+                            <span>Your Rooms</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.funnels.*') ? 'active' : '' }}"
+                           href="{{ route('member.funnels.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-board') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-board') }}"></use></svg>
+                            <span>Video Flows</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.presentations.prospects*') ? 'active' : '' }}"
+                           href="{{ route('member.presentations.prospects') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-user') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-user') }}"></use></svg>
+                            <span>Prospects</span>
+                        </a>
+                    </li>
+                    @endif
+
                     {{-- CRM --}}
                     @if (\App\Support\Prelaunch::open('crm', auth()->user()))
                     <li class="sidebar-list">

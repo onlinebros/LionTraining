@@ -61,7 +61,8 @@ The owner asked for it on 2026-09-14 and chose: git-based deploys from GitHub `m
 | TLS | Let's Encrypt `app.q3.life` via webroot `/var/www/certbot`, renewed by `certbot.timer` |
 | PHP-FPM | `www` pool, `pm.max_children = 10`, which keeps within the database's 25-connection limit. `memory_limit 256M`, uploads up to 100M |
 | Queue | `q3-queue.service` (systemd, runs as www-data, `queue:work database`). Source: `deploy/app.q3.life/q3-queue.service` |
-| Scheduler | None. The app defines no scheduled tasks. Add a `schedule:run` timer when it does |
+| Scheduler | None yet, although the app now defines scheduled tasks (`routes/console.php`): vendor event sync, commission billing holds, and the presentation tasks. Until a `schedule:run` timer exists, scheduled presentations have to be started by hand |
+| Video | `ffmpeg` and `ffprobe` (apt) are needed for recording upload, trim and combine. Recordings are stored on the local public disk (`RECORDINGS_DISK=public` in `shared/.env`) until Spaces keys exist. Without that override, the set `AWS_BUCKET` selects the Spaces disk and uploads fail |
 | Database | Managed Postgres database `q3_app`, owner role `q3app` (connection limit 20), `ltree` + `pgcrypto`. Credentials in `~deploy/.config/q3/db-app.env` and `shared/.env` |
 | Mail | `MAIL_MAILER=resend`, from `noreply@q3.life` |
 | Files | `FILESYSTEM_DISK=local` (shared/storage) until Spaces keys exist |
