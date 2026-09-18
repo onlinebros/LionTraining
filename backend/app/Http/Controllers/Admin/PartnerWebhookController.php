@@ -58,6 +58,21 @@ class PartnerWebhookController extends Controller
         );
     }
 
+    /**
+     * The signature troubleshooting guide, to hand to the partner's engineers.
+     *
+     * Written for the conversation that starts "your signature does not match
+     * ours", which is where every webhook integration goes at least once.
+     */
+    public function troubleshooting()
+    {
+        return response()->download(
+            base_path('resources/templates/partner-webhook-troubleshooting.md'),
+            'quantum3-webhook-signature-troubleshooting.md',
+            ['Content-Type' => 'text/markdown; charset=UTF-8'],
+        );
+    }
+
     public function show(PartnerWebhookDelivery $delivery)
     {
         $delivery->load('company', 'spot:id,name,email,external_user_id');

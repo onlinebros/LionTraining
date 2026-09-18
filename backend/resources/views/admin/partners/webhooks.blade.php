@@ -18,9 +18,14 @@
         A signed <code>spot.claimed</code> event goes to each partner's endpoint when one of their
         people claims a position. Everything we sent, and everything they said back, is here.
     </p>
-    <a href="{{ route('admin.partners.webhooks.guide') }}" class="btn btn-sm btn-outline-secondary">
-        Integration guide for the partner
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.partners.webhooks.guide') }}" class="btn btn-sm btn-outline-secondary">
+            Integration guide
+        </a>
+        <a href="{{ route('admin.partners.webhooks.troubleshooting') }}" class="btn btn-sm btn-outline-secondary">
+            Signature troubleshooting
+        </a>
+    </div>
 </div>
 
 @if($failing > 0)

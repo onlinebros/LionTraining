@@ -276,6 +276,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::get('/',                    [PartnerWebhookController::class, 'index'])->name('index');
                 // Before /{delivery} so "guide" cannot be read as an id.
                 Route::get('/guide',               [PartnerWebhookController::class, 'guide'])->name('guide');
+                Route::get('/troubleshooting',     [PartnerWebhookController::class, 'troubleshooting'])->name('troubleshooting');
                 Route::get('/{delivery}',          [PartnerWebhookController::class, 'show'])->name('show');
                 Route::post('/{delivery}/replay',  [PartnerWebhookController::class, 'replay'])->name('replay');
             });
