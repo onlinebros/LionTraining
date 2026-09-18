@@ -373,6 +373,21 @@ class GenealogyService
             return ['claimed' => 0, 'unclaimed' => 0, 'total' => 0];
         }
 
+        // Cached, because this is on the team page and counting the imported
+        // positions below somebody near the top of a partner organisation means
+        // aggregating over a million rows on every page load. It is a headline
+        // number on a card, not anything that is acted on, and it moves only
+        // when somebody claims.
+        return \Cache::remember(
+            "user_{$user->id}_spot_counts",
+            now()->addMinutes(5),
+            fn () => $this->countSpotsBelow($user),
+        );
+    }
+
+    /** @return array{claimed:int, unclaimed:int, total:int} */
+    private function countSpotsBelow(User $user): array
+    {
         $row = $this->descendantsOfPath($user->placement_path)
             ->where('users.id', '!=', $user->id)
             ->whereNotNull('partner_company_id')

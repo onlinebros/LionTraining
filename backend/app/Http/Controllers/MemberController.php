@@ -87,11 +87,23 @@ class MemberController extends Controller
 
         $counts = $genealogy->spotCounts($user);
 
+        // Ordered by id and paginated without a total.
+        //
+        // `placement_path` is indexed with GIST, which cannot answer an ORDER
+        // BY — asking for one sorts the whole result set, and for a partner
+        // near the top of an imported organisation that is a million rows
+        // sorted to show fifty. Id is the same arbitrary-but-stable ordering as
+        // far as anybody reading this list is concerned, and it is the primary
+        // key.
+        //
+        // simplePaginate because paginate() runs a COUNT over the same million
+        // rows to work out how many pages there are, and the count that matters
+        // is already on the page above from spotCounts().
         $waiting = $genealogy->descendants($user, includeHolding: true)
             ->holding()
             ->with('partnerCompany:id,name')
-            ->orderBy('placement_path')
-            ->paginate(50);
+            ->orderBy('id')
+            ->simplePaginate(50);
 
         $recentlyClaimed = $genealogy->descendants($user)
             ->whereNotNull('claimed_at')
