@@ -65,6 +65,14 @@ class SpotImportValidator
             return $import;
         }
 
+        // A committed batch is history. Re-running would reset every row from
+        // 'committed' back to 'valid' and recompute depths against positions
+        // that already exist, leaving the record claiming work is still to do
+        // on an import that is finished and permanent.
+        if ($import->isCommitted()) {
+            return $import;
+        }
+
         if ($import->rows()->doesntExist()) {
             $import->update([
                 'status'       => PartnerImport::STATUS_FAILED,
