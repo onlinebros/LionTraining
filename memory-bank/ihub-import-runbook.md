@@ -233,9 +233,15 @@ What it does, as a single transaction:
 4. `INSERT ... SELECT` — the legacy `sponsorships` rows
 5. one `UPDATE` — close the staging rows and wipe the plaintext codes
 
-Because it is one transaction, it holds locks on `users` throughout. Other
-writes to `users` — signups, claims, profile edits — will wait. This is the
-reason for the quiet window.
+Because it is one transaction it runs for a long time, but it does **not** lock
+other people out of the application. It takes row-level locks on the rows it
+creates and nothing else: ordinary reads never block on those, and a signup
+touches different rows. What a long transaction does block is DDL — see § 3a —
+which is why migrations must be finished before it starts.
+
+The reason to pick a quiet window is narrower than "the site will wait": it is
+that a failure is easier to reason about when nothing else is moving, and that
+WAL and disk grow steeply while it runs.
 
 If it fails, nothing is imported. Fix the cause and run it again.
 

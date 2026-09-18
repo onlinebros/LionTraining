@@ -78,11 +78,22 @@ class SpotImportCommitter
             );
         }
 
-        if ($import->rows()->whereNull('placement_depth')->exists()) {
-            throw new RuntimeException(
-                'Some rows have no depth, which means validation did not finish or the file '
-                .'changed underneath it. Re-check the batch before committing.'
-            );
+        // Both depths, not just placement. A row with no enrollment depth never
+        // gets an enrollment path — buildPaths() walks by level and a null
+        // level is never reached — so it would commit silently as a position
+        // outside the enrollment tree entirely. Validation flags a placement
+        // chain that loops; this catches the same thing in the sponsor chain,
+        // which nothing else looks at.
+        foreach (['placement_depth', 'enrollment_depth'] as $column) {
+            $missing = $import->rows()->whereNull($column)->count();
+
+            if ($missing > 0) {
+                throw new RuntimeException(
+                    "{$missing} row(s) have no {$column}, so their paths cannot be built in order. "
+                    .'Either validation did not finish, or the file changed underneath it. '
+                    .'Re-check the batch before committing.'
+                );
+            }
         }
 
         return DB::transaction(function () use ($import) {
