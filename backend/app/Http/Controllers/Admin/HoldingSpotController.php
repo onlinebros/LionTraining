@@ -39,14 +39,24 @@ class HoldingSpotController extends Controller
             ->when($request->get('state') === 'claimed', fn ($q) => $q->activated())
             ->when($request->get('state') === 'merged', fn ($q) => $q->merged())
             ->when($request->filled('q'), function ($q) use ($request) {
-                $term = '%' . $request->get('q') . '%';
-                $q->where(fn ($w) => $w->where('external_user_id', 'ilike', $term)
-                    ->orWhere('name', 'ilike', $term)
-                    ->orWhere('email', 'ilike', $term));
+                $term = trim((string) $request->get('q'));
+
+                // An exact partner id first, and on its own. That is what an
+                // admin types when a member is on the phone quoting their iHub
+                // number, and it is an index lookup rather than a scan of a
+                // million rows for a substring.
+                $q->where(fn ($w) => $w
+                    ->where('external_user_id', $term)
+                    ->orWhere('name', 'ilike', "%{$term}%")
+                    ->orWhere('email', 'ilike', "%{$term}%"));
             })
             ->with('partnerCompany:id,name,slug', 'placementParent:id,name,account_status')
             ->orderByDesc('id')
-            ->paginate(50)
+            // simplePaginate: paginate() would COUNT the whole filtered set to
+            // number the pages, which on an unfiltered million-row board is the
+            // most expensive thing on the screen. The totals above are cached
+            // and already say how many there are.
+            ->simplePaginate(50)
             ->withQueryString();
 
         return view('admin.partners.spots', [
@@ -119,8 +129,23 @@ class HoldingSpotController extends Controller
         ));
     }
 
-    /** @return array{claimed:int, unclaimed:int, total:int} */
+    /**
+     * @return array{claimed:int, unclaimed:int, total:int}
+     */
     private function totals(?int $companyId): array
+    {
+        // Cached for a minute. Aggregating a million imported positions takes
+        // seconds, and this is three cards at the top of a page an admin will
+        // refresh all day during a claim period. A minute stale is invisible.
+        return \Cache::remember(
+            'partner_spot_totals_' . ($companyId ?? 'all'),
+            now()->addMinute(),
+            fn () => $this->countTotals($companyId),
+        );
+    }
+
+    /** @return array{claimed:int, unclaimed:int, total:int} */
+    private function countTotals(?int $companyId): array
     {
         $row = User::query()
             ->whereNotNull('partner_company_id')
@@ -141,6 +166,16 @@ class HoldingSpotController extends Controller
      * @return \Illuminate\Support\Collection<int, object>
      */
     private function byCompany()
+    {
+        return \Cache::remember(
+            'partner_spot_by_company',
+            now()->addMinute(),
+            fn () => $this->countByCompany(),
+        );
+    }
+
+    /** @return \Illuminate\Support\Collection<int, object> */
+    private function countByCompany()
     {
         return DB::table('users')
             ->join('partner_companies', 'partner_companies.id', '=', 'users.partner_company_id')
