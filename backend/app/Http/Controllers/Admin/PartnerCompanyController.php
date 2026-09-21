@@ -19,9 +19,9 @@ class PartnerCompanyController extends Controller
 
         return view('admin.partners.companies', [
             'companies' => $companies,
-            // One query for every company's split rather than one per card.
+            // Read off the counters already loaded above: no query per card.
             'counts'    => $companies->mapWithKeys(
-                fn (PartnerCompany $c) => [$c->id => $c->spotCounts(fresh: true)],
+                fn (PartnerCompany $c) => [$c->id => $c->spotCounts()],
             ),
         ]);
     }
