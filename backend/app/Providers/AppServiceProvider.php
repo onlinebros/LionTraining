@@ -67,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Http\ViewComposers\BuyYoursPromoComposer::class,
         );
 
+        // Every layout runs on Bootstrap 5; Laravel's default Tailwind pager
+        // renders unstyled here, with full-size SVG arrows.
+        \Illuminate\Pagination\Paginator::useBootstrapFive();
+
         RedirectIfAuthenticated::redirectUsing(fn () => route('member.dashboard'));
 
         // Stripe notices become log entries rather than warnings that Laravel
