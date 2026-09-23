@@ -97,6 +97,19 @@ PlasmaGuard's product claims on the site are **quoted verbatim** from
 plasmaguard.com (owner's instruction). Written permission for their names, copy
 and photography is still open — `vendor-referral-framework.md` item 9.
 
+## Released to app.q3.life (2026-09-23)
+Commit `260542e` is live on the droplet — the first app deploy since
+`73067a8` (2026-09-21). It carries everything that had accumulated on dev,
+because the Product Partner portal stands on Opportunity Associations and none
+of that was committed either. Nine migrations, all additive; the two index
+migrations build CONCURRENTLY, so the 1.3M-row users table was never
+write-locked. Verified after: login, admin and the portal all answer, 64
+subscriptions intact, error log clean.
+
+Two things stayed behind on dev on purpose and are still uncommitted:
+`sites/air.q3.life` (staged as added but deleted from disk) and
+`.github/workflows/ci.yml` (the deploy token cannot push workflow files).
+
 ## Product Partner portal (2026-09-22)
 The vendor's own people, with a login to a section of their own. A
 **Product Partner** is a non-admin role linked to one or more vendors and

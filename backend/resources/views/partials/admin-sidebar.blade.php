@@ -56,6 +56,23 @@
                         </a>
                     </li>
 
+                    {{-- Partner Portal — top level, beside Member Area, for the
+                         same reason: it is one of the three back offices an
+                         admin works in, and a section reachable only by
+                         expanding an unrelated submenu is a section nobody
+                         remembers exists. The admin screens that MANAGE
+                         partners stay under Vendor Orders, where they belong;
+                         this is the way into the vendor-facing product itself. --}}
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('product-partner.*') ? 'active' : '' }}"
+                           href="{{ route('product-partner.dashboard') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-ecommerce') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-ecommerce') }}"></use></svg>
+                            <span>Partner Portal</span>
+                        </a>
+                    </li>
+
                     {{-- Users --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
@@ -246,13 +263,6 @@
                                    class="{{ request()->routeIs('admin.product-partners.index') ? 'active' : '' }}">Product Partners</a></li>
                             <li><a href="{{ route('admin.product-partners.payments') }}"
                                    class="{{ request()->routeIs('admin.product-partners.payments') ? 'active' : '' }}">Vendor Payments</a></li>
-                            {{-- The vendor-facing portal itself. Reachable from
-                                 anywhere in admin, the same way the Member Area
-                                 link above exists — an admin who can only get
-                                 to a section through one screen does not know
-                                 the section is there. --}}
-                            <li><a href="{{ route('product-partner.dashboard') }}"
-                                   class="{{ request()->routeIs('product-partner.*') ? 'active' : '' }}">Open Partner Portal</a></li>
                         </ul>
                     </li>
 

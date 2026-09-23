@@ -174,6 +174,21 @@ class ProductPartnerAdminTest extends TestCase
             ->assertDontSee('All products');
     }
 
+    public function test_the_admin_panel_links_straight_into_the_partner_portal(): void
+    {
+        /*
+         * Top level, beside Member Area. It was first shipped inside the
+         * Vendor Orders submenu, where it may as well not have existed: a
+         * section reachable only by expanding an unrelated menu is a section
+         * nobody remembers is there.
+         */
+        $this->actingAs($this->admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Partner Portal')
+            ->assertSee(route('product-partner.dashboard'));
+    }
+
     public function test_the_payments_screen_lists_what_a_vendor_has_claimed(): void
     {
         ProductPartnerPayment::create([
