@@ -53,8 +53,12 @@
         <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
             <ul class="nav-menus">
 
-                {{-- Upgrade badge (free members only) --}}
-                @if(auth()->user()->isFreeMember())
+                {{-- Upgrade badge (free members only).
+                     Also only for members whose business line actually includes
+                     the training program: for a PlasmaGuard partner this button
+                     points at a route that 404s for them, and offers an upgrade
+                     to something they never came here for. --}}
+                @if(auth()->user()->isFreeMember() && auth()->user()->canSee('training'))
                 <li>
                     <a href="{{ route('member.training') }}" class="btn btn-primary btn-sm" style="margin-top:2px;">
                         &#9733; Upgrade
@@ -104,6 +108,7 @@
                         </div>
                     </div>
                     <ul class="profile-dropdown onhover-show-div">
+                        @include('partials.landing-preference')
                         <li>
                             <a href="{{ route('member.profile') }}">
                                 <i data-feather="user"></i><span>Profile</span>

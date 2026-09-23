@@ -97,6 +97,7 @@
                         </div>
                     </div>
                     <ul class="profile-dropdown onhover-show-div">
+                        @include('partials.landing-preference')
                         <li>
                             <a href="#">
                                 <i data-feather="user"></i><span>Account</span>

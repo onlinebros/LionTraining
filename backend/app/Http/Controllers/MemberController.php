@@ -171,7 +171,7 @@ class MemberController extends Controller
         if (!$lesson->userCanAccess($user)) {
             $needed = \App\Models\Role::find($lesson->effectiveRoleId());
             return redirect()->route('member.training.category', $lesson->category->slug)
-                ->with('error', 'You need ' . ($needed?->display_name ?? 'a higher membership') . ' to access this lesson.');
+                ->with('error', 'You need ' . ($needed?->display_name ?? 'a higher access level') . ' to access this lesson.');
         }
 
         $blocks    = $lesson->contentBlocks()->with('videoAsset')->get();
@@ -186,32 +186,9 @@ class MemberController extends Controller
         return view('member.training.lesson', compact('user', 'lesson', 'blocks', 'breadcrumb', 'siblings', 'prev', 'next'));
     }
 
-    public function trainingDownload(TrainingContentBlock $block)
-    {
-        $user   = auth()->user()->load('role');
-        $lesson = $block->lesson()->with(['category', 'requiredRole'])->firstOrFail();
-
-        if (!$lesson->userCanAccess($user)) {
-            abort(403, 'Access denied.');
-        }
-
-        if (!$block->file_path) {
-            abort(404);
-        }
-
-        $fileName = $block->file_name ?: basename($block->file_path);
-
-        // Kartra files live on the private local disk; fall back to public disk for uploads
-        if (Storage::disk('local')->exists($block->file_path)) {
-            return Storage::disk('local')->download($block->file_path, $fileName);
-        }
-
-        if (Storage::disk('public')->exists($block->file_path)) {
-            return Storage::disk('public')->download($block->file_path, $fileName);
-        }
-
-        abort(404);
-    }
+    // Worksheet downloads, lesson video and poster frames all moved to
+    // Member\TrainingMediaController, which checks the library's visibility and
+    // the category tree above the lesson as well as the lesson itself.
 
     public function referral()
     {

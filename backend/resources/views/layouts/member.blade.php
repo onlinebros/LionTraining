@@ -109,8 +109,9 @@
         </div>
     </div>
 
-    {{-- Upgrade modal for free members --}}
-    @if(auth()->user()->isFreeMember())
+    {{-- Upgrade modal for free members. Same condition as the header button and
+         the dashboard link that opens it — see member-header.blade.php. --}}
+    @if(auth()->user()->isFreeMember() && auth()->user()->canSee('training'))
     <div class="modal fade" id="upgrade-modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">

@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use App\Services\Stripe\BillingService;
 use App\Services\Stripe\CommissionBillingTrigger;
 use App\Services\Stripe\StripeClientFactory;
+use App\Support\Opportunity;
 use App\Support\Prelaunch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,22 @@ class MemberBillingController extends Controller
             return redirect()->route('member.billing.index');
         }
 
+        /*
+        | The training program is not on sale yet.
+        |
+        | While `enrollment_open` is false nobody is asked for a card anywhere,
+        | and that has to include somebody who reaches this URL directly — from
+        | a bookmark, an old email, or a link written before the switch. The
+        | card form existing but being unreachable is the difference between a
+        | closed shop and a shop with the lights off.
+        |
+        | They go to the Training Program section, which says when it opens and
+        | takes their name for the day it does.
+        */
+        if (! Opportunity::membership()->enrollmentOpen()) {
+            return redirect()->route('member.training-program');
+        }
+
         [$firstCharge] = $this->billing->resolveTrialEnd();
 
         return view('member.billing.start', [
@@ -55,6 +72,17 @@ class MemberBillingController extends Controller
             'threshold'      => (float) config('stripe.subscription.commission_threshold'),
             // No option is pre-selected; the partner has to choose one.
             'enrollment'     => old('enrollment'),
+            /*
+            | Whether this partner is here because they have to be.
+            |
+            | A member whose business line is not the membership — the
+            | PlasmaGuard B2B side — reaches this screen only by choosing to,
+            | and nothing is gated behind it for them. The page has to say so,
+            | or it reads as a bill they have failed to pay. See
+            | config/opportunities.php.
+            */
+            'optional'       => ! $user->requiresMembership(),
+            'opportunity'    => $user->opportunity(),
             'amount'         => (int) config('stripe.subscription.amount'),
             'interval'       => config('stripe.subscription.interval'),
         ]);
@@ -68,6 +96,14 @@ class MemberBillingController extends Controller
      */
     public function setupIntent(): JsonResponse
     {
+        // The page is unreachable while the program is closed, but this is the
+        // endpoint that actually reaches the card network, so it refuses on its
+        // own rather than trusting that nobody kept the page open across the
+        // switch being thrown.
+        if (! Opportunity::membership()->enrollmentOpen()) {
+            return response()->json(['error' => 'The training program is not open yet. No card is needed.'], 422);
+        }
+
         try {
             $intent = $this->billing->createSetupIntent(auth()->user());
         } catch (BillingException $e) {
@@ -91,6 +127,12 @@ class MemberBillingController extends Controller
      */
     public function confirm(Request $request)
     {
+        // The last gate before a subscription is opened. See setupIntent().
+        if (! Opportunity::membership()->enrollmentOpen()) {
+            return redirect()->route('member.training-program')
+                ->with('status', 'The training program is not open yet, so nothing was charged and no card was saved.');
+        }
+
         $data = $request->validate([
             'payment_method' => 'required|string|max:255',
             'enrollment'     => ['required', Rule::in(Subscription::TRIGGERS)],
@@ -106,7 +148,7 @@ class MemberBillingController extends Controller
             Log::error('Subscription confirm failed', ['user_id' => auth()->id(), 'error' => $e->getMessage()]);
 
             return back()->withInput($request->only('enrollment'))->withErrors([
-                'payment_method' => 'We could not complete your membership. No charge has been made.',
+                'payment_method' => 'We could not start your Training Program. No charge has been made.',
             ]);
         }
 
@@ -123,7 +165,7 @@ class MemberBillingController extends Controller
         $subscription = auth()->user()->activeSubscription();
 
         if ($subscription === null || ! $subscription->isCommissionHold()) {
-            return back()->withErrors(['subscription' => 'Your membership billing has already started.']);
+            return back()->withErrors(['subscription' => 'Your Training Program billing has already started.']);
         }
 
         try {
@@ -131,7 +173,7 @@ class MemberBillingController extends Controller
         } catch (ApiErrorException $e) {
             Log::error('Start-now failed', ['user_id' => auth()->id(), 'error' => $e->getMessage()]);
 
-            return back()->withErrors(['subscription' => 'We could not start your membership. Please try again.']);
+            return back()->withErrors(['subscription' => 'We could not start your Training Program. Please try again.']);
         }
 
         return back()->with('status', $this->statusFor($subscription));
@@ -145,7 +187,7 @@ class MemberBillingController extends Controller
         }
 
         if ($subscription->status !== Subscription::STATUS_TRIALING) {
-            return 'Your membership is active and your card has been charged.';
+            return 'Your Training Program is active and your card has been charged.';
         }
 
         return Prelaunch::endsAt() === null
@@ -202,12 +244,12 @@ class MemberBillingController extends Controller
         $subscription = auth()->user()->activeSubscription();
 
         if ($subscription === null) {
-            return back()->withErrors(['subscription' => 'There is no active membership to cancel.']);
+            return back()->withErrors(['subscription' => 'There is no active Training Program subscription to cancel.']);
         }
 
         $this->billing->cancelAtPeriodEnd($subscription);
 
-        return back()->with('status', 'Your membership will end at the close of the current period. You keep access until then.');
+        return back()->with('status', 'Your Training Program will end at the close of the current period. You keep access until then.');
     }
 
     public function resume()
@@ -215,7 +257,7 @@ class MemberBillingController extends Controller
         $subscription = auth()->user()->subscriptions()->latest('id')->first();
 
         if ($subscription === null) {
-            return back()->withErrors(['subscription' => 'There is no membership to resume.']);
+            return back()->withErrors(['subscription' => 'There is no Training Program subscription to resume.']);
         }
 
         try {
@@ -224,6 +266,6 @@ class MemberBillingController extends Controller
             return back()->withErrors(['subscription' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Your membership will continue.');
+        return back()->with('status', 'Your Training Program will continue.');
     }
 }

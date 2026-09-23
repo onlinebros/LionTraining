@@ -24,6 +24,36 @@
 .lesson-rich-text img { max-width: 100%; border-radius: 6px; margin: .5rem 0; }
 .lesson-rich-text p:last-child { margin-bottom: 0; }
 
+/* Self-hosted lesson video */
+.lesson-video {
+    max-width: 720px;
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius);
+    overflow: hidden;
+    background: var(--q3-black);
+    /* The gold rim the rest of the library uses, kept subtle so it frames the
+       picture rather than competing with it. */
+    box-shadow: 0 0 0 1px var(--q3-border-gold), 0 10px 30px rgba(0, 0, 0, .35);
+}
+.lesson-video-el {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    background: var(--q3-black);
+    outline: none;
+}
+.lesson-video-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 720px;
+    margin-top: .5rem;
+    color: var(--q3-text-muted);
+    font-size: .8rem;
+    letter-spacing: .02em;
+}
+
 /* Video placeholder */
 .video-placeholder {
     max-width: 720px;
@@ -135,20 +165,45 @@
             {{-- VIDEO --}}
             @if($block->type === 'video')
                 @php
-                    $asset    = $block->videoAsset;
-                    $hasVimeo = $asset && $asset->isOnVimeo();
+                    $asset = $block->videoAsset;
+                    $mode  = $block->playbackMode();
                 @endphp
 
-                @if($hasVimeo)
-                    {{-- Vimeo embed --}}
-                    <div class="ratio ratio-16x9 mb-1" style="max-width:720px;border-radius:10px;overflow:hidden;">
-                        <iframe src="{{ $asset->vimeo_embed_url }}" allowfullscreen
-                                allow="autoplay; fullscreen; picture-in-picture">
-                        </iframe>
+                @if($mode === 'self')
+                    {{--
+                        Served from our own storage through member.training.video,
+                        which re-checks the membership and the release date on
+                        every request — including every seek. Nothing here is a
+                        static file URL, so a copied link stops working when the
+                        membership does.
+                    --}}
+                    <div class="lesson-video mb-1">
+                        <video
+                            class="lesson-video-el"
+                            controls
+                            preload="metadata"
+                            playsinline
+                            controlsList="nodownload noplaybackrate"
+                            oncontextmenu="return false;"
+                            @if($asset?->thumbnail_path)
+                                poster="{{ route('member.training.poster', $block) }}"
+                            @endif
+                        >
+                            <source src="{{ route('member.training.video', $block) }}"
+                                    type="{{ $asset?->mime_type ?: 'video/mp4' }}">
+                            Your browser cannot play this video.
+                            <a href="{{ route('member.training.video', $block) }}">Open it directly</a>.
+                        </video>
                     </div>
+                    @if($asset?->duration_seconds)
+                        <div class="lesson-video-meta">
+                            <i data-feather="clock" style="width:13px;height:13px;"></i>
+                            {{ gmdate($asset->duration_seconds >= 3600 ? 'G\h i\m' : 'i\m s\s', $asset->duration_seconds) }}
+                        </div>
+                    @endif
 
-                @elseif($block->isEmbeddable())
-                    {{-- YouTube or other embeddable --}}
+                @elseif($mode === 'embed')
+                    {{-- Material that genuinely lives elsewhere, e.g. a YouTube link. --}}
                     <div class="ratio ratio-16x9 mb-1" style="max-width:720px;border-radius:10px;overflow:hidden;">
                         <iframe src="{{ $block->embedUrl() }}" allowfullscreen
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
@@ -156,7 +211,7 @@
                     </div>
 
                 @elseif($asset || $block->video_url)
-                    {{-- Video downloaded locally but not yet on Vimeo — show placeholder --}}
+                    {{-- Referenced but the file is not in our storage yet. --}}
                     <div class="video-placeholder mb-1">
                         <div class="video-placeholder-icon">
                             <i data-feather="film" style="width:32px;height:32px;color:var(--q3-gold);"></i>

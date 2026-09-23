@@ -7,10 +7,14 @@ use Illuminate\Console\Command;
 
 class KartraImportCommand extends Command
 {
+    // Credentials come from the environment (KARTRA_PORTAL_URL, KARTRA_EMAIL,
+    // KARTRA_PASSWORD), not from defaults baked into the signature. They were
+    // literal values here, which put a working portal login in the repository
+    // and printed the email into every console log.
     protected $signature = 'kartra:import
-                            {--url=https://besafe.kartra.com/portal/Lion : Kartra portal URL}
-                            {--email=john@ihub.global : Login email}
-                            {--password=peZMDgQs : Login password}
+                            {--url= : Kartra portal URL (default: KARTRA_PORTAL_URL)}
+                            {--email= : Login email (default: KARTRA_EMAIL)}
+                            {--password= : Login password (default: KARTRA_PASSWORD)}
                             {--no-download : Skip video downloads, only scrape structure}
                             {--json= : Path to a JSON file to import instead of scraping live}';
 
@@ -31,12 +35,18 @@ class KartraImportCommand extends Command
 
     private function importLive(): int
     {
-        $url      = $this->option('url');
-        $email    = $this->option('email');
-        $password = $this->option('password');
+        $url      = $this->option('url') ?: config('services.kartra.url');
+        $email    = $this->option('email') ?: config('services.kartra.email');
+        $password = $this->option('password') ?: config('services.kartra.password');
+
+        if (!$url || !$email || !$password) {
+            $this->error('Kartra portal credentials are not set.');
+            $this->line('Set KARTRA_PORTAL_URL, KARTRA_EMAIL and KARTRA_PASSWORD, or pass --url/--email/--password.');
+
+            return self::FAILURE;
+        }
 
         $this->line("Portal : $url");
-        $this->line("Email  : $email");
 
         $service  = new KartraImportService($url, $email, $password);
         $download = !$this->option('no-download');
@@ -97,7 +107,16 @@ class KartraImportCommand extends Command
 
         $this->info("Imported $count items from JSON.");
 
-        if ($this->confirm('Download videos for imported items now?', true)) {
+        // --no-download used to be ignored on this path, so the command asked
+        // the question anyway and blocked forever when run unattended.
+        if ($this->option('no-download')) {
+            $this->line('Scrape-only mode: videos not downloaded.');
+            $this->line('Attach media already on disk with: php artisan training:adopt-media');
+
+            return self::SUCCESS;
+        }
+
+        if (!$this->input->isInteractive() || $this->confirm('Download videos for imported items now?', true)) {
             $result = $service->downloadPendingVideos();
             $this->info("Downloaded {$result['count']} videos.");
             foreach ($result['errors'] as $err) {

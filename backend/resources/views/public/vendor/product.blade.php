@@ -68,7 +68,7 @@
                 <h1>{{ $product['name'] }}</h1>
                 <p class="q3-sf-tagline">{{ $product['tagline'] }}</p>
 
-                <a class="q3-sf-btn q3-sf-btn--gold" href="#enquire">Request this system</a>
+                <a class="q3-sf-btn q3-sf-btn--gold" href="#enquire">Order this system</a>
                 <a class="q3-sf-btn q3-sf-btn--ghost ms-2" href="#specs">View specifications</a>
             </div>
 
@@ -206,17 +206,24 @@
                         Independent {{ $siteName }} partner · ref {{ $member->referral_code }}
                     </div>
                     <ul>
-                        <li>Your enquiry comes straight to {{ $member->name }}.</li>
+                        <li>Your order goes through {{ $member->name }}.</li>
                         <li>They stay your point of contact through ordering and installation.</li>
                         <li>{{ $vendor['name'] }} fulfils, ships and warranties the system.</li>
                     </ul>
 
                     @if ($price)
                         <div class="q3-sf-price">
-                            <span class="q3-sf-price-fig">{{ $product['currency'] ?? 'USD' }} {{ $price }}</span>
+                            {{-- Config holds a plain number in whole currency
+                                 units. Print it the way every other price on
+                                 the site is printed: $6,000 USD, not "USD 6000". --}}
+                            <span class="q3-sf-price-fig">
+                                ${{ number_format((float) $price, fmod((float) $price, 1) === 0.0 ? 0 : 2) }}
+                                {{ $product['currency'] ?? 'USD' }}
+                            </span>
                             <span class="q3-sf-price-note">
-                                Indicative. Shipping, tax and any site work are confirmed at
-                                checkout by {{ $vendor['name'] }}.
+                                per system. {{ $vendor['name'] }}'s price, the same for every buyer.
+                                Shipping, handling and any sales tax are added at checkout from your
+                                delivery address.
                             </span>
                         </div>
                     @endif
@@ -227,10 +234,11 @@
                   action="{{ route('vendor.enquire', [$member->referral_code, $vendorSlug, $productKey]) }}">
                 @csrf
 
-                <h2 class="q3-sf-h2">Request this system</h2>
+                <h2 class="q3-sf-h2">Order this system</h2>
                 <p class="q3-sf-lede" style="margin-bottom:24px;">
-                    Two short steps. Tell us how to reach you and how many you need —
-                    shipping and payment come next.
+                    Two short steps. Tell us how to reach you and how many you need, then
+                    shipping, tax and payment on the next page. The price is fixed, so there is
+                    nothing to quote and nothing to negotiate.
                 </p>
 
                 @if ($errors->any())

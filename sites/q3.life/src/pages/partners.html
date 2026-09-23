@@ -3,7 +3,7 @@
   <div class="wrap">
     <span class="eyebrow">Partner Program</span>
     <h1>The Partner Program</h1>
-    <p class="lede">Every {{ membership.name }} includes the Partner Program. Taking part is optional. Earnings are not guaranteed, and you may earn little or nothing.</p>
+    <p class="lede">A partner account is <strong>free</strong>: no monthly fee, nothing to buy and no card. Partners refer the {{ vendor.product }} and can earn commissions on confirmed sales. Earnings are not guaranteed, and you may earn little or nothing.</p>
     <p class="updated">Last updated {{ policies.updated_display }}</p>
   </div>
 </section>
@@ -28,12 +28,17 @@
 
   <section id="how">
     <h2>1. How the program works</h2>
-    <p>Partners share {{ site.brand }} and our partner products with people they know, using their personal referral link and product pages. Partners can earn commissions on qualifying sales, as defined in the Compensation Plan.</p>
+    <p>Partners share our partner products &mdash; principally the <a href="system">{{ vendor.product }}</a> &mdash; with people and businesses they know, using their personal referral link and product pages. Partners can earn commissions on qualifying sales, as defined in the Compensation Plan.</p>
     <ul>
+      <li><strong>A partner account is free.</strong> There is no joining fee, no monthly fee and no card. The <a href="training-program">{{ program.name }}</a> is a separate, optional subscription that you do not need in order to be a partner or to be paid.</li>
       <li>Commissions are only ever paid on completed, paid sales, and are reversed if a sale is refunded or charged back.</li>
       <li>There are no sales quotas, no volume requirements, and no products you have to buy or hold as inventory.</li>
       <li>Your back office shows your referral link, your partner organization, and a statement of any commissions.</li>
     </ul>
+    <div class="actions" data-ref hidden>
+      <a class="btn btn-gold" data-join href="contact">Open a free account with <span data-ref-first>them</span></a>
+    </div>
+    <p class="small muted" data-ref-hide>Partner accounts are opened by invitation from an existing partner. If you don't know one, <a href="contact">send us a request</a>.</p>
   </section>
 
   <section id="organization">
@@ -53,7 +58,7 @@
     <ul>
       <li>which sales qualify for commission, and the commission rates</li>
       <li>how sales made within your partner organization are treated</li>
-      <li>who is eligible to earn, including what happens if a payment fails or a membership ends</li>
+      <li>who is eligible to earn, including what happens if a payment fails or an account ends</li>
       <li>how long commissions are held before they can be paid, and how refunds and chargebacks are handled</li>
       <li>when payouts are made, and any minimum balance</li>
     </ul>
@@ -68,14 +73,14 @@
 
   <section id="conduct">
     <h2>6. Rules for partners</h2>
-    <p>These rules protect customers. Breaking them can cost you commissions or your membership (see <a href="terms#termination">Terms of Service</a>). As a partner you must:</p>
+    <p>These rules protect customers. Breaking them can cost you commissions or your account (see <a href="terms#termination">Terms of Service</a>). As a partner you must:</p>
     <ul>
-      <li><strong>Make no income claims.</strong> Never promise or suggest that anyone will earn a particular amount, cover their membership cost, or replace their income. Never present your own earnings as typical.</li>
+      <li><strong>Make no income claims.</strong> Never promise or suggest that anyone will earn a particular amount, cover the cost of the Training Program, or replace their income. Never present your own earnings as typical.</li>
       <li><strong>Make no product claims beyond the manufacturer's.</strong> Describe partner products only in the manufacturer's own words, and make no health or medical claims.</li>
       <li><strong>Disclose the relationship.</strong> Whenever you share a referral link or recommend a product, say clearly that you may earn a commission.</li>
-      <li><strong>Describe {{ site.brand }} accurately.</strong> Say what membership costs, that it renews every {{ membership.interval_noun }}, and that earnings are not guaranteed. Never present membership as an investment or a job.</li>
+      <li><strong>Describe {{ site.brand }} accurately.</strong> Say that a partner account is free, that the Training Program is optional and costs {{ program.price_display }} {{ program.interval_phrase }} and renews every {{ program.interval_noun }}, and that earnings are not guaranteed. Never present either as an investment or a job.</li>
       <li><strong>Contact people lawfully.</strong> No spam, no unsolicited automated calls or texts, and respect every opt-out.</li>
-      <li><strong>Do not pay other people's fees</strong> or offer them inducements to join, and do not open more than one membership.</li>
+      <li><strong>Do not pay other people's fees</strong> or offer them inducements to join, and do not open more than one account.</li>
       <li><strong>Do not use our name in ways we have not approved</strong>, including in ads, domain names or social media handles.</li>
     </ul>
   </section>
@@ -84,11 +89,11 @@
     <h2>7. Questions</h2>
     <details>
       <summary>Do I have to recruit anyone or sell anything?</summary>
-      <p>No. You can use {{ course.name }} and the back office and never share a link. Your membership costs the same either way.</p>
+      <p>No. You can use {{ course.name }} and the back office and never share a link. The Training Program costs the same either way.</p>
     </details>
     <details>
       <summary>Is there a separate fee to be a partner?</summary>
-      <p>No. The Partner Program is included in the {{ membership.name }} ({{ membership.price_display }} {{ membership.interval_phrase }} once your billing starts). There is no extra charge to take part.</p>
+      <p>No. The Partner Program is included in the {{ program.name }} ({{ program.price_display }} {{ program.interval_phrase }} once your billing starts). There is no extra charge to take part.</p>
     </details>
     <details>
       <summary>When will the Compensation Plan be published?</summary>

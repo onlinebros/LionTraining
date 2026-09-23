@@ -1,4 +1,4 @@
-/* A partner's personal copy of the site: q3.life/CODE (or ?ref=CODE).
+/* A partner's personal copy of the site: SITE/CODE (or ?ref=CODE).
  *
  * nginx serves the home page for /CODE. This reads the code, asks the member
  * app whose it is, and turns on everything marked data-ref: the "invited by"
@@ -8,12 +8,39 @@
  * The code is remembered for 30 days, so it survives clicking around the site
  * and coming back later. A newer link replaces it. Without a code nothing
  * changes: sign-up is invitation only, so the plain site offers no Join.
+ *
+ * Shared by every site in sites/ — see sites/build.py. Each one declares on
+ * <body> which business line it sells and which host it is, and both ride along
+ * on the Join link:
+ *
+ *     {app}/join/CODE?o=plasmaguard&s=q3.life
+ *
+ * That is the only place the difference between the front doors can be
+ * recorded, because they all post the same sign-up form. The back office reads
+ * the pair in App\Services\Opportunities\OpportunityTracker and it decides,
+ * among other things, whether a card is asked for at all. A site that declares
+ * neither behaves exactly as before.
+ *
+ * data-buy is the same idea for selling rather than recruiting: it points at
+ * the partner's own storefront for the vendor product this site sells,
+ *
+ *     {app}/p/CODE/plasmaguard/pro-in-duct
+ *
+ * which takes the address, computes the vendor's tax and charges their Stripe
+ * account (App\Http\Controllers\VendorStorefrontController). The vendor and
+ * product keys are declared on <body> and must match backend/config/vendors.php.
+ * Without a code there is no partner to credit the sale to, so a data-buy link
+ * is left as authored — inside data-ref it is not shown at all.
  */
 (function () {
   var KEY = 'q3.ref';
   var DAYS = 30;
   var CODE = /^[A-Za-z0-9]{8}$/;
   var app = document.body.getAttribute('data-app');
+  var opportunity = document.body.getAttribute('data-opportunity');
+  var entrySite = document.body.getAttribute('data-site');
+  var buyVendor = document.body.getAttribute('data-buy-vendor');
+  var buyProduct = document.body.getAttribute('data-buy-product');
 
   function stored() {
     try {
@@ -40,9 +67,33 @@
 
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
 
+  /* {app}/join/CODE, plus which door this is. Built with URLSearchParams so a
+   * hostname or key with anything awkward in it cannot break out of the query
+   * string. */
+  function joinUrl(code) {
+    var url = app + '/join/' + encodeURIComponent(code);
+    var params = new URLSearchParams();
+    if (opportunity) params.set('o', opportunity);
+    if (entrySite) params.set('s', entrySite);
+    var query = params.toString();
+    return query ? url + '?' + query : url;
+  }
+
+  /* {app}/p/CODE/vendor/product — the partner's own storefront, where the
+   * order is actually placed. Only wired when this site declares what it
+   * sells; a site that sells nothing leaves its data-buy links alone. */
+  function buyUrl(code) {
+    if (!buyVendor || !buyProduct) return null;
+    return app + '/p/' + encodeURIComponent(code)
+      + '/' + encodeURIComponent(buyVendor)
+      + '/' + encodeURIComponent(buyProduct);
+  }
+
   function show(s) {
-    var join = app + '/join/' + encodeURIComponent(s.code);
+    var join = joinUrl(s.code);
+    var buy = buyUrl(s.code);
     each('[data-join]', function (a) { a.href = join; });
+    if (buy) each('[data-buy]', function (a) { a.href = buy; });
     if (s.name) {
       each('[data-ref-name]', function (el) { el.textContent = s.name; });
       each('[data-ref-first]', function (el) { el.textContent = s.name.split(/\s+/)[0]; });

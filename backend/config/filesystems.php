@@ -33,7 +33,21 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            /*
+             * 'serve' registers GET and PUT /storage/{path} routes over this
+             * disk, gated on nothing but a valid signature. Nothing in the
+             * application mints those URLs, and this is now the disk holding
+             * the training library — 24 GB of the product — so an endpoint that
+             * serves it, and accepts uploads into it, on a signature alone is
+             * an attack surface we get nothing for.
+             *
+             * Training media is served by Member\TrainingMediaController, which
+             * re-checks the membership and the release date on every request.
+             * TrainingStorage deliberately refuses to mint a temporary URL for
+             * a local disk for the same reason: such a link would carry no
+             * identity and would outlive the membership that paid for it.
+             */
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

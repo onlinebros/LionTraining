@@ -25,7 +25,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'invitation'  => \App\Http\Middleware\RequireInvitation::class,
             'subscribed'  => \App\Http\Middleware\RequireActiveSubscription::class,
             'training.unlocked' => \App\Http\Middleware\EnsureTrainingUnlocked::class,
+            'training.visible'  => \App\Http\Middleware\EnsureTrainingVisible::class,
             'presentations' => \App\Http\Middleware\RequirePresentationAccess::class,
+            // opportunity:<feature> — the business line a member joined for
+            // decides which sections of the back office exist for them.
+            'opportunity' => \App\Http\Middleware\EnsureOpportunityFeature::class,
+            // The vendor portal: a product partner with at least one product
+            // linked to their account, or an admin looking at what they see.
+            'product_partner' => \App\Http\Middleware\RequireProductPartner::class,
         ]);
 
         // Check is_active on every authenticated web request
@@ -44,6 +51,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // door, and a control that only covers the HTML form is not a control.
         $middleware->appendToGroup('web', \App\Http\Middleware\RequireInvitation::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\RequireInvitation::class);
+
+        // A product partner is an outside company with a login: never staff,
+        // and a member only once they are put on a business line. Same
+        // route-name-prefix mechanism as the guards above, on the group rather
+        // than per route, so a section added later is covered the day it
+        // exists rather than when somebody remembers to wrap it.
+        $middleware->appendToGroup('web', \App\Http\Middleware\ProductPartnerSectionAccess::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -61,7 +75,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             try {
                 $request = request();
-                \App\Models\ErrorLog::create([
+                $log = \App\Models\ErrorLog::create([
                     'level'   => 'error',
                     'message' => $e->getMessage() ?: get_class($e),
                     'file'    => $e->getFile(),
@@ -76,6 +90,12 @@ return Application::configure(basePath: dirname(__DIR__))
                     'user_id' => auth()->id(),
                     'status'  => 'new',
                 ]);
+
+                // The error page tells the person their problem has been
+                // reported, and gives them this to quote at support. It is only
+                // set once the row is actually written, so the page can never
+                // promise a report that did not happen — see errors/500.
+                \App\Support\ErrorReference::set($log->id);
             } catch (\Throwable) {
                 // Never let logging crash the app
             }

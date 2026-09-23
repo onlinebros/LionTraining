@@ -16,10 +16,10 @@
 
 <div class="row g-3">
 
-    {{-- ── Membership ─────────────────────────────────────── --}}
+    {{-- ── Training Program ───────────────────────────────── --}}
     <div class="col-lg-7">
         <div class="card mb-0 h-100">
-            <div class="card-header py-3"><h6 class="mb-0 fw-bold">Membership</h6></div>
+            <div class="card-header py-3"><h6 class="mb-0 fw-bold">Training Program</h6></div>
             <div class="card-body">
 
                 @if($subscription)
@@ -49,9 +49,9 @@
                             Paid so far: <strong>${{ number_format($commissionPaid, 2) }}</strong>.
                             The training program opens when your billing starts.
                             <form method="POST" action="{{ route('member.billing.start-now') }}" class="mt-2"
-                                  onsubmit="return confirm('Start your membership billing now? This opens the training program.')">
+                                  onsubmit="return confirm('Start your Training Program billing now? This opens your training access.')">
                                 @csrf
-                                <button class="btn btn-sm btn-primary">Start my membership now</button>
+                                <button class="btn btn-sm btn-primary">Start my Training Program now</button>
                             </form>
                         </div>
                     @endif
@@ -83,21 +83,21 @@
                         @if($subscription->cancel_at_period_end && ! $subscription->ended_at)
                             <form method="POST" action="{{ route('member.billing.resume') }}">
                                 @csrf
-                                <button class="btn btn-sm btn-primary">Resume membership</button>
+                                <button class="btn btn-sm btn-primary">Resume Training Program</button>
                             </form>
                         @elseif(! $subscription->ended_at)
                             <form method="POST" action="{{ route('member.billing.cancel') }}"
                                   onsubmit="return confirm('Cancel at the end of the current period? You keep access until then.')">
                                 @csrf
-                                <button class="btn btn-sm btn-outline-danger">Cancel membership</button>
+                                <button class="btn btn-sm btn-outline-danger">Cancel Training Program</button>
                             </form>
                         @else
-                            <a href="{{ route('member.billing.start') }}" class="btn btn-sm btn-primary">Start a new membership</a>
+                            <a href="{{ route('member.billing.start') }}" class="btn btn-sm btn-primary">Start the Training Program again</a>
                         @endif
                     </div>
                 @else
-                    <p class="text-muted mb-3">No membership yet.</p>
-                    <a href="{{ route('member.billing.start') }}" class="btn btn-primary btn-sm">Activate membership</a>
+                    <p class="text-muted mb-3">No Training Program subscription yet.</p>
+                    <a href="{{ route('member.billing.start') }}" class="btn btn-primary btn-sm">Add the Training Program</a>
                 @endif
             </div>
         </div>

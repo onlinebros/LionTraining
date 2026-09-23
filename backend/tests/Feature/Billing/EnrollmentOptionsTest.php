@@ -185,6 +185,11 @@ class EnrollmentOptionsTest extends TestCase
 
     public function test_training_is_locked_while_waiting_on_commissions(): void
     {
+        // This is about the commission hold, so the library has to be released
+        // first: while it is admin-only every training route 404s for members,
+        // and the hold's redirect never gets a chance to run.
+        \App\Support\TrainingAccess::open();
+
         $held = $this->partner();
         $this->enroll($held, Subscription::TRIGGER_COMMISSION);
 

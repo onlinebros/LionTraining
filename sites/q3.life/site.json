@@ -2,27 +2,35 @@
   "_about": "Every business fact printed on q3.life. A value starting with TODO: is unfilled: preview builds highlight it, live builds refuse to run until it is set. _confirm lists values that are filled from app config or drafted, but have not been confirmed by the business.",
 
   "_confirm": [
-    "Course description for Vision of the Heart Training was drafted from the brand premise in memory-bank/marketing-inputs.md. Replace it with the real summary",
-    "Membership price $49.99 USD per month (owner, 2026-09-14). The app still bills $199.00 per year (STRIPE_PRICE_AMOUNT=19900, STRIPE_PRICE_INTERVAL=year) and needs a new monthly Stripe price before launch",
+    "PRODUCT-FIRST REBUILD (owner, 2026-09-22). The site leads with the PlasmaGuard PRO In-Duct System and presents the $49.99 Training Program as an OPTIONAL add-on. Joining is free and takes no card: the Join links carry ?o=plasmaguard. Read the next three items before this goes live",
+    "THE TRAINING PROGRAM IS NOT ON SALE (owner, 2026-09-22). MEMBERSHIP_ENROLLMENT_OPEN=false in the app, so nobody is asked for a card anywhere: card capture redirects to a Training Program section that says when it opens and takes an expression of interest. The Training Program page here is written to match — it publishes the price and terms in advance and says plainly that nothing is being sold yet. WHEN THE PROGRAM OPENS, set MEMBERSHIP_ENROLLMENT_OPEN=true AND rewrite this page's 'Opening soon' copy, or the site will be telling people the opposite of what the app does",
+    "STRIPE: making the product the focus does not change what Stripe reviews, because PlasmaGuard's charges land on THEIR connected account. On our own account the activity is still $49.99 subscriptions plus Connect payouts down a sponsor tree, which is the pattern Stripe's prohibited-business review looks at. The Partner Program page and the Earnings Disclaimer are therefore still in the main nav and the footer, and the home page says plainly that partners are paid commissions. Do not remove any of that to make the site read as product-only",
+    "The Partner Program page is still deliberately general about the Compensation Plan. If that plan pays commissions more than one level up the sponsor tree, it is what Stripe prohibits, and the fix is the plan or the processor, not the copy. See memory-bank/vendor-referral-framework.md and the Stripe restricted-businesses list",
+    "PRODUCT CLAIMS ARE PLASMAGUARD'S AND ARE QUOTED VERBATIM from plasmaguard.com and plasmaguard.com/plasmaguard-pro-in-duct-system/, read 2026-09-21. Nothing restates, rounds or strengthens them, and the manufacturer's asterisk and test-report footnote travel with every figure. Written permission for their names, copy and photography is still open (vendor-referral-framework.md item 9)",
+    "THE HOME PAGE NO LONGER MENTIONS THE TRAINING PROGRAM (owner, 2026-09-22). The replicated home page sells the PlasmaGuard PRO system and the free Partner Program only: the Rediscover your Heart card, its price and the paid-subscription sentence in 'Who sells what' are gone. The Training Program page, its nav link and its footer links stay, because the price and terms still have to be published in advance and Stripe's checklist looks for them. Do not put the training back on the home page without the owner",
+    "Course name Rediscover your Heart (owner, 2026-09-22), replacing the working title Vision of the Heart Training. The course SUMMARY is still ours, reworded to match the new name and not the real one. Replace it with the real summary",
+    "NOT A 'MEMBERSHIP' (owner, 2026-09-22). The paid training is an optional Training Program that any member can add at this price; a member account itself is free. The word is gone from the pages, the site.json block is `program`, the page moved to /training-program (the old /membership 301s to it), and the app's member and admin screens were swept with it. STILL OPEN: the LIVE Stripe product is still named Q3 Partner Membership, so that is what a real invoice and receipt say. Rename it in the live dashboard. Training Program price $49.99 USD per month (owner, 2026-09-14). Production bills it through the live Stripe price price_1UFenhDY1DawuO70qdffHGsz. The .env.example and config defaults still say $199.00 per year",
     "The app's names still say Quantum Life or The Quantum Solutions (STRIPE_PRODUCT_NAME, admin site_name, PWA title). The owner chose Quantum 3 Solution on 2026-09-14",
-    "Statement descriptor Q3SOLUTION is set in the Stripe dashboard (owner: 'Q3Solution is fine for now', 2026-09-14)",
+    "Statement descriptor QUANTUM 3 SOLUTION, as read from the live Stripe account on 2026-09-14. Q3SOLUTION had been assumed earlier, and the owner chose to match the site to Stripe",
     "7-day access grace period after a failed payment (STRIPE_GRACE_DAYS)",
     "Stripe Billing customer emails switched on: receipts for every charge, failed-payment emails and Smart Retries. There is no free trial any more (owner, 2026-09-16), so the site no longer promises a reminder before the first charge",
     "Enrollment options (owner, 2026-09-16): Start now is charged on launch day, when the training program opens, with no free trial; Wait for commissions is charged once paid commissions total $200, never if they don't, with training locked until then. The email 14 days before launch is still not built",
     "The app's signup and Billing pages show when the first charge happens under each option, and state that charges are non-refundable, next to the confirm button",
-    "Refund exceptions kept alongside the no-refund policy: duplicate or mistaken charges, and a refund of unused time if we end a membership without cause (Terms section 18)",
+    "Refund exceptions kept alongside the no-refund policy: duplicate or mistaken charges, and a refund of unused time if we end a paid Training Program subscription without cause (Terms section 18)",
     "30 days' email notice before a price change, a Compensation Plan change, or a material Terms change",
-    "The Partner Program page is deliberately general while the Compensation Plan is developed during pre-launch (owner, 2026-09-14). It does not say which sales pay commission. Publish the plan there, with 30 days' notice, before it takes effect. If the plan pays commissions on membership fees, tell Stripe: multi-level commissions are on its prohibited list",
-    "Membership limited to adults resident in the United States",
+    "The Partner Program page is deliberately general while the Compensation Plan is developed during pre-launch (owner, 2026-09-14). It does not say which sales pay commission. Publish the plan there, with 30 days' notice, before it takes effect. If the plan pays commissions on Training Program fees, tell Stripe: multi-level commissions are on its prohibited list",
+    "Member accounts and the Training Program are limited to adults resident in the United States",
     "No analytics or advertising cookies on q3.life or app.q3.life",
     "Support is by contact form only, with no public email or phone (owner decision, 2026-09-14). Stripe's website checklist asks for contact methods besides a form",
     "The contact form posts to {app_url}/api/support/requests. On production, app.q3.life must be deployed, with CORS allowing q3.life, before the form works",
     "Replies to website requests are not emailed automatically (no mail provider configured). Staff reply from their own mailbox",
-    "Cloudflare Turnstile protects the contact form. Create a widget for q3.life, www.q3.life and q3.onlinebros.com, put its site key in support.turnstile_site_key, and set TURNSTILE_SECRET_KEY (plus TURNSTILE_ALLOWED_HOSTNAMES) in the app's .env. Dev currently uses Cloudflare's always-pass test keys, which give no real protection",
+    "Cloudflare Turnstile protects the contact form. A real widget (2026-09-22) covers q3.life, www.q3.life and q3.onlinebros.com; its site key is support.turnstile_site_key. The matching TURNSTILE_SECRET_KEY and TURNSTILE_ALLOWED_HOSTNAMES live in each app's .env — dev allows q3.onlinebros.com, production q3.life,www.q3.life. The verifier fails closed, so a missing or wrong secret makes the form answer 503",
     "PlasmaGuard LLC is named as the seller of partner products at the owner's direction (2026-09-14). Written permission for product names and photos is still open (vendor-referral-framework.md item 9). Its phone, address and page links were copied from plasmaguard.com on 2026-09-14",
     "PlasmaGuard's card statement descriptor is assumed to read PLASMAGUARD (owner: 'probably', 2026-09-14). Confirm with PlasmaGuard",
     "PlasmaGuard publishes no refund, return, shipping or warranty policy on plasmaguard.com (its Terms and Conditions page checked 2026-09-14). Ask them to publish one, since q3.life sends customers to them for refunds",
     "Partner products: orders over 8 units ship by freight with a quote first (config/vendors.php freight_threshold_units)",
+    "ORDERING IS LIVE ON PARTNER SITES (owner, 2026-09-22). A shared site q3.life/CODE now offers 'Order the system', which goes to that partner's storefront and takes a real card on PlasmaGuard's live Stripe account. Previously the only route was 'Request a quote' to the contact form, which the owner ruled pointless because the price is fixed and we cannot change it. The plain company site (no code) still offers the contact form, because there is no partner to attribute the sale to",
+    "$6,000 per system is PlasmaGuard's price, taken from PLASMAGUARD_PRO_PRICE in the app (live). It is now PRINTED PUBLICLY on q3.life/system. If PlasmaGuard change it, this and the app's env value must move together, or the site advertises one price and the checkout charges another",
     "Accepted cards: Visa, Mastercard, American Express, Discover"
   ],
 
@@ -31,6 +39,12 @@
     "brand": "Quantum 3 Solution",
     "brand_short": "Q3",
     "app_url": "https://app.q3.life"
+  },
+
+  "_opportunity_about": "Which business line this front door sells. It rides on every Join link as ?o=&s= so the back office records which site a partner came in through, and it decides whether a card is asked for — see backend/config/opportunities.php. Set to plasmaguard on 2026-09-22 when the site became product-first: somebody joining from here is joining to sell air purification systems, which is free, and the training program is an add-on they buy later from inside the back office.",
+  "opportunity": {
+    "key": "plasmaguard",
+    "site": "q3.life"
   },
 
   "business": {
@@ -49,22 +63,24 @@
 
   "support": {
     "endpoint_path": "/api/support/requests",
-    "turnstile_site_key": "TODO: Cloudflare Turnstile site key (Cloudflare dashboard > Turnstile > Add widget, hostnames q3.life, www.q3.life, q3.onlinebros.com)"
+    "turnstile_site_key": "0x4AAAAAAE_-nHeV3NDAXPke"
   },
 
-  "membership": {
-    "name": "Q3 Partner Membership",
+  "_program_about": "The paid training subscription. It is NOT a membership and is never called one (owner, 2026-09-22): a Q3 member account is free, and this is an optional Training Program any member can add at this price. The block was called `membership` until then; the builder derives price_display and the interval words from it.",
+  "program": {
+    "name": "Q3 Training Program",
     "amount_cents": 4999,
     "currency": "usd",
     "interval": "month",
     "commission_threshold_display": "$200",
     "prelaunch_notice_days": 14,
-    "statement_descriptor": "Q3SOLUTION"
+    "statement_descriptor": "QUANTUM 3 SOLUTION"
   },
 
+  "_course_about": "The training program's own name, as the owner gave it on 2026-09-22: Rediscover your Heart. It replaces the earlier working title Vision of the Heart Training. 'Training Program' stays as the generic label in the nav, the footer and the back office; this name is what the course is called in the copy.",
   "course": {
-    "name": "Vision of the Heart Training",
-    "summary": "A video course in heart-centered leadership: getting clear on the vision you hold for your life, and learning to lead your work, relationships and choices from it."
+    "name": "Rediscover your Heart",
+    "summary": "A video course in heart-centered living and leadership: rediscovering what your own heart already knows, and learning to lead your work, relationships and choices from it."
   },
 
   "policies": {
@@ -79,11 +95,23 @@
     "legal_name": "PlasmaGuard LLC",
     "product": "PlasmaGuard PRO In-Duct System",
     "website": "https://plasmaguard.com",
+    "product_url": "https://plasmaguard.com/plasmaguard-pro-in-duct-system/",
     "terms_url": "https://plasmaguard.com/terms-and-conditions/",
     "contact_url": "https://plasmaguard.com/contact-us/",
+    "test_reports_url": "https://plasmaguard.com/test-reports/",
     "phone": "734-661-4520",
     "address": "600 S. Wagner Rd., Suite 300 B, Ann Arbor, Michigan 48103",
-    "statement_descriptor": "PLASMAGUARD"
+    "statement_descriptor": "PLASMAGUARD",
+    "copy_read_on": "September 21, 2026"
+  },
+
+  "_storefront_about": "Where an order is actually placed. A partner's replicated site (q3.life/CODE) turns its Order buttons into {app}/p/CODE/plasmaguard/pro-in-duct \u2014 the partner-coded storefront in the back office, which takes the address, computes PlasmaGuard's tax and charges their Stripe account. The vendor and product keys must match backend/config/vendors.php. A visitor with no code has no partner to order through, so they get the contact form instead.",
+  "storefront": {
+    "vendor": "plasmaguard",
+    "product": "pro-in-duct",
+    "price_display": "$6,000",
+    "price_unit": "per system",
+    "price_note": "Shipping, handling and any sales tax are added at checkout, where PlasmaGuard calculates them from the delivery address."
   },
 
   "products": {

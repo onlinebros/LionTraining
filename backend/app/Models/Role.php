@@ -9,6 +9,10 @@ class Role extends Model
     // Role name constants
     const FREE_MEMBER    = 'free_member';
     const PAID_MEMBER    = 'paid_member';
+    // A vendor whose products our partners sell. Not a member and not an
+    // admin — it has its own section, and is_admin stays false so every
+    // existing admin check keeps them out without being told to.
+    const PRODUCT_PARTNER = 'product_partner';
     const SUPPORT_ADMIN  = 'support_admin';
     const SUPER_ADMIN    = 'super_admin';
 

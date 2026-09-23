@@ -16,6 +16,7 @@ class KartraFile extends Model
         'original_filename',
         'local_path',
         'local_filename',
+        'disk',
         'file_size',
         'mime_type',
         'status',
@@ -27,9 +28,15 @@ class KartraFile extends Model
         return $this->belongsTo(KartraImport::class);
     }
 
+    /** The disk this file's bytes are on; null means the local private disk. */
+    public function diskName(): string
+    {
+        return $this->disk ?: 'local';
+    }
+
     public function isDownloaded(): bool
     {
-        return $this->local_path && Storage::disk('local')->exists($this->local_path);
+        return $this->local_path && Storage::disk($this->diskName())->exists($this->local_path);
     }
 
     public function formattedSize(): string

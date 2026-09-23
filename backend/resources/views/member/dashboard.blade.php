@@ -5,8 +5,12 @@
 
 @section('content')
 @php
-    $referralUrl = url('/join/' . $user->referral_code);
-    $siteUrl = rtrim(config('registration.site_url'), '/') . '/' . $user->referral_code;
+    // Carries the partner's own business line, so a free clean-air partner's
+    // link does not ask their prospect for a card. See User::referralJoinUrl().
+    $referralUrl = $user->referralJoinUrl();
+    // Their own line's marketing site, not always the company one: a
+    // PlasmaGuard partner shares the clean-air site. See App\Support\Opportunity.
+    $siteUrl = $user->opportunity()->partnerSiteUrl($user->referral_code);
     $roleColors  = ['free_member'=>'info','paid_member'=>'success','support_admin'=>'warning','super_admin'=>'danger'];
 @endphp
 
@@ -25,7 +29,7 @@
                             @if($user->role)
                                 <span class="badge badge-light-primary me-2">{{ $user->role->display_name }}</span>
                             @endif
-                            Member since {{ $user->created_at?->format('F Y') }}
+                            Member since {{ $user->registeredAt()?->format('F Y') }}
                         </div>
                     </div>
                     <div class="col-md-5">
@@ -34,7 +38,10 @@
                                 <div class="q3-stat-value q3-stat-value--gold">{{ number_format($stats['team']) }}</div>
                                 <div class="q3-stat-label">Total Team</div>
                             </div>
-                            @if($user->isFreeMember())
+                            {{-- The modal this opens is rendered under the same
+                                 condition in layouts/member.blade.php; a button
+                                 without it would do nothing. --}}
+                            @if($user->isFreeMember() && $user->canSee('training'))
                             <a href="#upgrade-modal" class="btn btn-sm btn-primary" data-bs-toggle="modal">Upgrade</a>
                             @endif
                         </div>
@@ -50,6 +57,48 @@
             @include('member.vendor.partials.buy-yours')
         </div>
     @endif
+
+    {{-- ── The optional Training Program ─────────────────────────
+         Shown only to partners who do not hold it. It is the one thing a
+         free clean-air partner cannot reach, so it is offered here rather
+         than left to be discovered in Billing — and it is offered as an
+         add-on, not as a bill. See config/opportunities.php. --}}
+    @unless($user->hasActiveMembership())
+        @php $membershipLine = \App\Support\Opportunity::membership(); @endphp
+        <div class="col-12">
+            <div class="card q3-card-featured mb-0">
+                <div class="card-body">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-8">
+                            <h6 class="mb-1">
+                                Training Program
+                                <span class="badge badge-light-secondary ms-1">
+                                    {{ $membershipLine->enrollmentOpen() ? 'Optional' : 'Opening soon' }}
+                                </span>
+                            </h6>
+                            <p class="text-muted mb-0" style="font-size:.85rem;">
+                                @if($membershipLine->enrollmentOpen())
+                                    {{ \App\Models\SiteSetting::get('site_name') }}'s video training, billed at
+                                    <strong>${{ number_format(config('stripe.subscription.amount') / 100, 2) }}</strong>
+                                    per {{ config('stripe.subscription.interval') }}.
+                                @else
+                                    An optional add-on that is not open yet. Nothing is being charged and no
+                                    payment details are needed.
+                                @endif
+                                You don't need it to refer products or to be paid commission &mdash; your
+                                account works exactly as it does now without it.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <a href="{{ route('member.training-program') }}" class="btn btn-sm btn-primary">
+                                {{ $membershipLine->enrollmentOpen() ? "See what's included" : 'Find out more' }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endunless
 
     {{-- ── Stat cards ──────────────────────────────────────────
          Gold is spent only on the enrolment count — the metric a partner

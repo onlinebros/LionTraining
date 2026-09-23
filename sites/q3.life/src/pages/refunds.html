@@ -1,16 +1,16 @@
-<!--meta {"title": "Refund & Cancellation Policy", "description": "How {{ site.brand }} enrollment options, cancellation and non-refundable membership charges work, and who handles refunds for partner products.", "nav": ""}-->
+<!--meta {"title": "Refund & Cancellation Policy", "description": "How {{ site.brand }} enrollment options, cancellation and non-refundable {{ program.name }} charges work, and who handles refunds for partner products.", "nav": ""}-->
 <section class="page-head">
   <div class="wrap">
     <span class="eyebrow">Policy</span>
     <h1>Refund &amp; Cancellation Policy</h1>
-    <p class="lede">Cancel any time before your first charge and you pay nothing. Once your card has been charged, membership fees are not refundable.</p>
+    <p class="lede">Cancel any time before your first charge and you pay nothing. Once your card has been charged, Training Program fees are not refundable.</p>
     <p class="updated">Last updated {{ policies.updated_display }}</p>
   </div>
 </section>
 
 <div class="wrap narrow prose">
   <div class="callout">
-    <p><strong>Membership charges are non-refundable.</strong> If you don't want to be charged, cancel before your first charge, or before your next billing date. Billing always shows when your first charge will happen and your next billing date.</p>
+    <p><strong>Training Program charges are non-refundable.</strong> If you don't want to be charged, cancel before your first charge, or before your next billing date. Billing always shows when your first charge will happen and your next billing date.</p>
   </div>
 
   <section id="summary">
@@ -20,10 +20,10 @@
         <thead><tr><th scope="col">Situation</th><th scope="col">What happens</th></tr></thead>
         <tbody>
           <tr><th scope="row">Before your first charge</th><td>Cancel any time and you are never charged. There is no free trial; your card is simply held until your billing starts.</td></tr>
-          <tr><th scope="row">Your first charge</th><td>If you chose Start now: when {{ course.name }} opens, or when you join if it is already open. If you chose Wait for commissions: once the commissions paid to you add up to {{ membership.commission_threshold_display }}. Your card is charged {{ membership.price_display }}, then {{ membership.price_display }} every {{ membership.interval_noun }} until you cancel. <strong>These charges are not refundable.</strong></td></tr>
-          <tr><th scope="row">Renewals</th><td>Your membership renews every {{ membership.interval_noun }}, and we email a receipt for each charge. <strong>Renewal charges are not refundable.</strong></td></tr>
-          <tr><th scope="row">Joined before launch</th><td>Your card is not charged before our official launch. If you chose Start now, we email you {{ membership.prelaunch_notice_days }} days before launch, and your first charge is made on launch day. Cancel any time before then and you pay nothing. Once charged, it is not refundable.</td></tr>
-          <tr><th scope="row">Cancelling after a charge</th><td>You keep access until the end of the {{ membership.interval_noun }} you paid for, and you are not charged again. There is no refund for unused time.</td></tr>
+          <tr><th scope="row">Your first charge</th><td>If you chose Start now: when {{ course.name }} opens, or when you join if it is already open. If you chose Wait for commissions: once the commissions paid to you add up to {{ program.commission_threshold_display }}. Your card is charged {{ program.price_display }}, then {{ program.price_display }} every {{ program.interval_noun }} until you cancel. <strong>These charges are not refundable.</strong></td></tr>
+          <tr><th scope="row">Renewals</th><td>The Training Program renews every {{ program.interval_noun }}, and we email a receipt for each charge. <strong>Renewal charges are not refundable.</strong></td></tr>
+          <tr><th scope="row">Joined before launch</th><td>Your card is not charged before our official launch. If you chose Start now, we email you {{ program.prelaunch_notice_days }} days before launch, and your first charge is made on launch day. Cancel any time before then and you pay nothing. Once charged, it is not refundable.</td></tr>
+          <tr><th scope="row">Cancelling after a charge</th><td>You keep access until the end of the {{ program.interval_noun }} you paid for, and you are not charged again. There is no refund for unused time.</td></tr>
           <tr><th scope="row">Duplicate or mistaken charge</th><td>Always refunded in full, whenever you tell us.</td></tr>
           <tr><th scope="row">Partner products</th><td>Sold and charged by the partner company, which handles its own refunds and returns. <a href="refunds#partner-products">See below</a>.</td></tr>
         </tbody>
@@ -34,7 +34,7 @@
   <section id="cancel">
     <h2>How to cancel</h2>
     <ul>
-      <li><strong>Online (fastest):</strong> sign in, open <strong>Billing</strong> and choose to cancel your membership. It takes effect straight away, and the Billing page shows the date your access ends.</li>
+      <li><strong>Online (fastest):</strong> sign in, open <strong>Billing</strong> and choose to cancel the Training Program. It takes effect straight away, and the Billing page shows the date your access ends.</li>
       <li><strong>Through our contact form:</strong> send a request from our <a href="contact">contact form</a>, choosing "Billing or cancellation" and using the email address on your account.</li>
     </ul>
     <p>To avoid any charge, cancel before your first charge. After a charge, cancelling stops the next one. If you change your mind before your access ends, you can resume from the same Billing page.</p>
@@ -52,7 +52,7 @@
 
   <section id="disputes">
     <h2>Before you dispute a charge</h2>
-    <p>Membership charges appear on card statements as <strong>{{ membership.statement_descriptor }}</strong>. If you don't recognize a charge, or think it is wrong, please contact us through our <a href="contact">contact form</a> before disputing it with your bank.</p>
+    <p>Training Program charges appear on card statements as <strong>{{ program.statement_descriptor }}</strong>. If you don't recognize a charge, or think it is wrong, please contact us through our <a href="contact">contact form</a> before disputing it with your bank.</p>
   </section>
 
   <section id="partner-products">

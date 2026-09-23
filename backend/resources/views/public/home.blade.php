@@ -227,7 +227,7 @@
             <a href="{{ route('login') }}" class="btn-hero btn-hero-outline">Sign In</a>
         @else
             <a href="{{ route('login') }}" class="btn-hero">Sign In</a>
-            <p class="hero-note">Membership is by invitation from an existing partner.</p>
+            <p class="hero-note">Member accounts are by invitation from an existing partner.</p>
         @endif
     </div>
 </section>

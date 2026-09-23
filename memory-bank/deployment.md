@@ -93,8 +93,19 @@ The production `.env` exists only on the droplet. Change it there, then run `php
   - **Resetting an account:** `php artisan connect:reset-account <email>` deletes a partner's account so it can be rebuilt.
 - PlasmaGuard live Stripe: restricted and publishable keys installed, `PLASMAGUARD_STRIPE_MODE=live` (account `acct_1UChdNEHqqaCFxmC`, taken from the key prefix; it differs from the dev test account). Still missing: `PLASMAGUARD_LIVE_WEBHOOK_SECRET`. PlasmaGuard must add an endpoint `https://app.q3.life/api/webhooks/vendor/plasmaguard` for `payment_intent.succeeded`, `charge.succeeded`, `charge.refunded`, `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Until then, conversions are marked by hand
 - FedEx (2026-09-15): the owner supplied production keys for our FedEx developer project. They go in the app `.env` as `FEDEX_MODE=live`, `FEDEX_LIVE_API_KEY` and `FEDEX_LIVE_SECRET_KEY`, next to `PLASMAGUARD_PRO_PRICE=6000`. They drive both negotiated rating and the delivery address check. The secret was pasted into a chat session, so rotate it in the FedEx portal and replace it in the dev and production `.env`. See `fedex-shipping-setup.md`
-- Turnstile: on 2026-09-14 the owner chose Cloudflare's always-pass **test** keys so the site could go live for the Stripe application. The live q3.life build and app.q3.life both use them, with `TURNSTILE_ALLOWED_HOSTNAMES` empty. That setup gives no bot protection. Replace with a real widget (hostnames q3.life, www.q3.life, q3.onlinebros.com): put the site key in `site.json`, set the secret and `TURNSTILE_ALLOWED_HOSTNAMES=q3.life,www.q3.life` in the app `.env`, then rebuild with `./deploy.sh live`
-- Vimeo credentials and Spaces access keys
+- Turnstile: **real widget since 2026-09-22**, replacing the always-pass test keys the owner chose on 2026-09-14 for the Stripe application. One widget covers q3.life, www.q3.life and q3.onlinebros.com. Its site key is public and lives in `sites/q3.life/site.json` (`support.turnstile_site_key`), so `./deploy.sh dev|live` no longer needs a `--set` override. The secret is per-environment in the app `.env`, never in the repo: dev has it with `TURNSTILE_ALLOWED_HOSTNAMES=q3.onlinebros.com`; production has it with `TURNSTILE_ALLOWED_HOSTNAMES=q3.life,www.q3.life` (done 2026-09-22, `.env` backed up on the droplet as `shared/.env.bak-2026-09-22-turnstile`). Both sides verified by posting a dummy token and getting a 422 rather than a 201. The verifier fails closed, so the site key and the app secret must always move together — a real site key against an app still holding a test secret is fine (test secrets pass anything), but a real secret with no key configured is a 503 on every submission. The secret was pasted into a chat session, so rotate it in the Cloudflare dashboard when convenient (same caveat as the FedEx key above)
+- **Spaces keys: supplied 2026-09-21 and in use.** The training library's 24 GB
+  is uploading to `storage-q3-01` from dev. Two things to know: the key is
+  **account-wide** (it also reaches `solarxfactor-storage-01`) and should be
+  replaced with one scoped to this bucket; and `league/flysystem-aws-s3-v3` was
+  never installed, so the `spaces` disk configured here since the screen-recorder
+  work could never have worked. It is installed now — the droplet needs
+  `composer install --no-dev` after this ships. See `training-library.md` § 6.
+- Setting any bucket flips `config/screen-recordings.php` to the Space for new
+  recordings. Pin `RECORDINGS_DISK=public` unless that is intended.
+- Vimeo credentials are **no longer wanted**. Training videos are self-hosted
+  behind the membership check: a Vimeo URL is playable by anyone it is passed to
+  and outlives the subscription that paid for it.
 - The CI workflow `.github/workflows/ci.yml` is uncommitted: the GitHub token in `origin` lacks the `workflow` scope
 
 ## Landing site deploy
@@ -107,4 +118,72 @@ rsync -av --delete <site-dir>/ liontraining-prod:/var/www/q3.life/public/
 
 Partner websites (`q3.life/CODE`) need the hand-added `location ~ "^/[A-Za-z0-9]{8}/?$"` block in `/etc/nginx/sites-available/q3.life` (added 2026-09-18, backup `.bak-2026-09-18-ref`). See `sites/q3.life/README.md`.
 
+`/membership` and `/membership/` 301 to `/training-program`, added 2026-09-22 in the same file (backup `.bak-2026-09-22-training`). The Training Program page was `/membership` until the owner ruled the paid training is not a membership.
+
 No reload is needed for content changes. After editing nginx config, run `sudo nginx -t && sudo systemctl reload nginx`.
+
+### Published live on 2026-09-22
+
+The product-first site went to `q3.life` on 2026-09-22 (previous docroot backed
+up on the droplet as `/var/www/q3.life/public-backup-2026-09-22.tar.gz`). It is
+the strict build — no preview banner, `robots: index, follow`.
+
+It first shipped with a `--set` override of Cloudflare's always-pass Turnstile
+test key, because `support.turnstile_site_key` was TODO and `./deploy.sh live`
+refuses while anything is. The real widget landed in `site.json` later the same
+day, so the override is gone and publishing is just:
+
+```bash
+cd sites/q3.life
+./deploy.sh live
+```
+
+Republished on 2026-09-22 with the real Turnstile key, and the droplet's
+`.env` given the matching secret the same day — see the Turnstile bullet above.
+
+**The live contact form therefore has no bot protection.** Fixing it is one
+change on both sides at once: the widget's site key into `site.json`
+(`support.turnstile_site_key`) and its secret into the app's `.env`
+(`TURNSTILE_SECRET_KEY`, plus `TURNSTILE_ALLOWED_HOSTNAMES`). A real site key
+with the test secret still in the app **breaks the form**, so never ship one
+without the other.
+
+### The site is the default page on the dev host (2026-09-22)
+
+`sites/` holds the public sites, all built by `sites/build.py` from their own
+directory (`python3 ../build.py`, or `--site <name>` from anywhere). Fonts,
+`site.css`, `product.css` and `ref.js` live once in `sites/_shared/assets/` and
+are copied in first, with each site's `src/assets/` layered over the top.
+
+There is one site today: `sites/q3.life`, product-first. On dev it is served at
+the **root** of q3.onlinebros.com, built with `--base /` into `dev-www/site/`.
+nginx tries the static file, then `$uri.html`, then falls through to the named
+location `@laravel`, so `/login`, `/join/...`, `/member/...` and `/admin/...` are
+untouched and both `/assets/` trees resolve from their own roots. Three details
+that are easy to lose:
+
+- `location = /` is separate, because `try_files` cannot turn `/` into
+  `index.html` — `/` is a directory, not a file — and without it the front page
+  is the only page that falls through to Laravel.
+- `location = /register` is separate, because `register` is eight characters and
+  the partner-code regex would otherwise swallow it. An exact-match location
+  outranks a regex one in nginx.
+- `/site` and `/site/` 301 to `/`, where the site used to live.
+- `/membership` and `/membership/` 301 to `/training-program`. The page was
+  `/membership` until 2026-09-22, when the owner ruled that the paid training is
+  a Training Program and not a membership. The old URL may already be out there,
+  Stripe included, so the redirect is not optional. **The q3.life droplet still
+  needs the same two lines** in `/etc/nginx/sites-available/q3.life`.
+
+All of it was added by hand on 2026-09-21/22, so re-add it if
+`control-action.sh` regenerates `/etc/nginx/sites-available/q3.onlinebros.com`.
+
+`sites/air.q3.life` was created on 2026-09-21 and **retired on 2026-09-22** at
+the owner's request — one site, one back office. The builder still takes a site
+directory, so a second front door is a directory and a `site.json`.
+
+Production serves `sites/q3.life` at `q3.life` from the droplet, where the
+`/CODE` rule and the `/membership` redirect are their own hand-added blocks in
+`/etc/nginx/sites-available/q3.life`. The product-first build is live there as
+of 2026-09-22 — see "Published live on 2026-09-22" above for the exact command
+and the Turnstile caveat.

@@ -8,6 +8,8 @@ use App\Models\PaymentMethod;
 use App\Models\Role;
 use App\Models\Subscription as SubscriptionModel;
 use App\Models\User;
+use App\Models\UserOpportunity;
+use App\Support\Opportunity;
 use App\Support\Prelaunch;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\QueryException;
@@ -306,7 +308,28 @@ class BillingService
                     return $existing;
                 }
 
-                return $this->createSubscription($user, $paymentMethod, $priceId, $trigger);
+                $subscription = $this->createSubscription($user, $paymentMethod, $priceId, $trigger);
+
+                /*
+                | Paying for the membership is what joining the membership
+                | business line means, so record it.
+                |
+                | This is the door out of the card-free B2B side: a PlasmaGuard
+                | partner who decides they want the training program comes
+                | through here, and from this moment the training routes open
+                | and the ordinary subscription gate applies to them. For
+                | everybody else it is a no-op — they already hold it, and
+                | associateOpportunity() is idempotent.
+                |
+                | Not made primary. Which door they came in by is a historical
+                | fact about them and stays true.
+                */
+                $user->associateOpportunity(
+                    Opportunity::defaultKey(),
+                    UserOpportunity::SOURCE_SELF,
+                );
+
+                return $subscription;
             });
         } catch (LockTimeoutException) {
             throw new BillingException(

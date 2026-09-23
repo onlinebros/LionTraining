@@ -51,6 +51,9 @@ class User extends Authenticatable
         'active_start_date',
         'referral_code',
         'role_id',
+        // Which section they land on after signing in; null = the default for
+        // their kind of account. See landingRoute().
+        'landing_preference',
         'sponsor_id',
         'prelaunch_preview',
         'profile_photo',
@@ -78,6 +81,24 @@ class User extends Authenticatable
     public function scopeActivated(\Illuminate\Database\Eloquent\Builder $query): void
     {
         $query->where($query->qualifyColumn('account_status'), self::ACCOUNT_ACTIVE);
+    }
+
+    /**
+     * Newest sign-ups first.
+     *
+     * A claimed spot counts from its claim, not its import: `created_at` on
+     * an imported position is when the import ran, which says nothing about
+     * when the person actually joined.
+     */
+    public function scopeLatestRegistered(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->orderByRaw('COALESCE('.$query->qualifyColumn('claimed_at').', '.$query->qualifyColumn('created_at').') DESC');
+    }
+
+    /** When this person signed up: the claim for an imported spot, otherwise account creation. */
+    public function registeredAt(): ?\Illuminate\Support\Carbon
+    {
+        return $this->claimed_at ?? $this->created_at;
     }
 
     /** Imported positions nobody has claimed yet. */
@@ -127,6 +148,7 @@ class User extends Authenticatable
 
     public function isFreeMember(): bool   { return $this->hasRole(Role::FREE_MEMBER); }
     public function isPaidMember(): bool   { return $this->hasRole(Role::PAID_MEMBER); }
+    public function isProductPartner(): bool { return $this->hasRole(Role::PRODUCT_PARTNER); }
     public function isSupportAdmin(): bool { return $this->hasRole(Role::SUPPORT_ADMIN); }
     public function isSuperAdmin(): bool   { return $this->hasRole(Role::SUPER_ADMIN); }
 
@@ -165,6 +187,8 @@ class User extends Authenticatable
             'placement_queued_at' => 'datetime',
             'placed_at'           => 'datetime',
             'billing_exempt'      => 'boolean',
+            // "Tell me when the training program opens." Null = they have not asked.
+            'training_interest_at' => 'datetime',
 
             'claimed_at'          => 'datetime',
             'merged_at'           => 'datetime',
@@ -316,6 +340,249 @@ class User extends Authenticatable
         return $this->activeSubscription() !== null;
     }
 
+    // ── Product partner access ────────────────────────────────────────────────
+    //
+    // Which vendor's products this account may look at, when it is a product
+    // partner. The role alone grants nothing — see App\Support\ProductPartner.
+
+    public function productPartnerAssignments()
+    {
+        return $this->hasMany(ProductPartnerAssignment::class);
+    }
+
+    /**
+     * May this account use the member back office?
+     *
+     * Everybody except a product partner already can. A product partner is an
+     * outside company's employee, and reaches it only once somebody has put
+     * them on a business line — which is how "this vendor's sales people also
+     * sell for us, their finance people do not" is expressed.
+     *
+     * EXPLICIT rows only, never opportunities(): every account with no line
+     * recorded reads as the training line, which requires a card. Accepting
+     * that default here would walk a vendor straight into a card capture
+     * screen for a membership nobody sold them — the exact failure the whole
+     * arrangement exists to avoid.
+     */
+    public function canUseMemberArea(): bool
+    {
+        if (! $this->isProductPartner()) {
+            return true;
+        }
+
+        return $this->relationLoaded('opportunityAssociations')
+            ? $this->opportunityAssociations->isNotEmpty()
+            : $this->opportunityAssociations()->exists();
+    }
+
+    /** Is the product partner portal open to this account? */
+    public function canUsePartnerPortal(): bool
+    {
+        return \App\Support\ProductPartner::hasAnyAccess($this);
+    }
+
+    // ── Where they land after signing in ──────────────────────────────────────
+
+    /**
+     * The sections this account could sensibly be sent to, as key => label.
+     *
+     * Fewer than two means there is no choice to offer, and the control is not
+     * rendered at all.
+     *
+     * @return array<string, string>
+     */
+    public function landingOptions(): array
+    {
+        $options = [];
+
+        if ($this->isAdmin()) {
+            $options['admin'] = 'Admin panel';
+        }
+
+        if ($this->canUseMemberArea()) {
+            $options['member'] = 'Member area';
+        }
+
+        if ($this->canUsePartnerPortal()) {
+            $options['portal'] = 'Partner portal';
+        }
+
+        return $options;
+    }
+
+    /**
+     * The route to send them to, honouring their choice where it still applies.
+     *
+     * A stored preference for a section they have since lost — the business
+     * line was removed, the products were unlinked — is ignored rather than
+     * obeyed, so losing access can never strand somebody on a redirect to a
+     * page that bounces them back.
+     */
+    public function landingRoute(): string
+    {
+        $options = $this->landingOptions();
+        $choice  = $this->landing_preference;
+
+        if ($choice === null || ! array_key_exists($choice, $options)) {
+            // The default for this kind of account, in order of how strongly
+            // the section defines them.
+            $choice = match (true) {
+                $this->isAdmin()             => 'admin',
+                $this->canUsePartnerPortal() => 'portal',
+                default                      => 'member',
+            };
+        }
+
+        return match ($choice) {
+            'admin'  => route('admin.dashboard'),
+            'portal' => route('product-partner.dashboard'),
+            default  => route('member.dashboard'),
+        };
+    }
+
+    // ── Opportunities ─────────────────────────────────────────────────────────
+    //
+    // Which business lines this member joined us for. See
+    // config/opportunities.php for what they are, and App\Support\Opportunity
+    // for the registry.
+    //
+    // `opportunity` on this row is the PRIMARY one — the door they came in by —
+    // and is what decides whether a card is wanted. `user_opportunities` holds
+    // every line they hold, and access is the union of them, so adding the
+    // training program to a PlasmaGuard partner is one row.
+
+    public function opportunityAssociations()
+    {
+        return $this->hasMany(UserOpportunity::class);
+    }
+
+    /**
+     * The line they came in by. Never null: an unset or retired key reads as
+     * the default.
+     *
+     * The column is `primary_opportunity` rather than `opportunity` so this
+     * method can be called `opportunity()` without colliding with an attribute.
+     * Eloquent resolves `$model->opportunity` against the attribute bag first
+     * and falls through to the method only when the column is absent — which is
+     * exactly what happens under a `select()` that omits it, and it would then
+     * throw for returning something that is not a relation.
+     */
+    public function opportunity(): \App\Support\Opportunity
+    {
+        return \App\Support\Opportunity::get($this->primary_opportunity);
+    }
+
+    public function opportunityKey(): string
+    {
+        return $this->opportunity()->key;
+    }
+
+    /**
+     * Every line this member holds, primary first.
+     *
+     * A member with no rows at all holds their primary and nothing else, which
+     * is what every account older than this feature means.
+     *
+     * @return \Illuminate\Support\Collection<int,\App\Support\Opportunity>
+     */
+    public function opportunities(): \Illuminate\Support\Collection
+    {
+        $primary = $this->opportunity();
+
+        $others = $this->relationLoaded('opportunityAssociations')
+            ? $this->opportunityAssociations
+            : $this->opportunityAssociations()->get();
+
+        return collect([$primary])
+            ->concat($others->map(fn (UserOpportunity $row) => \App\Support\Opportunity::find($row->opportunity))->filter())
+            ->unique(fn (\App\Support\Opportunity $o) => $o->key)
+            ->values();
+    }
+
+    public function hasOpportunity(string $key): bool
+    {
+        return $this->opportunities()->contains(fn (\App\Support\Opportunity $o) => $o->key === $key);
+    }
+
+    /**
+     * The sign-up link this partner shares.
+     *
+     * Carries their own business line, so somebody joining through a free
+     * clean-air partner's link is not asked for a card on arrival. Without the
+     * parameter the link falls back to the default line — correct for a
+     * membership partner, wrong for everybody else, and the failure is silent
+     * because the link still works.
+     *
+     * The same pair is what the marketing sites put on their Join buttons; see
+     * sites/_shared/assets/ref.js and OpportunityTracker.
+     */
+    public function referralJoinUrl(): string
+    {
+        $line  = $this->opportunity();
+        $query = array_filter([
+            \App\Services\Opportunities\OpportunityTracker::PARAM      => $line->key,
+            \App\Services\Opportunities\OpportunityTracker::SITE_PARAM => $line->site(),
+        ]);
+
+        return url('/join/'.$this->referral_code).($query ? '?'.http_build_query($query) : '');
+    }
+
+    /**
+     * Add a business line to this account.
+     *
+     * Idempotent — the unique index on (user_id, opportunity) is the guard, and
+     * a second attempt updates nothing rather than failing. Making it primary
+     * moves the denormalised column too, so the two never disagree.
+     */
+    public function associateOpportunity(string $key, string $source = 'signup', bool $primary = false, ?self $by = null): void
+    {
+        if (! \App\Support\Opportunity::exists($key)) {
+            return;
+        }
+
+        UserOpportunity::query()->updateOrCreate(
+            ['user_id' => $this->id, 'opportunity' => $key],
+            ['source' => $source, 'added_by_user_id' => $by?->id],
+        );
+
+        if ($primary && $this->primary_opportunity !== $key) {
+            $this->forceFill(['primary_opportunity' => $key])->save();
+        }
+
+        $this->unsetRelation('opportunityAssociations');
+    }
+
+    /**
+     * Does this member have to carry the membership — and therefore a card?
+     *
+     * True if ANY of their lines requires it. A PlasmaGuard partner who adds
+     * the training program becomes an ordinary paying member from that moment;
+     * nothing has to remember that they once were not.
+     */
+    public function requiresMembership(): bool
+    {
+        if ($this->isAdmin() || $this->billing_exempt === true) {
+            return false;
+        }
+
+        return $this->opportunities()->contains(fn ($o) => $o->requiresMembership());
+    }
+
+    /**
+     * May this member see a given section of the back office?
+     *
+     * The union of their lines' features. Admins see everything — they are
+     * previewing the product, not using it.
+     */
+    public function canSee(string $feature): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->opportunities()->contains(fn ($o) => $o->allows($feature));
+    }
+
     /**
      * Enrolled under "wait for my commissions" and not yet billed.
      *
@@ -329,6 +596,54 @@ class User extends Authenticatable
         }
 
         return $this->activeSubscription()?->isCommissionHold() === true;
+    }
+
+    /**
+     * When this member's training clock starts — the anchor the drip counts from.
+     *
+     * The training releases a module a month from the start of the PAID
+     * membership, so the anchor has to be the moment billing began, not the
+     * moment the account was created. Those are far apart here: a partner can
+     * sit on a parked pre-launch trial, or on commission hold, for months
+     * before they pay for anything. Counting from signup would hand a partner
+     * who has never paid a library they have not bought.
+     *
+     * In order of preference:
+     *
+     *  1. `billing_trigger_met_at` — the commission-hold partner's billing
+     *     started the day their paid commissions cleared the threshold.
+     *  2. `trial_ends_at` — the parked pre-launch trial converts at launch, and
+     *     that conversion is month one. While it is still in the future the
+     *     anchor is too, which correctly leaves the delayed modules shut.
+     *  3. `current_period_start` — an ordinary subscription already billing.
+     *  4. `active_start_date` — the hand-set date, kept as a fallback so an
+     *     admin can still place a comped or imported member on the schedule.
+     *
+     * Null means there is no clock: nothing with a delay on it has opened yet.
+     */
+    public function trainingClockStartedAt(): ?\Carbon\Carbon
+    {
+        // Their access does not come from a card, so neither does their clock.
+        // Anchoring on signup opens everything, which is what an admin or a
+        // comped founder should see.
+        if ($this->isAdmin() || $this->billing_exempt === true) {
+            return $this->active_start_date?->copy()
+                ?? $this->created_at?->copy();
+        }
+
+        $subscription = $this->activeSubscription();
+
+        if ($subscription) {
+            $anchor = $subscription->billing_trigger_met_at
+                ?? $subscription->trial_ends_at
+                ?? $subscription->current_period_start;
+
+            if ($anchor) {
+                return $anchor->copy();
+            }
+        }
+
+        return $this->active_start_date?->copy();
     }
 
     public function defaultPaymentMethod(): ?PaymentMethod

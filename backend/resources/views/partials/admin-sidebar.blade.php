@@ -99,6 +99,8 @@
                         <ul class="sidebar-submenu">
                             <li><a href="{{ route('admin.partners.spots') }}"
                                    class="{{ request()->routeIs('admin.partners.spots') ? 'active' : '' }}">Claimed / Unclaimed</a></li>
+                            <li><a href="{{ route('admin.partners.activations') }}"
+                                   class="{{ request()->routeIs('admin.partners.activations*') ? 'active' : '' }}">Activations &amp; Sales</a></li>
                             <li><a href="{{ route('admin.partners.imports.index') }}"
                                    class="{{ request()->routeIs('admin.partners.imports.*') ? 'active' : '' }}">Imports</a></li>
                             <li><a href="{{ route('admin.partners.companies.index') }}"
@@ -239,6 +241,18 @@
                                    class="{{ request()->routeIs('admin.vendor-leads.reconciliation') ? 'active' : '' }}">Reconciliation</a></li>
                             <li><a href="{{ route('admin.vendor-leads.promotion') }}"
                                    class="{{ request()->routeIs('admin.vendor-leads.promotion') ? 'active' : '' }}">Promotion</a></li>
+                            {{-- The vendor's own people and what they may see. --}}
+                            <li><a href="{{ route('admin.product-partners.index') }}"
+                                   class="{{ request()->routeIs('admin.product-partners.index') ? 'active' : '' }}">Product Partners</a></li>
+                            <li><a href="{{ route('admin.product-partners.payments') }}"
+                                   class="{{ request()->routeIs('admin.product-partners.payments') ? 'active' : '' }}">Vendor Payments</a></li>
+                            {{-- The vendor-facing portal itself. Reachable from
+                                 anywhere in admin, the same way the Member Area
+                                 link above exists — an admin who can only get
+                                 to a section through one screen does not know
+                                 the section is there. --}}
+                            <li><a href="{{ route('product-partner.dashboard') }}"
+                                   class="{{ request()->routeIs('product-partner.*') ? 'active' : '' }}">Open Partner Portal</a></li>
                         </ul>
                     </li>
 

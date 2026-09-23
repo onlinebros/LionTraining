@@ -36,6 +36,18 @@
                         </div>
                     </li>
 
+                    @php
+                        // Which sections this member's business line opens. One
+                        // back office, several front doors: a partner who came
+                        // in to sell PlasmaGuard systems is not shown the
+                        // training program they never bought. canSee() is the
+                        // union of their lines' features and is always true for
+                        // admins — see config/opportunities.php. The routes are
+                        // closed by the same rule ('opportunity:<feature>'), so
+                        // the menu can never point at a 404.
+                        $me = auth()->user();
+                    @endphp
+
                     {{-- ==================== MEMBER ==================== --}}
                     <li class="pin-title sidebar-main-title">
                         <div><h6>Pinned</h6></div>
@@ -56,6 +68,7 @@
                     </li>
 
                     {{-- My Team --}}
+                    @if ($me->canSee('team'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.network') ? 'active' : '' }}"
@@ -65,6 +78,7 @@
                             <span>My Team</span>
                         </a>
                     </li>
+                    @endif
 
                     {{-- Holding Spots — only for partners who actually have some
                          below them, so the sidebar stays about this member. --}}
@@ -81,6 +95,7 @@
                     @endif
 
                     {{-- Referrals --}}
+                    @if ($me->canSee('referrals'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.referrals') ? 'active' : '' }}"
@@ -90,11 +105,24 @@
                             <span>Referrals</span>
                         </a>
                     </li>
+                    @endif
 
-                    {{-- Training --}}
+                    {{-- Training.
+                         Hidden entirely while the library is admin-only, so the
+                         routes and the link tell the same story: for a member,
+                         it is not there yet. Admins see it with a marker. --}}
+                    @if(\App\Support\TrainingAccess::visibleTo($me) && $me->canSee('training'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
-                        @if(auth()->user()->isPaidOrAbove())
+                        @if(!\App\Support\TrainingAccess::isOpenToMembers())
+                            {{-- Admin preview of a library members cannot reach. --}}
+                            <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.training') ? 'active' : '' }}"
+                               href="{{ route('member.training') }}" title="Admin preview — hidden from members">
+                                <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-learning') }}"></use></svg>
+                                <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-learning') }}"></use></svg>
+                                <span>Training <span class="badge badge-light-danger ms-1" style="font-size:.6rem;padding:2px 6px;">Hidden</span></span>
+                            </a>
+                        @elseif(auth()->user()->isPaidOrAbove())
                             <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.training') ? 'active' : '' }}"
                                href="{{ route('member.training') }}">
                                 <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-learning') }}"></use></svg>
@@ -110,11 +138,13 @@
                             </a>
                         @endif
                     </li>
+                    @endif
 
                     {{-- Product sales — third-party vendor referrals. Deliberately
                          not behind the pre-launch guard: these are other people's
                          products on other people's checkouts, so they can be sold
                          before our own launch. --}}
+                    @if ($me->canSee('product-sales'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title {{ request()->routeIs('member.sales.*') ? 'active' : '' }}"
@@ -134,10 +164,11 @@
                             </span>
                         </a>
                     </li>
+                    @endif
 
                     {{-- The first-100 offer, straight to the order form. Shown only
                          while places remain; see BuyYoursPromoComposer. --}}
-                    @if ($buyYours ?? null)
+                    @if (($buyYours ?? null) && $me->canSee('product-sales'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.sales.buy') ? 'active' : '' }}"
@@ -153,7 +184,7 @@
                          section closed. Both this and the middleware read
                          App\Support\Prelaunch, so a section can never be visible
                          in the menu while its URLs are shut, or vice versa. --}}
-                    @if (\App\Support\Prelaunch::open('commissions', auth()->user()))
+                    @if (\App\Support\Prelaunch::open('commissions', $me) && $me->canSee('commissions'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title {{ request()->routeIs('member.commissions.*') ? 'active' : '' }}" href="#">
@@ -175,7 +206,8 @@
                     {{-- Presentations. Admin-only until PRESENTATIONS_OPEN_TO_MEMBERS
                          is switched on; RequirePresentationAccess closes the URLs by the
                          same rule, so the menu never points at a 403. --}}
-                    @if(config('presentations.open_to_members') || auth()->user()->isAdmin())
+                    @if(config('presentations.open_to_members') || $me->isAdmin())
+                    @if ($me->canSee('presentations'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         {{-- Your Rooms lives under the same route prefix, so the
@@ -187,6 +219,8 @@
                             <span>Presentations</span>
                         </a>
                     </li>
+                    @endif
+                    @if ($me->canSee('rooms'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.presentations.live*') ? 'active' : '' }}"
@@ -196,6 +230,8 @@
                             <span>Your Rooms</span>
                         </a>
                     </li>
+                    @endif
+                    @if ($me->canSee('video-flows'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.funnels.*') ? 'active' : '' }}"
@@ -205,6 +241,8 @@
                             <span>Video Flows</span>
                         </a>
                     </li>
+                    @endif
+                    @if ($me->canSee('prospects'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.presentations.prospects*') ? 'active' : '' }}"
@@ -215,9 +253,10 @@
                         </a>
                     </li>
                     @endif
+                    @endif
 
                     {{-- CRM --}}
-                    @if (\App\Support\Prelaunch::open('crm', auth()->user()))
+                    @if (\App\Support\Prelaunch::open('crm', $me) && $me->canSee('crm'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title {{ request()->routeIs('member.crm.*') ? 'active' : '' }}" href="#">
@@ -236,6 +275,36 @@
                     </li>
                     @endif
 
+                    {{-- Training Program — the optional add-on, and the only
+                         thing in the app that is ever paid for. Shown whether or
+                         not it is on sale yet: while it is closed the page says
+                         so and takes an expression of interest, which is the
+                         point of having the section at all.
+
+                         The test is "have they bought it", not canSee('training'):
+                         every account older than the business lines sits on the
+                         membership line by default without having paid for
+                         anything, and canSee() would hide this from exactly the
+                         people it is for. --}}
+                    @unless($me->hasActiveMembership())
+                    @php $membershipLine = \App\Support\Opportunity::membership(); @endphp
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.training-program') ? 'active' : '' }}"
+                           href="{{ route('member.training-program') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-learning') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-learning') }}"></use></svg>
+                            <span>Training Program
+                                @unless($membershipLine->enrollmentOpen())
+                                    <small style="display:block;font-size:11px;line-height:1.25;margin-top:2px;color:var(--q3-gold-high);font-weight:500;">
+                                        Opening soon
+                                    </small>
+                                @endunless
+                            </span>
+                        </a>
+                    </li>
+                    @endunless
+
                     {{-- Billing — never behind the pre-launch guard or the
                          subscription gate. A partner must always be able to
                          reach the screen that fixes their billing state. --}}
@@ -251,7 +320,7 @@
 
                     {{-- Get Paid — where a partner sets up the Stripe account their
                          commissions are paid into. --}}
-                    @if (config('stripe.connect.enabled'))
+                    @if (config('stripe.connect.enabled') && $me->canSee('payouts'))
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('member.payouts.*') ? 'active' : '' }}"
@@ -293,6 +362,20 @@
                             <span>Profile</span>
                         </a>
                     </li>
+
+                    {{-- Partner Portal — a vendor's own sales people hold both
+                         this back office and their company's portal, and an
+                         admin can reach the portal from here too. --}}
+                    @if(auth()->user()->canUsePartnerPortal())
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title link-nav" href="{{ route('product-partner.dashboard') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-ecommerce') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-ecommerce') }}"></use></svg>
+                            <span>Partner Portal</span>
+                        </a>
+                    </li>
+                    @endif
 
                     {{-- Admin Panel link (if user is admin) --}}
                     @if(auth()->user()->isAdmin())

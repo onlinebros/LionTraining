@@ -9,8 +9,12 @@
 
 @section('content')
 @php
-    $referralUrl = url('/join/' . $user->referral_code);
-    $siteUrl = rtrim(config('registration.site_url'), '/') . '/' . $user->referral_code;
+    // Carries the partner's own business line, so a free clean-air partner's
+    // link does not ask their prospect for a card. See User::referralJoinUrl().
+    $referralUrl = $user->referralJoinUrl();
+    // Their own line's marketing site, not always the company one: a
+    // PlasmaGuard partner shares the clean-air site. See App\Support\Opportunity.
+    $siteUrl = $user->opportunity()->partnerSiteUrl($user->referral_code);
 @endphp
 
 <div class="row g-3">

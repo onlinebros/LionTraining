@@ -193,6 +193,49 @@
             </div>
         </div>
 
+        {{-- Training library release --}}
+        @php $trainingVisibility = \App\Support\TrainingAccess::visibility(); @endphp
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0">Training Library</h5>
+                        @if($trainingVisibility === 'members')
+                            <span class="badge bg-success">Live for members</span>
+                        @else
+                            <span class="badge bg-danger">Hidden</span>
+                        @endif
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            While the library is hidden, every training page returns “not found” for anyone but an
+                            administrator, no video or worksheet is served, and members see no Training link.
+                            Administrators can browse the whole library as it will ship. Releasing it opens it to
+                            members under the usual subscription and monthly release rules.
+                        </p>
+
+                        <div class="row g-3">
+                            @foreach([
+                                'admin'   => ['Hidden — admin preview only', 'Nothing is reachable by members. Use this while the library is being loaded and checked.'],
+                                'members' => ['Live for members', 'Members with an active Training Program subscription see the modules that have released to them.'],
+                            ] as $val => $copy)
+                            <div class="col-md-6">
+                                <input type="radio" name="training_visibility" id="tv_{{ $val }}" value="{{ $val }}"
+                                       {{ $trainingVisibility === $val ? 'checked' : '' }} style="display:none;">
+                                <label class="mode-card {{ $trainingVisibility === $val ? 'selected' : '' }} w-100"
+                                       for="tv_{{ $val }}"
+                                       onclick="document.querySelectorAll('[name=training_visibility]').forEach(r=>r.closest('.col-md-6').querySelector('.mode-card').classList.remove('selected')); this.classList.add('selected');">
+                                    <div class="fw-bold mb-1">{{ $copy[0] }}</div>
+                                    <div class="text-muted small">{{ $copy[1] }}</div>
+                                </label>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-12">
                 <button type="submit" class="btn btn-primary px-5">

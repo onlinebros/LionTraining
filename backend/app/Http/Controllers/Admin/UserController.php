@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserOpportunity;
+use App\Support\Opportunity;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -15,15 +18,29 @@ class UserController extends Controller
         // owner — listing them here puts rows in front of staff that they will
         // try to contact, and buries real accounts under them. They have their
         // own screen: admin.partners.spots.
+        // Which business line they came in for. Filtered on the denormalised
+        // column rather than the join table, because this is the primary — "who
+        // came through the PlasmaGuard door" — and a member who later picked up
+        // a second line should not appear under both.
+        $opportunity = Opportunity::sanitise($request->query('opportunity'));
+
         $users = User::with('role')
             ->activated()
             ->withCount(['sponsees', 'sponsors'])
             ->when($request->role, fn($q, $role) => $q->whereHas('role', fn($q2) => $q2->where('name', $role)))
-            ->latest()
+            ->when($opportunity, fn ($q, $key) => $key === Opportunity::defaultKey()
+                // Null is the default: every account that predates the feature.
+                ? $q->where(fn ($q2) => $q2->whereNull('primary_opportunity')->orWhere('primary_opportunity', $key))
+                : $q->where('primary_opportunity', $key))
+            ->latestRegistered()
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', [
+            'users'         => $users,
+            'opportunity'   => $opportunity,
+            'opportunities' => Opportunity::all(),
+        ]);
     }
 
     public function create()
@@ -48,8 +65,61 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->load(['sponsors', 'sponsees']);
-        return view('admin.users.show', compact('user'));
+        $user->load([
+            'sponsors', 'sponsees', 'opportunityAssociations.addedBy',
+            // Only ever a handful of rows, and the Product Partner card on this
+            // page renders one per grant.
+            'productPartnerAssignments.grantedBy',
+        ]);
+
+        return view('admin.users.show', [
+            'user'          => $user,
+            'opportunities' => Opportunity::all(),
+        ]);
+    }
+
+    /**
+     * Put a member on a business line — see config/opportunities.php.
+     *
+     * Making it primary is what decides whether a card is ever asked for, so it
+     * is an explicit checkbox rather than implied by adding the line. Adding
+     * a second line only widens what they can see.
+     */
+    public function addOpportunity(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'opportunity' => ['required', 'string', Rule::in(Opportunity::keys())],
+            'primary'     => ['nullable', 'boolean'],
+        ]);
+
+        $user->associateOpportunity(
+            $data['opportunity'],
+            UserOpportunity::SOURCE_ADMIN,
+            primary: $request->boolean('primary'),
+            by: $request->user(),
+        );
+
+        return back()->with('success', Opportunity::get($data['opportunity'])->name().' added to '.$user->name.'.');
+    }
+
+    /**
+     * Take a line away.
+     *
+     * The primary is refused: removing it would leave the row pointing at a
+     * line the member no longer holds, and the fix — deciding what they are
+     * instead — is a different action. Move them to another line first.
+     */
+    public function removeOpportunity(User $user, string $opportunity)
+    {
+        if ($user->primary_opportunity === $opportunity) {
+            return back()->withErrors([
+                'error' => 'That is this member\'s primary opportunity. Add the one they should be on as primary first, then remove this.',
+            ]);
+        }
+
+        $user->opportunityAssociations()->where('opportunity', $opportunity)->delete();
+
+        return back()->with('success', Opportunity::get($opportunity)->name().' removed from '.$user->name.'.');
     }
 
     public function edit(User $user)

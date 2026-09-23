@@ -1,0 +1,118 @@
+<!--meta {"title": "Training Program & pricing", "description": "{{ course.name }} is an optional add-on at {{ program.price_display }} {{ program.interval_phrase }}. You do not need it to be a partner. What is included, and how billing and cancellation work.", "nav": "training-program"}-->
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Optional add-on &middot; Opening soon</span>
+    <h1>Training Program &amp; pricing</h1>
+    <p class="lede">One optional subscription, one price, shown in US dollars. These are the terms that will apply when it opens, published in advance so nobody has to decide in a hurry.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap narrow">
+    <div class="callout">
+      <p>
+        <strong>The Training Program is not open yet.</strong> Nothing on this page is being sold
+        today, no payment details are collected anywhere on this site or in the back office, and
+        partners are not charged. Partners can ask to be told when it opens from
+        <strong>Training Program</strong> in their back office.
+      </p>
+      <p>
+        <strong>You do not need it to be a partner.</strong> Joining {{ site.brand }} to refer the
+        {{ vendor.product }} is free, takes no card, and pays commission on confirmed sales whether or
+        not you ever add the Training Program. See the <a href="partners">Partner Program</a> for
+        the free side.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap grid grid-2">
+    <article class="card card-gold">
+      <span class="eyebrow">{{ program.name }}</span>
+      <p class="plan-price">{{ program.price_display }} <small>{{ program.interval_phrase }}</small></p>
+      <p class="muted">Billed {{ program.interval_adverb }} once your billing starts, under the enrollment option you choose. Renews automatically until you cancel.</p>
+      <ul class="ticks">
+        <li>Full access to {{ course.name }} once your billing starts</li>
+        <li>Support through our contact form and back office</li>
+        <li>Cancel online at any time. You keep access until the end of the {{ program.interval_noun }} you paid for.</li>
+      </ul>
+      <h3>Already free without it</h3>
+      <p class="small muted">
+        Your partner account, your referral link, your copy of this site, your product pages, the
+        contact book, commission statements and payouts all come with a free partner account and are
+        not part of this subscription.
+      </p>
+      <div class="actions">
+        <a class="btn btn-gold" href="partners">Open a free partner account</a>
+      </div>
+      <p class="small muted">When the Training Program opens you will be able to add it from <strong>Training Program</strong> in your back office. Until then there is nothing to pay and nothing to enter.</p>
+    </article>
+    <article class="card">
+      <h2>About {{ course.name }}</h2>
+      <p>{{ course.summary }}</p>
+      <p>Lessons are streamed video, organized into sections you can work through in any order. You can watch on a computer, tablet or phone with a modern web browser and an internet connection. Nothing is shipped.</p>
+      <h3>What it does not include</h3>
+      <p>It does not include partner products, which are sold separately by their manufacturers &mdash; see <a href="system">the {{ vendor.product }}</a>. It also does not include any promise of income, and buying it does not increase what you are paid. See the <a href="earnings-disclaimer">Earnings Disclaimer</a>.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section" id="billing">
+  <div class="wrap narrow">
+    <div class="section-head">
+      <span class="eyebrow">Billing terms</span>
+      <h2>How you will be charged</h2>
+      <p>Published now, in advance of the program opening. Nothing here applies until you choose to add it.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><th scope="row">Price</th><td>{{ program.price_display }} {{ program.interval_phrase }}. All prices are in US dollars. Any sales tax that applies is shown before you confirm.</td></tr>
+          <tr><th scope="row">Enrollment options</th><td>When you add the Training Program from Billing, you save a card and choose when it is first charged. No card is taken when you open your free partner account. There is no free trial. <strong>Start now:</strong> your card is charged {{ program.price_display }} when {{ course.name }} opens, or straight away if it is already open. <strong>Wait for commissions:</strong> your card is first charged {{ program.price_display }} once the Partner Program commissions actually paid to you add up to {{ program.commission_threshold_display }}. {{ course.name }} opens when your billing starts, and you can switch to Start now from Billing at any time. Commissions are never guaranteed. If yours never reach {{ program.commission_threshold_display }}, you are not charged. Cancel any time before your first charge and you pay nothing. <strong>Once your card is charged, the charge is not refundable.</strong></td></tr>
+          <tr><th scope="row">Adding it before launch</th><td>If you add it before our official launch, your card is saved with Stripe but not charged before launch. If you chose Start now, we email you {{ program.prelaunch_notice_days }} days before launch with the launch date, and your first charge of {{ program.price_display }} is made on launch day, when {{ course.name }} opens. Cancel any time before then and you pay nothing. Once charged, it is not refundable.</td></tr>
+          <tr><th scope="row">Renewal</th><td>Your subscription renews automatically every {{ program.interval_noun }} at the price then in effect, charged to the card on file. We email a receipt for every charge, and your next billing date is always shown in Billing.</td></tr>
+          <tr><th scope="row">Price changes</th><td>We give at least 30 days' email notice before a new price applies to your subscription, so you can cancel first if you choose.</td></tr>
+          <tr><th scope="row">Failed payments</th><td>If a payment fails, we email you and retry the card. Access continues for {{ policies.payment_grace_days }} days while you update your card, then pauses until payment succeeds.</td></tr>
+          <tr><th scope="row">Cancellation</th><td>Cancel from Billing in your back office, or send a request through our <a href="contact">contact form</a>. Cancelling stops the next charge, and you keep access until the end of the {{ program.interval_noun }} you paid for.</td></tr>
+          <tr><th scope="row">Refunds</th><td>Training Program charges are not refundable once they are made. That includes the first charge and every renewal. Duplicate or mistaken charges are always refunded. See the <a href="refunds">Refund &amp; Cancellation Policy</a>.</td></tr>
+          <tr><th scope="row">Card statement</th><td>Charges appear on your statement as <strong>{{ program.statement_descriptor }}</strong>.</td></tr>
+          <tr><th scope="row">Payment methods</th><td>Visa, Mastercard, American Express and Discover. Payments are processed by Stripe, and we never see or store your full card number.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap narrow faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Training Program FAQ</h2>
+    </div>
+    <details>
+      <summary>Do I have to buy this to be a partner?</summary>
+      <p>No. A partner account is free and takes no card. You can refer the {{ vendor.product }} and be paid commission on confirmed sales without ever subscribing to {{ course.name }}. There are no sales quotas and no required purchases.</p>
+    </details>
+    <details>
+      <summary>How do I get an invitation?</summary>
+      <p>Ask the person who told you about {{ site.brand }} for their referral link. If you don't know a partner, send us a request through our <a href="contact">contact form</a>. The account itself is free; the Training Program is added later from Billing if you want it.</p>
+    </details>
+    <details>
+      <summary>Can I cancel before my first charge?</summary>
+      <p>Yes. Cancel from Billing any time before your first charge and you will not be charged. Billing always shows when your first charge will happen. Until the program opens there is nothing to cancel, because nothing has been started.</p>
+    </details>
+    <details>
+      <summary>What happens to my access when I cancel?</summary>
+      <p>You keep access to {{ course.name }} until the end of the {{ program.interval_noun }} you paid for, and you are not charged again. After that the course access ends. <strong>Your partner account is not affected</strong> — it is free, and your referral link, product pages and commissions carry on.</p>
+    </details>
+    <details>
+      <summary>Is my payment information safe?</summary>
+      <p>Card details are entered into Stripe's secure payment form and sent directly to Stripe, a PCI DSS Level 1 certified payment processor. They never pass through or get stored on our servers. Every page of our site and member platform is served over HTTPS.</p>
+    </details>
+    <details>
+      <summary>Who can join?</summary>
+      <p>Adults aged {{ policies.min_age }} or older who live in {{ business.service_region }}, with a free partner account. See <a href="terms#eligibility">Eligibility</a> in our Terms.</p>
+    </details>
+  </div>
+</section>

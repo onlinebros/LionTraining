@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\KartraImportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\HoldingSpotController;
+use App\Http\Controllers\Admin\PartnerActivationController;
 use App\Http\Controllers\Admin\PartnerCompanyController;
 use App\Http\Controllers\Admin\PartnerWebhookController;
 use App\Http\Controllers\Admin\SpotImportController;
@@ -44,7 +45,15 @@ use App\Http\Controllers\Admin\ScreenRecordingController;
 use App\Http\Controllers\FunnelWatchController;
 use App\Http\Controllers\Member\FunnelController as MemberFunnelController;
 use App\Http\Controllers\Member\PresentationController as MemberPresentationController;
+use App\Http\Controllers\Member\TrainingMediaController;
+use App\Http\Controllers\Member\TrainingProgramController;
+use App\Http\Controllers\LandingPreferenceController;
 use App\Http\Controllers\PresentationWatchController;
+use App\Http\Controllers\ProductPartner\DashboardController as PartnerDashboardController;
+use App\Http\Controllers\ProductPartner\ProspectController as PartnerProspectController;
+use App\Http\Controllers\ProductPartner\SalesController as PartnerSalesController;
+use App\Http\Controllers\ProductPartner\StatementController as PartnerStatementController;
+use App\Http\Controllers\Admin\ProductPartnerController;
 use App\Http\Controllers\ScreenRecordingPlaybackController;
 use Illuminate\Support\Facades\Route;
 
@@ -152,6 +161,14 @@ Route::prefix('member/billing')->name('member.billing.')->middleware('auth')->gr
 // Also outside the gate: a partner held at card capture still needs to fix their
 // profile and ask for help.
 Route::prefix('member')->name('member.')->middleware('auth')->group(function () {
+    // The Training Program section — what the membership is and how to get it.
+    // Outside the subscription gate for the same reason Billing is: a page
+    // about buying access cannot sit behind having bought it. While
+    // `enrollment_open` is false this is an announcement, not a checkout.
+    Route::get('/training-program',          [TrainingProgramController::class, 'show'])->name('training-program');
+    Route::post('/training-program/interest', [TrainingProgramController::class, 'interest'])
+        ->middleware('throttle:20,10')->name('training-program.interest');
+
     Route::get('/profile',           [MemberController::class, 'profile'])->name('profile');
     Route::post('/profile',               [MemberController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/address',       [MemberController::class, 'updateAddress'])->name('profile.address');
@@ -176,12 +193,32 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
     // Imported positions in this partner's organisation that are still waiting
     // on their owner. Kept off the team page for the reason in the action.
     Route::get('/network/spots',     [MemberController::class, 'spots'])->name('network.spots');
-    // Partners waiting on commissions before paying don't get training yet.
-    Route::middleware('training.unlocked')->group(function () {
+    // The training library.
+    //
+    // 'training.visible' is the outermost gate and it 404s: while the library
+    // is admin-only, production behaves as though these routes do not exist.
+    // Admins pass every gate here — 'subscribed' and 'training.unlocked' both
+    // exempt them — so an administrator previews the library on live exactly as
+    // a member will see it, before anyone else can reach it.
+    //
+    // 'training.unlocked' holds out partners who chose to wait for commissions
+    // before paying: they have not bought the program yet.
+    //
+    // 'opportunity:training' is the newest of the three and the coarsest: a
+    // partner who joined through the PlasmaGuard site to sell air purification
+    // systems never bought the training program, so for them it does not exist
+    // at all. See config/opportunities.php.
+    Route::middleware(['training.visible', 'opportunity:training', 'training.unlocked'])->group(function () {
         Route::get('/training',                  [MemberController::class, 'trainingIndex'])->name('training');
         Route::get('/training/c/{slug}',         [MemberController::class, 'trainingCategory'])->name('training.category');
         Route::get('/training/l/{slug}',         [MemberController::class, 'trainingLesson'])->name('training.lesson');
-        Route::get('/training/download/{block}', [MemberController::class, 'trainingDownload'])->name('training.download');
+
+        // The media itself. Each of these re-checks role and release date for
+        // the lesson the block belongs to, so a copied URL stops working when
+        // the membership does. Nothing under here is ever a static file URL.
+        Route::get('/training/video/{block}',    [TrainingMediaController::class, 'video'])->name('training.video');
+        Route::get('/training/poster/{block}',   [TrainingMediaController::class, 'poster'])->name('training.poster');
+        Route::get('/training/download/{block}', [TrainingMediaController::class, 'download'])->name('training.download');
     });
     Route::get('/referrals',         [MemberController::class, 'referral'])->name('referrals');
 
@@ -239,12 +276,12 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
     // Presentations and funnels from the host's side: Your Rooms, prospects,
     // reports. Admin-only until PRESENTATIONS_OPEN_TO_MEMBERS=true — see
     // RequirePresentationAccess. A funnel is presentations, so same gate.
-    Route::prefix('funnels')->name('funnels.')->middleware('presentations')->group(function () {
+    Route::prefix('funnels')->name('funnels.')->middleware(['presentations', 'opportunity:video-flows'])->group(function () {
         Route::get('/',          [MemberFunnelController::class, 'index'])->name('index');
         Route::get('/{funnel}',  [MemberFunnelController::class, 'show'])->name('show');
     });
 
-    Route::prefix('presentations')->name('presentations.')->middleware('presentations')->group(function () {
+    Route::prefix('presentations')->name('presentations.')->middleware(['presentations', 'opportunity:presentations'])->group(function () {
         Route::get('/', [MemberPresentationController::class, 'index'])->name('index');
 
         // A member scheduling a released recording for their own team. Above
@@ -270,8 +307,52 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
     });
 });
 
-// Legacy /dashboard redirect
-Route::get('/dashboard', fn() => redirect()->route('member.dashboard'))->middleware('auth');
+// ── Product Partner portal ────────────────────────────────────────────────────
+//
+// A vendor whose products our partners sell, looking at their own line: how it
+// is selling, how big the channel behind it is, and the account between us.
+//
+// Its own section on purpose. These are outside companies with a login, so they
+// get neither the member area (they are not members and must never be asked for
+// a card) nor the admin area (they are not staff). The section is where the
+// tooling for helping them close deals will hang off.
+//
+// Everything inside is scoped by App\Support\ProductPartner — a route here
+// reaching vendor_leads without going through it is a bug, not a shortcut.
+Route::prefix('product-partner')->name('product-partner.')
+    ->middleware(['auth', 'product_partner'])
+    ->group(function () {
+        Route::get('/', [PartnerDashboardController::class, 'index'])->name('dashboard');
+
+        // Confirmed orders, in full: they are the merchant of record on these.
+        Route::get('/sales',          [PartnerSalesController::class, 'index'])->name('sales');
+        Route::get('/sales/export',   [PartnerSalesController::class, 'export'])->name('sales.export');
+        Route::get('/sales/{vendorLead}', [PartnerSalesController::class, 'show'])->name('sales.show');
+
+        // The pipeline in numbers only — see the controller for why.
+        Route::get('/prospects',      [PartnerProspectController::class, 'index'])->name('prospects');
+
+        // What is owed and what has been paid, one copy, both sides.
+        Route::get('/statement',      [PartnerStatementController::class, 'index'])->name('statement');
+        Route::post('/statement/payments', [PartnerStatementController::class, 'storePayment'])
+            ->middleware('throttle:20,10')->name('statement.payments');
+    });
+
+/*
+ * Where I land when I sign in.
+ *
+ * Outside every section on purpose: it is set from the profile menu of the
+ * admin panel, the member area and the partner portal alike, and it is the one
+ * thing an account holding several of them has to be able to change from
+ * wherever it happens to be.
+ */
+Route::post('/preferences/landing', [LandingPreferenceController::class, 'update'])
+    ->middleware('auth')->name('preferences.landing');
+
+// Legacy /dashboard redirect. Follows the account's own choice rather than
+// assuming the member area — an admin or a product partner landing here has
+// somewhere of their own to be.
+Route::get('/dashboard', fn() => redirect(request()->user()->landingRoute()))->middleware('auth');
 
 // ── Recording playback ────────────────────────────────────────────────────────
 //
@@ -330,6 +411,57 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
 
+        // Which business lines a member holds — see config/opportunities.php.
+        // This decides what they see and whether a card is asked for, so it is
+        // a deliberate staff action rather than something edited inline on the
+        // user form.
+        Route::post('users/{user}/opportunities', [UserController::class, 'addOpportunity'])->name('users.opportunities.add');
+        Route::delete('users/{user}/opportunities/{opportunity}', [UserController::class, 'removeOpportunity'])->name('users.opportunities.remove');
+
+        /*
+         * Product partners: the vendors' own people and what they may see.
+         *
+         * Super admin only. Granting one of these is letting an outside company
+         * see our sales pipeline, which is a commercial decision rather than a
+         * support action — support staff can see the list, not change it.
+         */
+        Route::prefix('product-partners')->name('product-partners.')->group(function () {
+            Route::get('/', [ProductPartnerController::class, 'index'])->name('index');
+
+            /*
+             * Look at the portal as one particular partner sees it. Read-only,
+             * and any admin may: it shows them no more than the admin section
+             * already does, only arranged as the vendor sees it.
+             *
+             * `stop-viewing` is one segment and `{user}/view-as` is two, so the
+             * two patterns cannot collide.
+             */
+            Route::post('/stop-viewing', [ProductPartnerController::class, 'stopViewingAs'])->name('stop-viewing');
+            Route::post('/{user}/view-as', [ProductPartnerController::class, 'viewAs'])->name('view-as');
+
+            // What the vendors say they have paid us, waiting on our agreement.
+            Route::get('/payments', [ProductPartnerController::class, 'payments'])->name('payments');
+            Route::post('/payments/{payment}/confirm', [ProductPartnerController::class, 'confirmPayment'])
+                ->middleware('super_admin')->name('payments.confirm');
+            Route::post('/payments/{payment}/reject', [ProductPartnerController::class, 'rejectPayment'])
+                ->middleware('super_admin')->name('payments.reject');
+        });
+
+        /*
+         * Whether a product partner also sells. Super admin only, like the
+         * product grant: it hands an outside company's employee a back office,
+         * a referral code and a commission ledger entry of their own.
+         */
+        Route::post('users/{user}/product-partner/member-access', [ProductPartnerController::class, 'grantMemberAccess'])
+            ->middleware('super_admin')->name('users.product-partner.member-access.add');
+        Route::delete('users/{user}/product-partner/member-access', [ProductPartnerController::class, 'revokeMemberAccess'])
+            ->middleware('super_admin')->name('users.product-partner.member-access.remove');
+
+        Route::post('users/{user}/product-partner', [ProductPartnerController::class, 'store'])
+            ->middleware('super_admin')->name('users.product-partner.add');
+        Route::delete('users/{user}/product-partner/{assignment}', [ProductPartnerController::class, 'destroy'])
+            ->middleware('super_admin')->name('users.product-partner.remove');
+
         Route::prefix('sponsors')->name('sponsors.')->group(function () {
             Route::get('/', [SponsorController::class, 'index'])->name('index');
             Route::get('relationships', [SponsorController::class, 'relationships'])->name('relationships');
@@ -347,6 +479,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Rearranges a live genealogy. The only action in this module that
             // does — see SpotMergeService.
             Route::post('/spots/{spot}/merge',   [HoldingSpotController::class, 'merge'])->name('spots.merge');
+
+            // Who came through the claim page and what they have sold since.
+            // 'export' before nothing else here, but kept above in the file for
+            // the same reason the webhook guide is: a literal segment must not
+            // end up read as an id if this prefix ever grows one.
+            Route::get('/activations/export', [PartnerActivationController::class, 'export'])->name('activations.export');
+            Route::get('/activations',        [PartnerActivationController::class, 'index'])->name('activations');
 
             Route::prefix('companies')->name('companies.')->group(function () {
                 Route::get('/',               [PartnerCompanyController::class, 'index'])->name('index');

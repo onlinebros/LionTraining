@@ -19,16 +19,19 @@
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset:img/apple-touch-icon.png }}">
 <link rel="stylesheet" href="{{ asset:fonts.css }}">
 <link rel="stylesheet" href="{{ asset:site.css }}">
+<link rel="stylesheet" href="{{ asset:product.css }}">
 <script src="{{ asset:ref.js }}" defer></script>
 </head>
-<body class="page-{{ page.slug }}" data-app="{{ attr:site.app_base }}">
+<body class="page-{{ page.slug }}" data-app="{{ attr:site.app_base }}"
+      data-opportunity="{{ attr:opportunity.key }}" data-site="{{ attr:opportunity.site }}"
+      data-buy-vendor="{{ attr:storefront.vendor }}" data-buy-product="{{ attr:storefront.product }}">
 {{ preview_banner }}
 <a class="skip" href="{{ page.path }}#main">Skip to content</a>
 
 <div class="ref-bar" role="note" data-ref hidden>
   <div class="wrap ref-bar-inner">
     <p>You were invited by <strong data-ref-name>a partner</strong>, an independent {{ site.brand_short }} partner.</p>
-    <a class="btn btn-gold" data-join href="membership">Join with <span data-ref-first>them</span></a>
+    <a class="btn btn-gold" data-join href="partners">Join with <span data-ref-first>them</span></a>
   </div>
 </div>
 
@@ -40,12 +43,13 @@
     </a>
     <nav class="site-nav" aria-label="Main">
       <ul>
-        <li><a data-nav="membership" href="membership">Membership</a></li>
+        <li><a data-nav="system" href="system">The System</a></li>
         <li><a data-nav="partners" href="partners">Partner Program</a></li>
+        <li><a data-nav="training-program" href="training-program">Training Program</a></li>
         <li><a data-nav="about" href="about">About</a></li>
         <li><a data-nav="contact" href="contact">Contact</a></li>
         <li><a class="nav-login" href="{{ attr:site.app_base }}/login">Log in</a></li>
-        <li data-ref hidden><a class="nav-cta" data-join href="membership">Join</a></li>
+        <li data-ref hidden><a class="nav-cta" data-join href="partners">Join</a></li>
       </ul>
     </nav>
   </div>
@@ -73,8 +77,9 @@
     <nav aria-labelledby="footer-company">
       <h2 id="footer-company">Company</h2>
       <ul>
-        <li><a href="membership">Membership &amp; pricing</a></li>
+        <li><a href="system">The {{ vendor.product }}</a></li>
         <li><a href="partners">Partner Program</a></li>
+        <li><a href="training-program">Training Program &amp; pricing</a></li>
         <li><a href="about">About us</a></li>
         <li><a href="contact">Contact us</a></li>
         <li><a href="{{ attr:site.app_base }}/login">Member log in</a></li>
@@ -90,6 +95,32 @@
         <li><a href="earnings-disclaimer">Earnings Disclaimer</a></li>
       </ul>
     </nav>
+  </div>
+
+  <div class="wrap footer-disclosure">
+    <p>
+      <strong>{{ vendor.product }}</strong> is manufactured and sold by
+      <strong>{{ vendor.legal_name }}</strong>
+      (<a href="{{ attr:vendor.website }}" rel="noopener">plasmaguard.com</a>),
+      {{ vendor.address }}, {{ vendor.phone }}.
+      {{ vendor.name }} is the seller of record for it: they take payment, ship the product, handle
+      sales tax, and provide the warranty and support. {{ business.legal_name }} is an authorised
+      referral channel and is paid by {{ vendor.name }} on completed orders. Its own charges are for
+      the {{ program.name }} only.
+    </p>
+    <p>
+      For test reports on specific contaminants, environmental test conditions and
+      performance levels, see
+      <a href="{{ attr:vendor.test_reports_url }}" rel="noopener">plasmaguard.com/test-reports/</a>.
+      Actual results may vary based on the environment and occupied space.
+      This site is not operated by {{ vendor.name }}.
+    </p>
+    <p>
+      Partners of {{ site.brand }} are independent and are paid commissions on sales they refer.
+      Commissions are not guaranteed and a partner may earn nothing — see our
+      <a href="earnings-disclaimer">Earnings Disclaimer</a> and
+      <a href="partners">Partner Program</a>.
+    </p>
   </div>
 
   <div class="wrap footer-pay">

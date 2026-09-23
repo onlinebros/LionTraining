@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'unclaimed_spots' => (int) \App\Models\PartnerCompany::sum('unclaimed_spots'),
         ];
 
-        $recentUsers = User::query()->activated()->latest()->limit(10)->get();
+        $recentUsers = User::query()->activated()->latestRegistered()->limit(10)->get();
 
         return view('admin.dashboard', compact('stats', 'recentUsers'));
     }

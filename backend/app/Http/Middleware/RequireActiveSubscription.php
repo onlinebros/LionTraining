@@ -35,6 +35,25 @@ class RequireActiveSubscription
             return $next($request);
         }
 
+        /*
+        | Business lines that are not the membership.
+        |
+        | A partner who came in through the PlasmaGuard site joined to sell air
+        | purification systems, not to buy a $49.99 membership, so there is
+        | nothing to capture a card for and nothing for this gate to protect.
+        | They reach the back office directly.
+        |
+        | This is not an access grant. What they can see is decided separately
+        | by the feature list on their business line — see
+        | EnsureOpportunityFeature — and the training program, which IS the
+        | membership's product, is not on it. The moment they add the
+        | membership, requiresMembership() turns true and this gate applies to
+        | them exactly as to everybody else.
+        */
+        if (! $user->requiresMembership()) {
+            return $next($request);
+        }
+
         // Only when config/prelaunch.php switches bypass_membership back on. It
         // ships off: pre-launch partners put a card on file like everyone else,
         // and their trial is parked until launch.
@@ -42,7 +61,7 @@ class RequireActiveSubscription
             return $next($request);
         }
 
-        $message = 'Add a payment method to activate your membership. You will not be charged today.';
+        $message = 'Add a payment method to start your Training Program. You will not be charged today.';
 
         if ($request->expectsJson()) {
             return response()->json([

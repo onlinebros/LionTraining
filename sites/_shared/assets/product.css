@@ -1,0 +1,64 @@
+/* Product-page blocks, shared by every Q3 site that sells the PlasmaGuard system.
+ *
+ * site.css is the base and loads first; everything here is
+ * either a block only a product page needs, or a small
+ * adjustment to it. Nothing in the base is redefined without a reason written
+ * next to it.
+ */
+
+/* Attribution. Product claims on this site are the manufacturer's, and the line
+ * that says so has to be legible without competing with the claim itself. */
+.claim-note { margin: 18px 0 0; color: var(--dim); font-size: 0.85rem; }
+.footnote { margin: 20px 0 0; color: var(--dim); font-size: 0.82rem; line-height: 1.6; max-width: 80ch; }
+.footnote a { color: var(--muted); }
+.footnote a:hover { color: var(--gold-high); }
+
+/* The headline figures. Deliberately one gold value and three plain: four
+ * highlighted numbers highlight nothing. */
+.stat-row { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.stat-value { font-family: var(--font-display); font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 600; color: var(--text); line-height: 1.05; }
+.stat-value--gold { color: var(--gold); }
+.stat-label { color: var(--muted); font-size: 0.9rem; margin-top: 6px; max-width: 30ch; }
+
+/* Copy beside the product shot. */
+.product-lead { display: grid; gap: 32px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; }
+.product-lead > :last-child { justify-self: center; }
+.product-shot img { display: block; width: 100%; max-width: 280px; height: auto; }
+@media (max-width: 760px) {
+  .product-lead { grid-template-columns: 1fr; }
+  .product-shot img { max-width: 168px; }
+}
+
+/* The three boxes that arrive. */
+.gallery { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.gallery figure { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.shot-frame { display: grid; place-items: center; padding: 20px; background: var(--surface-2); }
+.shot-frame img { width: auto; max-height: 124px; }
+.gallery figcaption { padding: 16px 20px 20px; }
+.gallery figcaption strong { display: block; color: var(--text); margin-bottom: 4px; }
+.gallery figcaption span { color: var(--muted); font-size: 0.9rem; }
+@media (max-width: 560px) { .shot-frame img { max-height: 68px; } }
+
+/* Where it is used: the manufacturer's list, kept as a list rather than
+ * reflowed into prose, because each line is their wording. */
+.applications { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.applications li { padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-size: 0.92rem; }
+.applications strong { display: block; color: var(--text); font-size: 0.95rem; margin-bottom: 2px; }
+
+/* "Free to join. No card." — the single most important thing on the partner
+ * page, so it gets the gold frame and sits on its own. */
+.no-card { border: 1px solid var(--border-gold); border-radius: var(--radius); background: linear-gradient(180deg, var(--gold-tint), transparent 70%), var(--surface); padding: clamp(24px, 4vw, 40px); }
+.no-card h2 { margin-top: 0; }
+.no-card > :last-child { margin-bottom: 0; }
+.no-card .actions { margin-top: 24px; }
+
+/* Seller-of-record disclosure, above the copyright line. */
+.footer-disclosure { margin-top: 40px; padding-block: 24px; border-top: 1px solid var(--border); }
+.footer-disclosure p { color: var(--muted); font-size: 0.85rem; line-height: 1.7; max-width: 92ch; }
+.footer-disclosure p:last-child { margin-bottom: 0; }
+.footer-disclosure strong { color: var(--body); }
+
+/* The spec table is label/value with no header row, so the base's thead rule
+ * never applies and the row headers carry the whole structure. */
+.table-wrap tbody th { width: 45%; }
+@media (max-width: 560px) { .table-wrap tbody th { width: auto; min-width: 0; } }

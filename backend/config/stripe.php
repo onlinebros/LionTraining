@@ -50,7 +50,10 @@ return [
         'price_id'   => env('STRIPE_PRICE_ID'),
 
         // Only used by billing:bootstrap-product when creating the price.
-        'name'      => env('STRIPE_PRODUCT_NAME', 'Quantum Life Partner Membership'),
+        // What the customer reads on the invoice and the receipt. It is a
+        // Training Program, never a membership (owner, 2026-09-22): the member
+        // account is free and this is the optional paid part.
+        'name'      => env('STRIPE_PRODUCT_NAME', 'Q3 Training Program'),
         'amount'    => (int) env('STRIPE_PRICE_AMOUNT', 19900),   // minor units
         'currency'  => env('STRIPE_CURRENCY', 'usd'),
         'interval'  => env('STRIPE_PRICE_INTERVAL', 'year'),

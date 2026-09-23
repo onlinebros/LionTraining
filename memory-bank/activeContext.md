@@ -10,6 +10,105 @@ Project is **Quantum Life** (was LionTraining), 2026-09-02. Display name lives i
 1. **Placement model: unilevel.** Every partner sits directly beneath their sponsor; no spillover. Chosen 2026-09-02 over the binary recommendation. Consequence accepted: early position confers no advantage relative to others, so the pre-launch campaign cannot honestly sell position. `users.placement_*` columns are kept separate from `sponsor_id`/`enrollment_path` so a later switch to binary or matrix is a config change, not a migration.
 2. **Pre-launch billing: card on file, billed at launch.** Scheduling constraint: Stripe setup-intent capture and the webhook ledger must ship *before* the campaign opens, not alongside it.
 
+## Training library (2026-09-21)
+The *Releasing The-LION* material is off Kartra and built on dev: 21 modules,
+165 lessons, 124 self-hosted videos (24 GB), 89 worksheets. Self-hosted, not
+Vimeo — every byte goes through a gated route that re-checks the membership on
+each request. Ships **hidden**: admin-only until released from Admin → Settings.
+Releases one module a month from the start of the paid membership.
+
+Not on production yet — blocked on a DigitalOcean Spaces access key. Full
+procedure and the things that bit us in [training-library.md](training-library.md).
+
+## It is not a "Membership" (2026-09-22)
+Owner's naming rule, to be held everywhere: the paid training is an optional
+**Training Program** that any member can add for $49.99 a month. A member
+account is free, so calling the fee a membership fee describes the wrong thing.
+The course itself is called **Rediscover your Heart** (it replaces the working
+title *Vision of the Heart Training*).
+
+Done: every page of q3.life, the `site.json` block (`membership` → `program`,
+name **Q3 Training Program**), the member Billing and Training screens, the
+billing flash messages, the two admin labels, `STRIPE_PRODUCT_NAME` and the
+Stripe **test-mode** product. The **home page no longer mentions the training at
+all** — it sells the system and the free Partner Program, and the replicated
+partner sites are that same page. The Training Program page and its nav and
+footer links stay, because the price and terms must stay published in advance.
+
+The page moved from `/membership` to **`/training-program`**, with a hand-added
+nginx 301 from the old URL on dev. The **q3.life droplet still needs that
+redirect** — see [deployment.md](deployment.md).
+
+Left deliberately: internal identifiers and config keys
+(`hasActiveMembership()`, `requiresMembership()`, `opportunities.*.membership`,
+`MEMBERSHIP_ENROLLMENT_OPEN`), and the **live** Stripe product name, which still
+reads *Q3 Partner Membership* on real invoices and has to be renamed in the live
+dashboard.
+
+## Product-first, and nobody is asked for a card (2026-09-22)
+The company site leads with the **PlasmaGuard PRO In-Duct System**. A partner
+account is **free**, and the $49.99 Training Program is optional and
+**not on sale yet**.
+
+`MEMBERSHIP_ENROLLMENT_OPEN=false`, so no card is requested anywhere in the
+application — not at sign-up, not on any gate, not from a bookmarked URL. Card
+capture redirects to a new **Training Program** section (`/member/training-program`)
+that says when it opens and takes an expression of interest
+(`users.training_interest_at`). Opening it is that one variable, plus rewriting
+the site's "Opening soon" copy in the same change.
+
+There is now **one** public site. `sites/air.q3.life` was retired; on dev
+q3.life is served at the **root of q3.onlinebros.com**, with anything nginx
+cannot find on disk falling through to Laravel.
+
+The owner's reason for product-first was Stripe. Recorded in `opportunities.md`
+§6: the site is not the lever it looks like, because PlasmaGuard's charges land
+on *their* connected account and ours still shows subscriptions plus Connect
+payouts down a sponsor tree. The Partner Program stays in the nav and the
+Earnings Disclaimer in the footer for that reason — **do not strip them in a
+later copy pass.** The comp plan, not the home page, decides the MLM question.
+
+## A shared site can take an order (2026-09-22)
+
+The owner's point: PlasmaGuard's price is fixed and we cannot change it, so
+"request a quote" wastes the visit. A partner's replicated site now offers
+**Order the system**, which goes to that partner's storefront
+(`{app}/p/CODE/plasmaguard/pro-in-duct`) — address, PlasmaGuard's tax, and a
+card charged on their Stripe account. The wiring is `data-buy` in
+`sites/_shared/assets/ref.js`, with the vendor and product keys declared in
+`site.json` (`storefront`) and put on `<body>` by the layout.
+
+`$6,000 per system` is now printed publicly on `/system`. It has to move
+together with `PLASMAGUARD_PRO_PRICE` in the app, or the site advertises one
+price and the checkout charges another.
+
+A visitor with **no** code still gets the contact form: there is no partner to
+attribute the sale or the commission to. If the company should be able to sell
+without a partner, that needs a house code and a decision about who is credited.
+
+## Opportunity Associations (2026-09-21)
+A member carries a **business line** — `q3-training` or `plasmaguard` — which
+decides whether a card is ever asked for and which sections of the back office
+exist for them. It is captured from `?o=` on the Join link at sign-up. Full
+design, and what is deliberately left undone, in
+[opportunities.md](opportunities.md).
+
+PlasmaGuard's product claims on the site are **quoted verbatim** from
+plasmaguard.com (owner's instruction). Written permission for their names, copy
+and photography is still open — `vendor-referral-framework.md` item 9.
+
+## Product Partner portal (2026-09-22)
+The vendor's own people, with a login to a section of their own. A
+**Product Partner** is a non-admin role linked to one or more vendors and
+products; they see their line's sales in full, their pipeline as counts only,
+and one shared settlement account with Quantum 3. Built on dev, nothing
+deployed. Design and the rules behind it in
+[vendor-referral-framework.md](vendor-referral-framework.md) §14.
+
+Two things on it are deliberate and should not be "fixed" without a decision:
+open prospects are never listed (they are our partners' un-closed customers),
+and a vendor can record a payment but never confirm one.
+
 ## Still open
 - **Subscription lapse timing** (immediate vs. period-end vs. split access/earning clocks). Recommended: split clocks with grace. Gates the `subscriptions` state machine and commission accrual eligibility.
 - Compensation plan rules (the spec's D2) — still a business decision, and the largest schedule risk.
@@ -54,6 +153,7 @@ mechanism for the course; what is missing is purchase and entitlement, not
 playback.
 
 ## Recent changes
+- 2026-09-21: **Opportunity Associations + air.q3.life.** A member now carries a business line (`backend/config/opportunities.php`): `q3-training` (the membership, card at sign-up) or `plasmaguard` (B2B, **no card, no fee, no training library**). `users.primary_opportunity` + `user_opportunities`; nothing backfilled, null reads as the default. `RequireActiveSubscription` passes anyone whose lines do not require the membership; `opportunity:<feature>` gates the routes and `User::canSee()` gates the sidebar, so the menu can never point at a 404. Captured at `/join/{code}?o=…&s=…` by `OpportunityTracker`. The card-free side's only door to the paying side is `BillingService::startSubscription()`, which adds the default line. New marketing site `sites/air.q3.life` (PlasmaGuard, claims quoted verbatim), built by the now-shared `sites/build.py` with `sites/_shared/assets/`; q3.life's build output is byte-identical apart from the two new `<body>` attributes. Dev: https://q3.onlinebros.com/air/. **Not on production** — placeholder domain, and PlasmaGuard's copy/photo permission is still open. See [opportunities.md](opportunities.md).
 - 2026-09-18: **Recording Studio, Presentations and Video Funnels, admin-only.** Ported from SolarXFactor using the handoff at `/srv/workspaces/agent6/handoff/video-presentations/`. Admin sidebar: *Recording Studio* (record, upload, combine, library) and *Presentations* (schedule, repeating schedules, prospects, funnels, calls to action, Your Rooms). The member-side pages are closed to non-admins by `PRESENTATIONS_OPEN_TO_MEMBERS=false`; guest pages `/watch/{slug}/{code}` and `/flow/{slug}/{code}` are public. Deviations from the source are listed at the top of `backend/docs/presentations.md`. **Dev runtime gap:** no queue worker or scheduler runs for this workspace, so trim/combine stay queued and scheduled showings must be started by hand until `queue:work` and `schedule:run` are set up. Recordings go to the local public disk until a Spaces bucket is configured.
 - 2026-09-14: **PlasmaGuard own purchases + first-100 promotion.** Partners can buy for themselves from Product Sales → Buy for yourself. A partner's own purchase counts for them but pays their **sponsor**, whichever link was used: detected automatically on back-office orders and on an email or phone match, and held for admin review on an address-only match. The raised commission now applies the configured basis (10% of our revenue share rather than of the order total). The promotion tracker for the first 100 PRO systems has a partner leaderboard and an admin order list. See `vendor-referral-framework.md` §11–12. Deployed to app.q3.life on 2026-09-15 (commit `3b0e757`, migration `2026_09_14_220000`). All changed pages were verified rendering there as the real partner and admin.
 - 2026-09-03: **Billing C1–C3.** Stripe subscriptions with card-on-file: `config/stripe.php`, `BillingService`, `StripeClientFactory`, `StripeWebhookProcessor`, `ProcessPaymentWebhookJob`, `RequireActiveSubscription`, member billing screens, admin oversight (`/admin/billing/subscriptions`, `/admin/billing/webhooks`). Commands: `billing:bootstrap-product`, `billing:preflight`, `billing:apply-prelaunch-end`. Two webhook endpoints with separate secrets. **The billing routes sit outside the subscription gate on purpose** — gating them is a redirect loop, and there is a test asserting it. `past_due` grace is `STRIPE_GRACE_DAYS`, a policy value, not an accident of which statuses the gate lists.

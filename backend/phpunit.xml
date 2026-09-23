@@ -60,5 +60,12 @@
              commissions count only commission credits. PromotionBonusTest and
              the promotion copy tests switch it on themselves. -->
         <env name="PROMO_PG_PRO_100_BONUS" value="false"/>
+
+        <!-- Training-program enrollment is OPEN in tests, and closed in the
+             application (config/opportunities.php). The subscription gate, card
+             capture and the enrollment options only exist when it is open, so
+             the suite that covers them has to run against an open program.
+             TrainingProgramClosedTest switches it off to pin the other state. -->
+        <env name="MEMBERSHIP_ENROLLMENT_OPEN" value="true"/>
     </php>
 </phpunit>

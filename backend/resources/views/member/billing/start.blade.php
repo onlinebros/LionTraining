@@ -1,7 +1,7 @@
 @extends('layouts.member')
 
-@section('title', 'Activate Membership')
-@section('page-title', 'Activate Membership')
+@section('title', 'Add the Training Program')
+@section('page-title', 'Add the Training Program')
 
 @section('breadcrumb')
     <li class="breadcrumb-item active">Billing</li>
@@ -26,6 +26,18 @@
 
             @php($price = '$' . number_format($amount / 100, 2))
             @php($thresholdText = '$' . number_format($threshold))
+
+            {{-- A partner on a business line that is not the membership got
+                 here by choosing to, not by being stopped. Saying so is the
+                 difference between an offer and an unpaid bill. --}}
+            @if($optional ?? false)
+                <div class="alert alert-info py-2 small mb-3">
+                    <strong>This is optional.</strong>
+                    Nothing in {{ $opportunity->name() }} needs a card, and your account keeps working
+                    exactly as it does now if you close this page. Adding the Training Program below is what
+                    opens the training program.
+                </div>
+            @endif
 
             <div class="card">
                 <div class="card-body p-4">
@@ -106,7 +118,7 @@
                     </button>
 
                     <p class="text-muted small mt-3 mb-2">
-                        Charges are non-refundable. A card can back only one membership.
+                        Charges are non-refundable. A card can back only one Training Program subscription.
                         See the <a href="https://q3.life/terms" target="_blank" rel="noopener">Terms</a>
                         and <a href="https://q3.life/refunds" target="_blank" rel="noopener">Refund Policy</a>.
                     </p>

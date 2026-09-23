@@ -423,40 +423,30 @@ class GenealogyService
 
         $maxDepth ??= (int) config('genealogy.tree_depth', 5);
 
-        // Ask for one row more than the ceiling. Getting fewer means the whole
-        // subtree is in hand and every count below is exact — which is the case
-        // for essentially every partner, and the behaviour this method has
-        // always had.
-        $rows = $this->subtreeRows($root)->limit($this->maxTreeRows() + 1)->get();
+        // Ask for one row more than the ceiling. Getting fewer means every
+        // member below the root is in hand and every count is exact — which is
+        // the case for essentially every partner, and the behaviour this method
+        // has always had.
+        $visible = $this->subtreeRows($root)->limit($this->maxTreeRows() + 1)->get();
 
-        $overflowed = $rows->count() > $this->maxTreeRows();
+        $overflowed = $visible->count() > $this->maxTreeRows();
 
         if ($overflowed) {
-            // An organisation too large to hold in one request. The iHub import
-            // put 1.3 million positions under one account, and its widest node
-            // has 6,035 direct children, so this is not hypothetical: before
-            // the ceiling, opening My Team near the top of that tree fetched
-            // 1,304,353 models against a 256MB limit. That is not a slow page,
-            // it is a 500.
-            //
-            // Fall back to the levels that actually render. The counts on the
-            // nodes below then describe what was loaded rather than everything
+            // An organisation with more members than one page can draw. Fall
+            // back to the levels that actually render. The counts on the nodes
+            // below then describe what was loaded rather than everything
             // beneath them, so the view is told, and the root — the one node
             // the member is really looking at — gets its true total from a
             // single indexed count.
-            $rows = $this->subtreeRows($root)
+            $visible = $this->subtreeRows($root)
                 ->whereRaw('nlevel(placement_path) <= ?', [$this->depthOf($root->placement_path) + $maxDepth])
                 ->limit($this->maxTreeRows())
                 ->get();
         }
 
-        $compression = $this->compress($rows, $root);
-
-        // Only rows that are members get rendered. The root is kept whatever it
-        // is, so an admin can open the tree from a holding spot.
-        $visible = $rows->filter(
-            fn (User $row) => $row->id === $root->id || $row->account_status === User::ACCOUNT_ACTIVE,
-        );
+        // Compression is worked out from the paths these rows already carry,
+        // which is why the holding spots between them never have to be read.
+        $compression = $this->compressionMap($root, $visible);
 
         // Team size per node, accumulated by walking each visible row's
         // activated ancestors once. O(rows × depth) rather than a query per
@@ -509,9 +499,9 @@ class GenealogyService
             ];
         };
 
-        $rootRow = $rows->firstWhere('id', $root->id) ?? $root;
-
-        $tree = $build($rootRow, 0);
+        // The root is never among the rows — subtreeRows excludes it, so that an
+        // admin opening the tree from an unclaimed spot still gets their node.
+        $tree = $build($root, 0);
         $tree['overflowed'] = $overflowed;
 
         if ($overflowed) {
@@ -528,12 +518,26 @@ class GenealogyService
      * cannot select different columns or order differently — the build step
      * depends on parents arriving before children.
      *
+     * **Activated only, and the root excluded.** The tree draws members; an
+     * unclaimed spot is never a node on it, and the compression that re-hangs
+     * partners sitting under one reads the ancestor ids out of the paths these
+     * rows already carry, so the spots in between never have to be fetched.
+     *
+     * That is also what makes the query survive a large organisation. Asking
+     * for every row below the root and sorting it is a sequential scan plus an
+     * external merge sort — 1.3 million rows spilling 360MB to disk, 32.7
+     * seconds measured on production, to take the first five thousand. The
+     * activated set is matched by an index on account_status, and it grows with
+     * claims rather than with imports: 86 rows against that same million.
+     *
      * @return Builder<User>
      */
     private function subtreeRows(User $root): Builder
     {
         return User::query()
+            ->activated()
             ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
+            ->where('id', '!=', $root->id)
             ->orderByRaw('nlevel(placement_path)')
             ->orderBy('id')
             ->select(['id', 'name', 'email', 'phone', 'is_active', 'account_status', 'sponsor_id',
@@ -541,50 +545,6 @@ class GenealogyService
     }
 
     // ── Compression ───────────────────────────────────────────────────────────
-
-    /**
-     * Where each activated descendant sits once unclaimed spots are ignored.
-     *
-     * For every row below $root this returns the nearest activated ancestor
-     * (falling back to $root), how many activated ancestors stand between the
-     * two, and the full list of activated ancestors so a caller can accumulate
-     * team counts in one pass.
-     *
-     * @param  \Illuminate\Support\Collection<int, User>  $rows  The whole subtree, root included.
-     * @return array{parent: array<int,int>, depth: array<int,int>, ancestors: array<int,list<int>>}
-     */
-    private function compress($rows, User $root): array
-    {
-        $activated = [];
-
-        foreach ($rows as $row) {
-            $activated[$row->id] = $row->account_status === User::ACCOUNT_ACTIVE;
-        }
-
-        $parent = $depth = $ancestors = [];
-
-        foreach ($rows as $row) {
-            if ($row->id === $root->id) {
-                continue;
-            }
-
-            $ids = $this->pathIds($row->placement_path);
-
-            // Keep only what lies strictly between the root and this row.
-            $rootAt = array_search($root->id, $ids, true);
-            $between = $rootAt === false
-                ? array_slice($ids, 0, -1)
-                : array_slice($ids, $rootAt + 1, count($ids) - $rootAt - 2);
-
-            $chain = array_values(array_filter($between, fn (int $id) => $activated[$id] ?? false));
-
-            $ancestors[$row->id] = array_merge($chain, [$root->id]);
-            $parent[$row->id]    = $chain === [] ? $root->id : end($chain);
-            $depth[$row->id]     = count($chain) + 1;
-        }
-
-        return ['parent' => $parent, 'depth' => $depth, 'ancestors' => $ancestors];
-    }
 
     /**
      * Where each activated descendant sits, without reading the whole subtree.
@@ -601,11 +561,19 @@ class GenealogyService
      * query — distinct ids drawn from the paths already in hand — which is what
      * compression needs and nothing more.
      *
+     * @param  \Illuminate\Support\Collection<int, User>|null  $members
+     *         The activated descendants, when the caller has already loaded
+     *         them — and then it is asserting that this is *all* of them, which
+     *         is what lets the ancestor lookup be skipped entirely. subtree()
+     *         qualifies: it selects the same population, and orders it by depth,
+     *         so a member cannot be in the set without its activated ancestors.
      * @return array{parent: array<int,int>, depth: array<int,int>, ancestors: array<int,list<int>>}
      */
-    private function compressionMap(User $root): array
+    private function compressionMap(User $root, $members = null): array
     {
-        $members = User::query()
+        $supplied = $members !== null;
+
+        $members ??= User::query()
             ->activated()
             ->whereRaw('placement_path <@ ?::ltree', [$root->placement_path])
             ->where('id', '!=', $root->id)
@@ -630,11 +598,18 @@ class GenealogyService
 
         $ancestorIds = array_unique(array_merge(...array_values($between))) ?: [];
 
-        $activated = $ancestorIds === []
-            ? []
-            : array_flip(
-                User::query()->activated()->whereIn('id', $ancestorIds)->pluck('id')->all()
-            );
+        if ($supplied) {
+            // The caller handed over every activated row below the root, so an
+            // ancestor is activated exactly when it is one of them. Asking the
+            // database again would be asking it to confirm rows already in hand.
+            $activated = array_flip($members->pluck('id')->all());
+        } else {
+            $activated = $ancestorIds === []
+                ? []
+                : array_flip(
+                    User::query()->activated()->whereIn('id', $ancestorIds)->pluck('id')->all()
+                );
+        }
 
         $parent = $depth = $ancestors = [];
 

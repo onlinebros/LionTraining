@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\Genealogy\EnrollmentService;
+use App\Services\Opportunities\OpportunityTracker;
 use App\Services\Presentations\ConversionTracker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,13 +30,27 @@ class UserAuthController extends Controller
             $request->session()->regenerate();
             // Back to the page that sent them to sign in, if there was one — a
             // Your Rooms link to one guest's conversation is useless if it
-            // lands on the dashboard. Otherwise admins get the admin panel.
-            return redirect()->intended(
-                Auth::user()->isAdmin() ? route('admin.dashboard') : route('member.dashboard')
-            );
+            // lands on the dashboard. Otherwise admins get the admin panel,
+            // and a product partner gets their own section: the member
+            // dashboard would only bounce them (KeepProductPartnersInPortal)
+            // and flash a member-area page on the way.
+            return redirect()->intended($this->homeFor(Auth::user()));
         }
 
         return back()->withErrors(['email' => 'Invalid email or password.'])->onlyInput('email');
+    }
+
+    /**
+     * Where an account belongs when nothing more specific was asked for.
+     *
+     * The account's own choice where it has made one, and the sensible default
+     * for its kind where it has not — an admin who lives in the member area and
+     * a vendor's sales person who lives in the back office should not each pay
+     * a redirect every morning. See User::landingRoute().
+     */
+    private function homeFor(\App\Models\User $user): string
+    {
+        return $user->landingRoute();
     }
 
     public function showRegister()
@@ -84,7 +99,20 @@ class UserAuthController extends Controller
         // address they end up using.
         app(ConversionTracker::class)->remember($request->query(ConversionTracker::PARAM));
 
-        return view('public.auth.referral', ['sponsor' => $this->sponsorFor($code)]);
+        // Which marketing site and which business line sent them. The form
+        // below is shared by every front door, so this is the only place the
+        // difference can be captured — and it has to be captured before the
+        // account exists.
+        $tracker = app(OpportunityTracker::class);
+        $tracker->remember(
+            $request->query(OpportunityTracker::PARAM),
+            $request->query(OpportunityTracker::SITE_PARAM),
+        );
+
+        return view('public.auth.referral', [
+            'sponsor'     => $this->sponsorFor($code),
+            'opportunity' => $tracker->current(),
+        ]);
     }
 
     /**
@@ -131,6 +159,11 @@ class UserAuthController extends Controller
         // watched it.
         app(ConversionTracker::class)->attribute($user);
 
+        // And which front door they came through. This sets their primary
+        // business line, which afterSignup() reads a moment later to decide
+        // whether to ask for a card at all.
+        app(OpportunityTracker::class)->attribute($user);
+
         Auth::login($user);
         $request->session()->regenerate();
 
@@ -144,9 +177,15 @@ class UserAuthController extends Controller
      */
     private function afterSignup(User $user): string
     {
-        return $user->hasActiveMembership()
-            ? route('member.dashboard')
-            : route('member.billing.start');
+        // A business line that is not the membership has nothing to charge for,
+        // so there is no card to capture and the billing screen would be a dead
+        // end asking them to buy something they did not come for. The
+        // subscription gate agrees — see RequireActiveSubscription.
+        if ($user->hasActiveMembership() || ! $user->requiresMembership()) {
+            return route('member.dashboard');
+        }
+
+        return route('member.billing.start');
     }
 
     public function logout(Request $request)

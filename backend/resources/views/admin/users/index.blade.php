@@ -14,17 +14,35 @@
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">All Users</h5>
                     <div class="d-flex gap-2 align-items-center">
-                        {{-- Role filter --}}
+                        {{-- Role and business-line filters. One GET form rather
+                             than two onchange handlers that each throw the
+                             other's parameter away. --}}
                         @php $roles = \App\Models\Role::orderBy('level')->get(); @endphp
-                        <select class="form-select form-select-sm" style="width:auto;"
-                                onchange="window.location = '{{ route('admin.users.index') }}?role=' + this.value">
-                            <option value="">All Roles</option>
-                            @foreach($roles as $r)
-                                <option value="{{ $r->name }}" {{ request('role') === $r->name ? 'selected' : '' }}>
-                                    {{ $r->display_name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <form method="GET" action="{{ route('admin.users.index') }}" class="d-flex gap-2 align-items-center">
+                            <select name="role" class="form-select form-select-sm" style="width:auto;"
+                                    onchange="this.form.submit()">
+                                <option value="">All Roles</option>
+                                @foreach($roles as $r)
+                                    <option value="{{ $r->name }}" {{ request('role') === $r->name ? 'selected' : '' }}>
+                                        {{ $r->display_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            {{-- Which front door they came in through. The
+                                 default line also matches every account that
+                                 predates the feature — see the controller. --}}
+                            <select name="opportunity" class="form-select form-select-sm" style="width:auto;"
+                                    onchange="this.form.submit()">
+                                <option value="">All Opportunities</option>
+                                @foreach($opportunities as $key => $line)
+                                    <option value="{{ $key }}" {{ $opportunity === $key ? 'selected' : '' }}>
+                                        {{ $line->name() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <noscript><button type="submit" class="btn btn-sm btn-secondary">Filter</button></noscript>
+                        </form>
                         <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm">
                             <i data-feather="user-plus" data-width="14" data-height="14"></i> Add User
                         </a>
@@ -45,6 +63,7 @@
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Role</th>
+                                    <th>Opportunity</th>
                                     <th>Status</th>
                                     <th>Sponsees</th>
                                     <th>Sponsors</th>
@@ -67,6 +86,20 @@
                                                 <span class="badge badge-light-secondary">No Role</span>
                                             @endif
                                         </td>
+                                        {{-- The line they came in for. A member
+                                             on the default is left plain: it is
+                                             most of the list, and badging all of
+                                             them badges none of them. --}}
+                                        <td>
+                                            @if($user->opportunity()->isDefault())
+                                                <span class="text-muted small">{{ $user->opportunity()->shortName() }}</span>
+                                            @else
+                                                <span class="badge badge-light-primary">{{ $user->opportunity()->shortName() }}</span>
+                                            @endif
+                                            @if($user->entry_site)
+                                                <div class="text-muted" style="font-size:.7rem;">{{ $user->entry_site }}</div>
+                                            @endif
+                                        </td>
                                         <td>
                                             @if($user->is_active)
                                                 <span class="badge badge-light-success">Active</span>
@@ -76,7 +109,7 @@
                                         </td>
                                         <td>{{ $user->sponsees_count }}</td>
                                         <td>{{ $user->sponsors_count }}</td>
-                                        <td class="text-muted small">{{ $user->created_at->format('d M Y') }}</td>
+                                        <td class="text-muted small">{{ $user->registeredAt()?->format('d M Y') }}</td>
                                         <td class="text-nowrap">
                                             <div class="d-flex gap-1 justify-content-end">
                                                 <a href="{{ route('admin.users.show', $user) }}"
@@ -112,7 +145,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center f-light py-4">No users found.</td>
+                                        <td colspan="10" class="text-center f-light py-4">No users found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

@@ -79,23 +79,34 @@ class TrainingCategory extends Model
         return ['value' => (int) $this->release_delay, 'unit' => $this->release_delay_unit ?? 'days'];
     }
 
-    /** Carbon date when this category becomes available for the given user, or null if immediately. */
+    /**
+     * Carbon date when this category becomes available for the given user, or
+     * null if immediately.
+     *
+     * Counted from the start of the member's paid membership — see
+     * User::trainingClockStartedAt(), which explains why that is not the same
+     * as when they signed up.
+     */
     public function availableAtForUser(User $user): ?\Carbon\Carbon
     {
         $delay = $this->releaseDelay();
         if (!$delay) return null;
-        if (!$user->active_start_date) return null;
+
+        $start = $user->trainingClockStartedAt();
+        if (!$start) return null;
 
         return $delay['unit'] === 'months'
-            ? $user->active_start_date->copy()->addMonths($delay['value'])
-            : $user->active_start_date->copy()->addDays($delay['value']);
+            ? $start->addMonths($delay['value'])
+            : $start->addDays($delay['value']);
     }
 
     public function isTimeLocked(User $user): bool
     {
         $delay = $this->releaseDelay();
         if (!$delay) return false;
-        if (!$user->active_start_date) return true; // delay set but no start date = locked
+        // A delay is configured but the member's membership has not started, so
+        // month one has not begun. Locked until it does.
+        if (!$user->trainingClockStartedAt()) return true;
         $at = $this->availableAtForUser($user);
         return $at !== null && now()->lt($at);
     }

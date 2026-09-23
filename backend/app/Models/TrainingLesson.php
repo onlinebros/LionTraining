@@ -100,23 +100,30 @@ class TrainingLesson extends Model
         return null;
     }
 
-    /** Carbon date the lesson unlocks for this user, or null if already available. */
+    /**
+     * Carbon date the lesson unlocks for this user, or null if already
+     * available. Counted from the start of the paid membership — see
+     * User::trainingClockStartedAt().
+     */
     public function availableAtForUser(User $user): ?\Carbon\Carbon
     {
         $delay = $this->effectiveReleaseDelay();
         if (!$delay) return null;
-        if (!$user->active_start_date) return null;
+
+        $start = $user->trainingClockStartedAt();
+        if (!$start) return null;
 
         return $delay['unit'] === 'months'
-            ? $user->active_start_date->copy()->addMonths($delay['value'])
-            : $user->active_start_date->copy()->addDays($delay['value']);
+            ? $start->addMonths($delay['value'])
+            : $start->addDays($delay['value']);
     }
 
     public function isTimeLocked(User $user): bool
     {
         $delay = $this->effectiveReleaseDelay();
         if (!$delay) return false;
-        if (!$user->active_start_date) return true; // delay configured but member has no start date
+        // Delay configured but the member's paid membership has not started.
+        if (!$user->trainingClockStartedAt()) return true;
         $at = $this->availableAtForUser($user);
         return $at !== null && now()->lt($at);
     }

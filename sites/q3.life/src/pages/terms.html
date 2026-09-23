@@ -1,9 +1,9 @@
-<!--meta {"title": "Terms of Service", "description": "The terms for {{ site.brand }} memberships, {{ course.name }}, the member platform, the Partner Program and this website, provided by {{ business.legal_name }}.", "nav": ""}-->
+<!--meta {"title": "Terms of Service", "description": "The terms for {{ site.brand }} member accounts, the {{ program.name }}, the member platform, the Partner Program and this website, provided by {{ business.legal_name }}.", "nav": ""}-->
 <section class="page-head">
   <div class="wrap">
     <span class="eyebrow">Policy</span>
     <h1>Terms of Service</h1>
-    <p class="lede">The agreement between you and {{ business.legal_name }} when you use our website, membership and member platform.</p>
+    <p class="lede">The agreement between you and {{ business.legal_name }} when you use our website, our member platform and the {{ program.name }}.</p>
     <p class="updated">Last updated {{ policies.updated_display }}</p>
   </div>
 </section>
@@ -15,7 +15,7 @@
       <li><a href="terms#agreement">This agreement</a></li>
       <li><a href="terms#eligibility">Eligibility</a></li>
       <li><a href="terms#accounts">Your account</a></li>
-      <li><a href="terms#billing">Membership, billing and renewal</a></li>
+      <li><a href="terms#billing">The Training Program, billing and renewal</a></li>
       <li><a href="terms#prelaunch">Joining before launch</a></li>
       <li><a href="terms#enrollment">Enrollment options</a></li>
       <li><a href="terms#cancellation">Cancellation and refunds</a></li>
@@ -38,7 +38,7 @@
 
   <section id="agreement">
     <h2>1. This agreement</h2>
-    <p>These Terms of Service ("Terms") are an agreement between you and {{ business.legal_name }}, {{ business.entity_description }} ("{{ site.brand_short }}", "we" or "us"). They apply to {{ site.url }}, our member platform at {{ site.app_url }}, partner product pages, {{ course.name }} and the {{ membership.name }}.</p>
+    <p>These Terms of Service ("Terms") are an agreement between you and {{ business.legal_name }}, {{ business.entity_description }} ("{{ site.brand_short }}", "we" or "us"). They apply to {{ site.url }}, our member platform at {{ site.app_url }}, partner product pages, {{ course.name }} and the {{ program.name }}.</p>
     <p>By creating an account or using our services, you agree to these Terms and to the policies they refer to: our <a href="privacy">Privacy Policy</a>, <a href="refunds">Refund &amp; Cancellation Policy</a>, <a href="partners">Partner Program</a> page and Compensation Plan, and <a href="earnings-disclaimer">Earnings Disclaimer</a>. If you do not agree, do not use our services.</p>
   </section>
 
@@ -47,7 +47,7 @@
     <ul>
       <li>You must be at least {{ policies.min_age }} years old, able to enter a binding contract, and live in {{ business.service_region }}. Our services are not offered anywhere else.</li>
       <li>You may not use our services if US law prohibits it, including if you are subject to US sanctions.</li>
-      <li>Membership is by invitation, through a referral link from an existing partner. Each person may hold one membership.</li>
+      <li>Member accounts are by invitation, through a referral link from an existing partner. Each person may hold one account.</li>
       <li>We may decline any application.</li>
     </ul>
   </section>
@@ -58,44 +58,44 @@
   </section>
 
   <section id="billing">
-    <h2>4. Membership, billing and renewal</h2>
+    <h2>4. The Training Program, billing and renewal</h2>
     <ul>
-      <li><strong>Price.</strong> The {{ membership.name }} costs {{ membership.price_display }} {{ membership.interval_phrase }}, plus any sales tax that applies. The price is shown before you confirm.</li>
-      <li><strong>Automatic renewal.</strong> Your membership renews automatically every {{ membership.interval_noun }} at the price then in effect, until you cancel. By joining, you authorize us and our payment processor, Stripe, to charge your card on file for each renewal. We email a receipt for every charge, and your next billing date is always shown in Billing.</li>
+      <li><strong>Price.</strong> A member account is free. The optional {{ program.name }} costs {{ program.price_display }} {{ program.interval_phrase }}, plus any sales tax that applies. The price is shown before you confirm.</li>
+      <li><strong>Automatic renewal.</strong> Once it starts, the Training Program renews automatically every {{ program.interval_noun }} at the price then in effect, until you cancel. By subscribing, you authorize us and our payment processor, Stripe, to charge your card on file for each renewal. We email a receipt for every charge, and your next billing date is always shown in Billing.</li>
       <li><strong>Payment method.</strong> Keep a valid card on file. If a payment fails, we retry the card and your access continues for {{ policies.payment_grace_days }} days. After that, access pauses until payment succeeds or you cancel.</li>
-      <li><strong>Statement.</strong> Charges appear on your card statement as {{ membership.statement_descriptor }}.</li>
+      <li><strong>Statement.</strong> Charges appear on your card statement as {{ program.statement_descriptor }}.</li>
     </ul>
   </section>
 
   <section id="prelaunch">
     <h2>5. Joining before launch</h2>
-    <p>If you join before our official launch, your card is saved with Stripe but not charged before launch. If you choose Start now, we will email you {{ membership.prelaunch_notice_days }} days before launch with the launch date, and the membership fee is first charged on launch day, then every {{ membership.interval_noun }} until you cancel. If you choose Wait for commissions, section 6 applies instead. You can cancel at any time before the first charge and pay nothing. Once made, charges are not refundable. We do not guarantee a launch date. If we do not launch, your card is never charged.</p>
+    <p>If you add the Training Program before our official launch, your card is saved with Stripe but not charged before launch. If you choose Start now, we will email you {{ program.prelaunch_notice_days }} days before launch with the launch date, and the Training Program fee is first charged on launch day, then every {{ program.interval_noun }} until you cancel. If you choose Wait for commissions, section 6 applies instead. You can cancel at any time before the first charge and pay nothing. Once made, charges are not refundable. We do not guarantee a launch date. If we do not launch, your card is never charged.</p>
   </section>
 
   <section id="enrollment">
     <h2>6. Enrollment options</h2>
-    <p>When you join, you save a card and choose when the membership fee is first charged. There is no free trial.</p>
+    <p>When you add the Training Program, you save a card and choose when its fee is first charged. Opening a member account itself is free and takes no card. There is no free trial.</p>
     <ul>
-      <li><strong>Start now.</strong> The fee is first charged when {{ course.name }} opens: on launch day if you join before launch, or when you join if we have already launched.</li>
-      <li><strong>Wait for commissions.</strong> The fee is first charged once the Partner Program commissions actually paid to you total at least {{ membership.commission_threshold_display }}. A commission that is reversed does not count. Until then, you can use the back office and the Partner Program, but not {{ course.name }}. You can switch to Start now from Billing at any time. We do not promise that you will earn any commissions. If yours never reach {{ membership.commission_threshold_display }}, you are not charged.</li>
+      <li><strong>Start now.</strong> The fee is first charged when {{ course.name }} opens: on launch day if you add it before launch, or when you add it if we have already launched.</li>
+      <li><strong>Wait for commissions.</strong> The fee is first charged once the Partner Program commissions actually paid to you total at least {{ program.commission_threshold_display }}. A commission that is reversed does not count. Until then, you can use the back office and the Partner Program, but not {{ course.name }}. You can switch to Start now from Billing at any time. We do not promise that you will earn any commissions. If yours never reach {{ program.commission_threshold_display }}, you are not charged.</li>
     </ul>
-    <p>Whichever option you choose, the fee is then charged every {{ membership.interval_noun }} until you cancel. You can cancel at any time before the first charge and pay nothing.</p>
+    <p>Whichever option you choose, the fee is then charged every {{ program.interval_noun }} until you cancel. You can cancel at any time before the first charge and pay nothing.</p>
   </section>
 
   <section id="cancellation">
     <h2>7. Cancellation and refunds</h2>
-    <p>You can cancel at any time, online in Billing or by sending a request through our <a href="contact">contact form</a>. Cancelling stops future charges, and you keep access until the end of the {{ membership.interval_noun }} you paid for.</p>
-    <p><strong>Membership charges are not refundable.</strong> This covers the first charge, every renewal charge, and the unused part of any billing period. The only exceptions are duplicate or mistaken charges and the cases in section 18, as set out in our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>
+    <p>You can cancel at any time, online in Billing or by sending a request through our <a href="contact">contact form</a>. Cancelling stops future charges, and you keep access until the end of the {{ program.interval_noun }} you paid for.</p>
+    <p><strong>Training Program charges are not refundable.</strong> This covers the first charge, every renewal charge, and the unused part of any billing period. The only exceptions are duplicate or mistaken charges and the cases in section 18, as set out in our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>
   </section>
 
   <section id="price-changes">
     <h2>8. Price and service changes</h2>
-    <p>We may change the membership price. A new price applies only after we have emailed you at least 30 days in advance, so you can cancel before it applies. We may also update the course, features and tools.</p>
+    <p>We may change the Training Program price. A new price applies only after we have emailed you at least 30 days in advance, so you can cancel before it applies. We may also update the course, features and tools.</p>
   </section>
 
   <section id="content">
     <h2>9. Using the course</h2>
-    <p>While your membership is active, we give you a personal, non-exclusive, non-transferable license to stream {{ course.name }} and use member materials for your own learning. You may not download, record, copy, share, resell or publicly show course content, or let anyone else use your account to watch it.</p>
+    <p>While your Training Program subscription is active, we give you a personal, non-exclusive, non-transferable license to stream {{ course.name }} and use member materials for your own learning. You may not download, record, copy, share, resell or publicly show course content, or let anyone else use your account to watch it.</p>
     <p>The course is for education only. It is not financial, legal, tax, medical or other professional advice, and we don't guarantee any particular result from it.</p>
   </section>
 
@@ -156,7 +156,7 @@
 
   <section id="termination">
     <h2>18. Suspension and termination</h2>
-    <p>You can end your membership at any time by cancelling. We may suspend or end your membership for non-payment, fraud, a breach of these Terms, or where the law requires. If we end your membership without cause, we refund the unused part of your current billing period. If we end it because you breached these Terms, no refund is due, and unpaid commissions are treated as the Compensation Plan describes. Sections that by their nature should survive, including 13 and 15 to 19, survive the end of your membership.</p>
+    <p>You can cancel the Training Program at any time, and you can close your account by asking us to. We may suspend or end your account, your Training Program subscription or both for non-payment, fraud, a breach of these Terms, or where the law requires. If we end a paid Training Program subscription without cause, we refund the unused part of your current billing period. If we end it because you breached these Terms, no refund is due, and unpaid commissions are treated as the Compensation Plan describes. Sections that by their nature should survive, including 13 and 15 to 19, survive the end of your account.</p>
   </section>
 
   <section id="disputes">
@@ -171,7 +171,7 @@
 
   <section id="general">
     <h2>21. General</h2>
-    <p>These Terms, and the policies they refer to, are the entire agreement between you and us about our services. If any part is found unenforceable, the rest still applies. Our not enforcing a term is not a waiver of it. You may not transfer your membership or these Terms. We may transfer them to a successor to our business. We are not responsible for delays caused by events beyond our reasonable control. We may give you notices by email to the address on your account. Legal notices to us must be sent by mail to the address below.</p>
+    <p>These Terms, and the policies they refer to, are the entire agreement between you and us about our services. If any part is found unenforceable, the rest still applies. Our not enforcing a term is not a waiver of it. You may not transfer your account or these Terms. We may transfer them to a successor to our business. We are not responsible for delays caused by events beyond our reasonable control. We may give you notices by email to the address on your account. Legal notices to us must be sent by mail to the address below.</p>
     <p>{{ business.legal_name }}, {{ business.address_line1 }}, {{ business.address_line2 }} · Support: <a href="contact">contact form</a></p>
   </section>
 </div>

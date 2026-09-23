@@ -1,15 +1,75 @@
-<!--meta {"title": "{{ site.brand }} ({{ site.brand_short }}): {{ course.name }} and the Partner Program", "description": "{{ business.legal_name }} offers {{ course.name }}, a member back office and a Partner Program in one membership: {{ membership.price_display }} {{ membership.interval_phrase }}."}-->
+<!--meta {"title": "{{ site.brand }} ({{ site.brand_short }}): the {{ vendor.product }}", "description": "{{ business.legal_name }} sells commercial air purification: {{ vendor.name }}'s non-thermal cold plasma system, installed into the ductwork a building already has. Refer one as a partner, free to join."}-->
 <section class="hero">
   <div class="wrap">
-    <span class="eyebrow">{{ site.brand }} · {{ site.brand_short }}</span>
-    <h1>An online membership for learning, growing and sharing what works.</h1>
-    <p class="lede">{{ business.legal_name }} offers the {{ membership.name }}: {{ course.name }}, a private back office, and the option to earn commissions through our Partner Program.</p>
-    <p class="price-line"><strong>{{ membership.price_display }} {{ membership.interval_phrase }}</strong><span>No charge until your billing starts · Cancel any time before your first charge · Renews {{ membership.interval_adverb }}</span></p>
+    <span class="eyebrow">{{ site.brand }} &middot; {{ site.brand_short }}</span>
+    <h1>Clean air, sold by people who care about it.</h1>
+    <p class="lede">
+      {{ business.legal_name }} puts the {{ vendor.product }} into commercial buildings — offices,
+      clinics, schools, hotels, plants. It installs into the ductwork a building already has, and it
+      cleans the air and the surfaces while the heating and cooling run as normal.
+    </p>
     <div class="actions">
-      <a class="btn btn-gold" data-ref data-join href="membership" hidden>Join with <span data-ref-first>them</span></a>
-      <a class="btn btn-gold" data-ref-hide href="membership">Membership &amp; pricing</a>
-      <a class="btn btn-ghost" data-ref href="membership" hidden>Membership &amp; pricing</a>
-      <a class="btn btn-ghost" href="partners">How the Partner Program works</a>
+      <a class="btn btn-gold" data-ref data-buy href="system" hidden>Order the system</a>
+      <a class="btn btn-gold" data-ref-hide href="system">See the system</a>
+      <a class="btn btn-ghost" data-ref href="system" hidden>See the system</a>
+      <a class="btn btn-ghost" data-ref data-join href="partners" hidden>Join with <span data-ref-first>them</span></a>
+      <a class="btn btn-ghost" data-ref-hide href="partners">Refer it as a partner</a>
+    </div>
+    <p class="claim-note" data-ref hidden>
+      {{ storefront.price_display }} {{ storefront.price_unit }}. {{ vendor.name }} takes the payment,
+      ships it and warranties it.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="stat-row">
+      <div>
+        <div class="stat-value stat-value--gold">99.99%</div>
+        <div class="stat-label">of tested viruses and bacteria inactivated, including SARS-CoV-2 and tested variants</div>
+      </div>
+      <div>
+        <div class="stat-value">0.3 &micro;m</div>
+        <div class="stat-label">particulates measured, including PM1, PM2.5 and PM10</div>
+      </div>
+      <div>
+        <div class="stat-value">4000 CFM</div>
+        <div class="stat-label">maximum air flow volume per device</div>
+      </div>
+      <div>
+        <div class="stat-value">5 years</div>
+        <div class="stat-label">generator warranty</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="product-lead">
+      <div>
+        <span class="eyebrow">What it is</span>
+        <h2>Advanced science. Real results.</h2>
+        <p>
+          PlasmaGuard PRO&trade; combines proven non-thermal cold plasma technology with sophisticated
+          sensors that use real-time data to ensure the best purified indoor environment for employees,
+          visitors, and customers. The patented response technology continuously measures and monitors
+          indoor air and responds to real-time changes to consistently purify and verify the air is
+          clean, confirming the system&rsquo;s performance.
+        </p>
+        <p>
+          The automated system is installed directly into the building&rsquo;s existing HVAC system. It
+          efficiently operates by continuously purifying all ducts and indoor environments during normal
+          heating, cooling, and ventilation cycles or if sensors detect a change in air quality.
+        </p>
+        <p><a href="system">Read the full specification</a></p>
+      </div>
+      <div class="product-shot">
+        <img src="{{ asset:img/pg-pro-generator-560.webp }}"
+             alt="PlasmaGuard PRO in-duct generator, shown with its ionizing cell extended"
+             width="560" height="560" fetchpriority="high" decoding="async">
+      </div>
     </div>
   </div>
 </section>
@@ -17,30 +77,32 @@
 <section class="section">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">What you get</span>
-      <h2>Everything in one {{ membership.name }}</h2>
-      <p>Membership is fully online. There is nothing to ship, no inventory and nothing else you have to buy.</p>
+      <span class="eyebrow">Who sells what</span>
+      <h2>We refer. {{ vendor.name }} sells.</h2>
+      <p>
+        Worth being plain about, because it decides who you deal with and whose name is on your
+        statement.
+      </p>
     </div>
-    <div class="grid">
+    <div class="grid grid-2">
       <article class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/></svg></div>
-        <h3>{{ course.name }}</h3>
-        <p>{{ course.summary }} Watch the lessons on any device, at your own pace, for as long as your membership is active.</p>
+        <h3>{{ vendor.legal_name }}</h3>
+        <p>
+          Manufactures the system and is the <strong>seller of record</strong>. They quote it, take
+          the payment, work out the sales tax, ship it, and provide the warranty and support. Their
+          charges appear on your statement as <strong>{{ vendor.statement_descriptor }}</strong>.
+        </p>
+        <p><a href="shipping#partner-products">How partner-product orders are shipped</a></p>
       </article>
       <article class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h3M8 17h6"/></svg></div>
-        <h3>Member back office</h3>
-        <p>Track your contacts, notes and follow-ups. Manage your account and billing, and reach our support team, all from one secure dashboard.</p>
-      </article>
-      <article class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div>
-        <h3>Partner tools</h3>
-        <p>Your personal referral link, referral pages for partner products, and a statement of every commission you have earned, had held back, or been paid.</p>
-      </article>
-      <article class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div>
-        <h3>Support when you need it</h3>
-        <p>Send a request through our <a href="contact">contact form</a>, or open a ticket from your back office. Our support team works {{ contact.hours }}.</p>
+        <h3>{{ business.legal_name }}</h3>
+        <p>
+          Is the referral channel. We introduce the buyer, our partner stays their point of contact,
+          and {{ vendor.name }} pays us on completed orders. We never take card details for the
+          equipment, and joining as a partner is free: there is no fee, nothing to buy and no card
+          taken anywhere on this site.
+        </p>
+        <p><a href="about">About {{ business.legal_name }}</a></p>
       </article>
     </div>
   </div>
@@ -49,38 +111,45 @@
 <section class="section">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">How it works</span>
-      <h2>From invitation to first lesson</h2>
+      <span class="eyebrow">Partner Program</span>
+      <h2>Refer a building, get paid when it sells</h2>
+      <p>
+        Free to join. No monthly fee, nothing to buy, and no card. Partners are independent, get their
+        own product page and referral link, and are paid a commission by {{ business.legal_name }} when
+        a sale is confirmed.
+      </p>
     </div>
     <ol class="steps">
-      <li><h3>Get an invitation</h3><p>Membership is by invitation. You join through a referral link from an existing partner.</p></li>
-      <li><h3>Join and choose your option</h3><p>Create your account, add a card and choose when your billing starts. The price and when your first charge happens are shown before you confirm.</p></li>
-      <li><h3>Learn at your own pace</h3><p>Work through {{ course.name }} and use the back office. Cancel online whenever you like.</p></li>
-      <li><h3>Share if you want to</h3><p>Earning through our <a href="partners">Partner Program</a> is optional, and commissions are never guaranteed.</p></li>
+      <li><h3>Get an invitation</h3><p>Partner accounts are opened by invitation from an existing partner, through their referral link.</p></li>
+      <li><h3>Open your account</h3><p>Name, email, password. No card and no fee. You get a back office and your own copy of this site.</p></li>
+      <li><h3>Share the system</h3><p>Send your link to a building with ducted heating or cooling. {{ vendor.name }} quotes, ships and warranties it.</p></li>
+      <li><h3>Get paid</h3><p>Commission is raised when the sale is confirmed, and paid out to a Stripe account in your own name.</p></li>
     </ol>
+    <div class="callout">
+      <p>
+        <strong>Commissions are not guaranteed and you may earn nothing.</strong> What a partner earns
+        depends entirely on what they sell, and this is commercial HVAC equipment with a long sales
+        cycle. We do not promise any level of income. Read the
+        <a href="earnings-disclaimer">Earnings Disclaimer</a> and the
+        <a href="partners">Partner Program</a> terms before you start.
+      </p>
+    </div>
   </div>
 </section>
 
 <section class="section">
-  <div class="wrap grid grid-2">
+  <div class="wrap narrow">
     <article class="card">
-      <span class="eyebrow">Partner products</span>
-      <h2>Products from companies we work with</h2>
-      <p>Partners can refer customers to products that other companies make and sell. The manufacturer is the seller. It takes payment on its own checkout, ships the order, and handles returns and warranty. {{ site.brand }} receives a fee when a sale completes.</p>
-      <p>Our first partner company is {{ vendor.legal_name }}, maker of the {{ vendor.product }}, a commercial air purification system installed into existing heating and cooling ductwork. {{ vendor.name }} runs its own checkout and billing, so charges for its products come from {{ vendor.legal_name }}, not from {{ business.legal_name }}.</p>
-      <p><a href="shipping#partner-products">How partner-product orders are shipped</a></p>
-    </article>
-    <article class="card card-gold">
       <span class="eyebrow">No surprises</span>
-      <h2>Read the terms before you pay</h2>
+      <h2>Read the terms first</h2>
       <ul class="ticks">
-        <li><a href="membership#billing">Price, enrollment options and billing terms</a></li>
+        <li><a href="partners">Partner Program</a></li>
         <li><a href="refunds">Refund &amp; cancellation policy</a></li>
+        <li><a href="shipping">Shipping &amp; delivery</a></li>
         <li><a href="terms">Terms of Service</a></li>
         <li><a href="privacy">Privacy Policy</a></li>
         <li><a href="earnings-disclaimer">Earnings disclaimer</a></li>
       </ul>
-      <p class="muted small">Earnings from the Partner Program depend on your own effort and circumstances. You may earn nothing, and we do not promise any level of income.</p>
     </article>
   </div>
 </section>
@@ -89,10 +158,10 @@
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">Talk to us</span>
-      <h2>Questions before you join?</h2>
+      <h2>Questions, or a building to quote?</h2>
     </div>
     <div class="grid">
-      <div class="card card-gold"><h3>Contact support</h3><p>Send us a question or request through our contact form.</p><a class="btn btn-gold" href="contact">Open the contact form</a></div>
+      <div class="card card-gold"><h3>Contact us</h3><p>Ask for a quote, or about becoming a partner.</p><a class="btn btn-gold" href="contact">Open the contact form</a></div>
       <div class="card"><h3>Support hours</h3><p>{{ contact.hours }}</p></div>
       <div class="card"><h3>Mail</h3><p>{{ business.legal_name }}<br>{{ business.address_line1 }}<br>{{ business.address_line2 }}</p></div>
     </div>

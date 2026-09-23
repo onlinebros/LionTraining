@@ -140,7 +140,7 @@
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
-                                        <td>{{ $user->created_at->diffForHumans() }}</td>
+                                        <td>{{ $user->registeredAt()?->diffForHumans() }}</td>
                                         <td><span class="badge badge-light-success">Active</span></td>
                                     </tr>
                                 @empty

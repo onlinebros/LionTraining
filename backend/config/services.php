@@ -48,6 +48,15 @@ return [
         'allowed_hostnames' => array_filter(explode(',', (string) env('TURNSTILE_ALLOWED_HOSTNAMES', ''))),
     ],
 
+    // The Kartra portal the training library was migrated out of. Only the
+    // one-off import commands use these, and they are unset in normal
+    // operation — the material now lives in our own storage.
+    'kartra' => [
+        'url'      => env('KARTRA_PORTAL_URL'),
+        'email'    => env('KARTRA_EMAIL'),
+        'password' => env('KARTRA_PASSWORD'),
+    ],
+
     // Stripe lives in config/stripe.php, not here. It outgrew a services entry
     // once it carried two webhook secrets, the product and price ids, trial
     // arithmetic and the card-uniqueness safeguard.

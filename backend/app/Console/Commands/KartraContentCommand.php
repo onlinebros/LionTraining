@@ -11,9 +11,9 @@ class KartraContentCommand extends Command
                             {--json= : Path to kartra-page-content.json (default: scripts/kartra-page-content.json)}
                             {--no-download : Import content metadata only, skip file downloads}
                             {--download-only : Skip JSON import, only download pending files}
-                            {--url=https://besafe.kartra.com/portal/Lion : Portal URL}
-                            {--email=john@ihub.global : Login email}
-                            {--password=peZMDgQs : Login password}';
+                            {--url= : Portal URL (default: KARTRA_PORTAL_URL)}
+                            {--email= : Login email (default: KARTRA_EMAIL)}
+                            {--password= : Login password (default: KARTRA_PASSWORD)}';
 
     protected $description = 'Import lesson page content and download attached files from Kartra';
 
@@ -23,10 +23,12 @@ class KartraContentCommand extends Command
         $downloadOnly = $this->option('download-only');
         $noDownload  = $this->option('no-download');
 
+        // Credentials from the environment; see KartraImportCommand for why the
+        // literals that used to sit in this signature had to go.
         $service = new KartraContentService(
-            $this->option('url'),
-            $this->option('email'),
-            $this->option('password'),
+            $this->option('url') ?: (string) config('services.kartra.url'),
+            $this->option('email') ?: (string) config('services.kartra.email'),
+            $this->option('password') ?: (string) config('services.kartra.password'),
         );
 
         // ── Import JSON content ────────────────────────────────────────────

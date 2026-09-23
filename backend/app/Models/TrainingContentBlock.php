@@ -11,7 +11,7 @@ class TrainingContentBlock extends Model
         'lesson_id', 'type', 'title',
         'video_url', 'video_provider', 'video_asset_id',
         'body',
-        'file_path', 'file_name', 'file_size', 'file_mime',
+        'file_path', 'file_disk', 'file_name', 'file_size', 'file_mime',
         'sort_order', 'is_active',
     ];
 
@@ -59,6 +59,35 @@ class TrainingContentBlock extends Model
     public function isEmbeddable(): bool
     {
         return $this->isYouTube() || $this->isVimeo();
+    }
+
+    /**
+     * How this block's video should be shown.
+     *
+     * Self-hosting wins over any embed. Everything Kartra served came off a
+     * CloudFront URL that is public to anyone who has it and would keep working
+     * after someone cancels, so where we hold the file ourselves we play our
+     * own copy through the gated stream and ignore the original source.
+     *
+     * 'embed' is left for material that genuinely lives elsewhere — a YouTube
+     * link an admin adds by hand.
+     */
+    public function playbackMode(): string
+    {
+        if ($this->videoAsset?->isPlayable()) {
+            return 'self';
+        }
+
+        if ($this->isEmbeddable()) {
+            return 'embed';
+        }
+
+        return 'none';
+    }
+
+    public function fileDiskName(): string
+    {
+        return $this->file_disk ?: 'local';
     }
 
     public function formattedFileSize(): string

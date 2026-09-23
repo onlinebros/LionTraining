@@ -321,3 +321,155 @@ is $23.30, not the $14.78 business Ground rate.
 **Tests.** They never call FedEx: `phpunit.xml` blanks the keys, and
 `AddressVerificationTest` fakes production-shaped replies. In those replies the
 attribute values are the strings "true" and "false".
+
+## 14. The Product Partner portal (owner, 2026-09-22)
+
+The vendor's own people, inside our back office, in a section that is neither
+the member area nor the admin area.
+
+**Why a third section.** A product partner is an outside company with a login.
+The member area would put them through the subscription gate and ask a vendor
+for a card for a training program nobody sold them; the admin area would show
+them the whole business. So: its own role, its own middleware, its own layout,
+and its own route prefix — `/product-partner`. The tooling for helping them
+close deals hangs off this section when it is built.
+
+**The role grants nothing.** `roles.product_partner` (level 5, `is_admin` false,
+inserted by migration because production is migrated and not seeded) says what
+kind of account it is. `product_partner_assignments` says what it can see: one
+row per vendor per product, with `'*'` meaning every product that vendor has now
+or adds later. An account with the role and no assignment signs in and reaches a
+holding page saying so — that is the state between "role set" and "products
+linked", and it is minutes long in practice.
+
+Everything the portal reads goes through `App\Support\ProductPartner`, which
+intersects the grants with the vendor registry. A grant naming a vendor removed
+from `config/vendors.php` grants nothing. **A query in this section that reaches
+`vendor_leads` without `ProductPartner::scopeLeads()` is a bug**, because the
+failure mode is one vendor seeing another's customers.
+
+**Admins get in two ways, and they are not the same thing.**
+
+1. **As themselves.** Any admin can open the portal — sidebar → Vendor Orders →
+   Open Partner Portal. They hold *every* vendor, and the page says so in a
+   banner. This answers "does the portal work", not "what does PlasmaGuard see".
+2. **View as.** Admin → Product Partners → **View as** on a row. The whole
+   portal then scopes to that partner's grants: their vendors, their products,
+   their orders, their totals, and their holding page if nothing is linked. This
+   is the one that answers the second question.
+
+`ProductPartner::viewedBy()` decides whose eyes a request is read through, from
+a session key, and `PortalController::subject()` is what every screen scopes to.
+**A controller in that namespace using `$request->user()` for scoping is a
+bug** — it would silently widen the page back to the admin's own access.
+
+Three properties hold it honest:
+
+- **It only ever narrows.** `viewedBy()` is the identity function for anyone who
+  is not an admin, so a product partner cannot scope themselves to another
+  partner by any means, including putting the key in their own session.
+- **It announces itself on every page**, including the holding page, which has
+  no navigation of its own and so carries its own way back.
+- **It is read-only.** Recording a payment is refused while it is on. A payment
+  filed by an admin wearing the vendor's face would read as the vendor's claim
+  and would not be one, on the one screen whose purpose is that both companies
+  trust the same numbers. Admins settle from the admin side, under their own
+  name.
+
+A view whose subject is deleted or taken off the role is dropped rather than
+kept — a view corresponding to nobody looks like data and is not.
+
+**The privacy line runs at the point of payment.** Decided by the owner, and the
+reason the Pipeline screen is counts rather than a list:
+
+| | What the vendor sees |
+|---|---|
+| **Open prospect** (`new`, `handed_off`) | Counts, medians and trends only. No name, no email, no address, no partner. It is a customer one of our partners found and has not closed, and handing it over lets the vendor close it themselves. |
+| **Confirmed order** (`converted`, `refunded`) | Everything: customer, address, qualifiers, amounts, our share, invoice state, tracking. They are the merchant of record, their order desk is already emailed all of it, and withholding it here would be theatre. |
+
+The referring partner's **name and code** appear on a confirmed order; their
+contact details do not. The partner is our relationship until there is a channel
+built for it.
+
+**The settlement account.** One page both companies read, at
+`/product-partner/statement`. The arithmetic, which lives once in
+`App\Services\ProductPartner\PartnerStatement`:
+
+```
+outstanding = earned - credits - paid
+```
+
+- `earned` — `our_share_amount` on every confirmed sale, ever.
+- `credits` — share on orders refunded **after** being invoiced. A refund moves
+  the lead off `converted` so it leaves `earned` by itself; that is right for an
+  order never billed and wrong for one that was, where the money goes back.
+- `paid` — payments the vendor recorded **and we confirmed**.
+- `pending` — recorded and not yet confirmed. **Never in the balance.**
+
+`settled` (what we ticked off invoice by invoice) and `paid` (what they said
+they sent and we agreed) measure the same money from two directions and are both
+shown. When they disagree, that difference is the conversation the screen exists
+to have — do not derive one from the other.
+
+**The vendor can add to the ledger and cannot move it.** They record a payment;
+it is pending until a super admin confirms it on
+Admin → Vendor Orders → Vendor Payments. Confirming a payment that names an
+invoice settles every order on that invoice **in the same transaction**: a
+confirmed payment sitting next to an invoice still marked owed is precisely the
+disagreement this was built to stop. A payment can only be decided once, and a
+rejection requires a reason, which the vendor sees.
+
+There is no invoices table. An invoice is a reference an admin typed onto a
+batch of orders (§7, the existing reconciliation screen), so the statement
+builds each one by grouping its orders — a line can therefore never disagree
+with its total. An invoice with any unsettled order on it reads as open.
+
+**The two counts the vendor asked for**, on the dashboard:
+
+- **Active partners on this line** — accounts holding the business line whose
+  `vendor` key points at them (`config/opportunities.php`), with, underneath,
+  how many have actually sourced a prospect. Never names, only sizes.
+- **In approval** — orders waiting on a decision at *our* end before the sale is
+  final: attribution review (§11) and address review (§13). Shown because it is
+  the honest answer to "why is that order not on my statement yet", and the
+  screen says plainly that nothing is needed from the vendor.
+
+**Isolation, and the one hole in it (owner, 2026-09-22).**
+`ProductPartnerSectionAccess` is on the whole `web` group and matches by
+route-name prefix — the same mechanism as the pre-launch guard, so a section
+added later is covered the day it exists. Two rules, for two reasons:
+
+- `admin.*` — **never**. They are an outside company's employee, not staff, and
+  no amount of business line changes that.
+- `member.*` — **only once they are put on a business line.** A vendor's sales
+  people sell for us and want the back office; their accountant does not.
+
+That second rule is not tidiness. An account with no business line recorded
+reads as the **training** line, which requires a card — so letting an unlinked
+product partner into the member area walks a vendor into a card capture screen
+for a $49.99 membership nobody sold them. `User::canUseMemberArea()` therefore
+tests for an **explicit** `user_opportunities` row and never `opportunities()`,
+which folds in that default.
+
+**Letting a partner sell.** Admin → the user's page → *Give member access*. One
+button rather than "add the line, and remember to tick primary": a non-primary
+line leaves the default in place and the card gate armed, and the person it
+happens to works for the vendor. It puts them on the line whose `vendor` key
+matches a vendor they already hold, **as primary**, so "can see PlasmaGuard's
+numbers" and "can sell PlasmaGuard" stay paired. They get a referral code and
+**earn ordinary commission** (owner's call, 2026-09-22) — worth remembering that
+this means the vendor's own staff take a cut of what the vendor pays us.
+
+Each side links to the other in the sidebar. Holding two back offices with no
+way between them is worse than holding one.
+
+**Where people land.** `users.landing_preference` ('admin' | 'member' |
+'portal', null = the default for that kind of account) with the control in the
+profile menu of all three shells. It renders only for accounts holding more than
+one section, so an ordinary member never sees it. A stored preference for a
+section since lost is ignored rather than obeyed — otherwise losing access
+strands somebody on a redirect that bounces them straight back.
+
+**Not built yet.** Deal-closing tools: no way for the vendor to message a
+partner, claim a prospect, or be assigned one. That is the next piece, and the
+section exists to hold it.

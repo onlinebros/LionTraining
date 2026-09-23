@@ -41,16 +41,33 @@
             </span>
         </div>
 
+        @php
+            // Which front door sent them. Defaults to the membership, so a link
+            // with no ?o= reads exactly as it always has.
+            $opportunity ??= \App\Support\Opportunity::default();
+        @endphp
+
         <div class="q3-sponsor-card">
             <div class="q3-avatar q3-avatar-lg">{{ strtoupper(substr($sponsor->name, 0, 1)) }}</div>
             <div>
                 <div class="q3-sponsor-name">{{ $sponsor->name }}</div>
-                <div class="q3-sponsor-sub">is inviting you to join Quantum 3 Solution as their sponsored member.</div>
+                <div class="q3-sponsor-sub">is inviting you to join {{ $opportunity->name() }} as their sponsored member.</div>
             </div>
         </div>
 
         <h1 class="q3-auth-title">Create your account</h1>
         <p class="q3-auth-sub">Fill in your details to accept the invitation and get started.</p>
+
+        {{-- Said plainly, because it is the difference between the two doors and
+             it is the thing somebody is most likely to be wary of. A business
+             line that is not the membership takes no card and has nothing to
+             charge for. --}}
+        @unless($opportunity->requiresMembership())
+            <p class="q3-auth-sub" style="margin-top:-8px;">
+                <strong>No card needed.</strong> {{ $opportunity->name() }} is free to join — there is
+                nothing to pay and no payment details to enter.
+            </p>
+        @endunless
 
         @if($errors->any())
             <div class="alert alert-danger py-2">{{ $errors->first() }}</div>

@@ -22,7 +22,7 @@ class EnsureTrainingUnlocked
             return $next($request);
         }
 
-        $message = 'The training program opens once your membership billing starts. Start now below, or it starts automatically when your paid commissions reach $'
+        $message = 'Your training opens once your Training Program billing starts. Start now below, or it starts automatically when your paid commissions reach $'
             . number_format((float) config('stripe.subscription.commission_threshold', 200)) . '.';
 
         if ($request->expectsJson()) {

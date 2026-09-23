@@ -28,6 +28,13 @@ class RoleSeeder extends Seeder
                 'level'        => 1,
             ],
             [
+                'name'         => 'product_partner',
+                'display_name' => 'Product Partner',
+                'description'  => 'A vendor whose products we sell. Sees their own sales, pipeline and settlement — nothing else.',
+                'is_admin'     => false,
+                'level'        => 5,
+            ],
+            [
                 'name'         => 'support_admin',
                 'display_name' => 'Support Admin',
                 'description'  => 'Customer support staff. Can view and manage members, cannot modify admins.',
