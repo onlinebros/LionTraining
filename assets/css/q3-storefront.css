@@ -1385,6 +1385,263 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
 .q3-storefront .q3-sf-vs--new .q3-sf-vs-meterlabel { color: var(--q3-gold-soft); }
 
 /* ==========================================================================
+   15. The challenge — "Can you keep up?"
+   --------------------------------------------------------------------------
+   Two arenas side by side (stacked on a phone, PRO first and shorter), one
+   overlay for intro, countdown and result. Game logic: q3-challenge.js.
+   ========================================================================== */
+
+.q3-storefront .q3-cg { border-top: 0; }
+.q3-storefront .q3-cg-title {
+    color: var(--q3-text);
+    font-family: var(--q3-font-display);
+    font-size: clamp(1.9rem, 4.4vw, 2.9rem);
+    font-weight: 600;
+    line-height: 1.1;
+    margin: 0 0 14px;
+    max-width: 24ch;
+}
+
+.q3-storefront .q3-cg-board {
+    background: var(--q3-sf-raise);
+    border: 1px solid var(--q3-border-gold-soft);
+    border-radius: var(--q3-radius-lg);
+    padding: 18px;
+    position: relative;
+}
+
+.q3-storefront .q3-cg-timer {
+    color: var(--q3-text);
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    text-align: center;
+}
+.q3-storefront .q3-cg-timer-n { font-size: 1.6rem; }
+.q3-storefront .q3-cg-timer-u { color: var(--q3-text-muted); font-size: 0.9rem; margin-left: 2px; }
+
+.q3-storefront .q3-cg-arenas {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+    .q3-storefront .q3-cg-arenas { grid-template-columns: 1fr 1fr; }
+}
+
+.q3-storefront .q3-cg-head {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 4px;
+}
+.q3-storefront .q3-cg-who {
+    color: var(--q3-text-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+.q3-storefront .q3-cg-arena--pro .q3-cg-who { color: var(--q3-gold-soft); }
+.q3-storefront .q3-cg-score {
+    color: var(--q3-text);
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+.q3-storefront .q3-cg-arena--pro .q3-cg-score { color: var(--q3-gold-high); }
+
+.q3-storefront .q3-cg-arena canvas {
+    background:
+        repeating-linear-gradient(135deg, transparent 0 16px, rgba(255, 255, 255, 0.018) 16px 17px),
+        var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    display: block;
+    height: clamp(300px, 52vh, 460px);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    width: 100%;
+}
+.q3-storefront .q3-cg-arena--pro canvas {
+    background:
+        radial-gradient(80% 60% at 50% 110%, rgba(var(--q3-gold-rgb), 0.12) 0%, transparent 70%),
+        repeating-linear-gradient(135deg, transparent 0 16px, rgba(255, 255, 255, 0.018) 16px 17px),
+        var(--q3-surface-2);
+    border-color: var(--q3-border-gold);
+}
+.q3-storefront .q3-cg-arena--you canvas { cursor: pointer; }
+@media (max-width: 767.98px) {
+    .q3-storefront .q3-cg-board { padding: 14px 12px; }
+    .q3-storefront .q3-cg-arena--pro canvas { height: 190px; }
+    .q3-storefront .q3-cg-arena--you canvas { height: min(52vh, 360px); }
+}
+
+/* How much of the surface is still contaminated. */
+.q3-storefront .q3-cg-load {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    height: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+.q3-storefront .q3-cg-load span {
+    background: linear-gradient(90deg, rgba(var(--q3-sf-germ-rgb), 0.6), rgba(var(--q3-sf-germ-rgb), 1));
+    display: block;
+    height: 100%;
+    transition: width 200ms linear;
+    width: 0;
+}
+.q3-storefront .q3-cg-caption {
+    color: var(--q3-text-muted);
+    font-size: 0.78rem;
+    margin-top: 8px;
+    padding: 0 4px;
+}
+
+/* ---- Overlay ------------------------------------------------------------ */
+.q3-storefront .q3-cg-overlay {
+    align-items: center;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    background: rgba(5, 5, 5, 0.66);
+    border-radius: var(--q3-radius-lg);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 16px;
+    position: absolute;
+    z-index: 3;
+}
+.q3-storefront .q3-cg-overlay[hidden] { display: none; }
+
+.q3-storefront .q3-cg-panel {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border-gold);
+    border-radius: var(--q3-radius-lg);
+    box-shadow: 0 30px 80px -30px rgba(var(--q3-gold-rgb), 0.35);
+    max-width: 440px;
+    padding: 28px 28px 26px;
+    text-align: center;
+    width: 100%;
+}
+.q3-storefront .q3-cg-panel[hidden] { display: none; }
+.q3-storefront .q3-cg-panel h2 {
+    color: var(--q3-text);
+    font-family: var(--q3-font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0 0 16px;
+}
+.q3-storefront .q3-cg-panel ul {
+    color: var(--q3-text-body);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    list-style: none;
+    margin: 0 0 22px;
+    padding: 0;
+    text-align: left;
+}
+.q3-storefront .q3-cg-panel ul li { padding-left: 18px; position: relative; }
+.q3-storefront .q3-cg-panel ul li + li { margin-top: 6px; }
+.q3-storefront .q3-cg-panel ul li::before { color: var(--q3-gold-soft); content: "—"; left: 0; position: absolute; }
+
+.q3-storefront .q3-cg-panel--count {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+.q3-storefront .q3-cg-count {
+    color: var(--q3-gold-high);
+    font-family: var(--q3-font-display);
+    font-size: 6rem;
+    font-weight: 600;
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(var(--q3-gold-rgb), 0.5);
+}
+
+.q3-storefront .q3-cg-final {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    margin: 4px 0 16px;
+}
+.q3-storefront .q3-cg-final > div {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius);
+    padding: 14px 10px;
+}
+.q3-storefront .q3-cg-final-n {
+    color: var(--q3-text);
+    font-size: 2rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+.q3-storefront .q3-cg-final-n--pro { color: var(--q3-gold-high); }
+.q3-storefront .q3-cg-final-l {
+    color: var(--q3-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    margin-top: 4px;
+    text-transform: uppercase;
+}
+.q3-storefront .q3-cg-final-s { color: var(--q3-text-muted); font-size: 0.78rem; margin-top: 4px; }
+.q3-storefront .q3-cg-sum {
+    color: var(--q3-text-body);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    margin: 0 0 18px;
+}
+.q3-storefront .q3-cg-again {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+.q3-storefront .q3-cg-again .q3-sf-btn { flex: 1; padding: 11px 14px; font-size: 0.88rem; }
+
+.q3-storefront .q3-cg-note {
+    color: var(--q3-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.6;
+    margin: 16px 0 0;
+}
+
+/* ---- The invitation on the product page --------------------------------- */
+.q3-storefront .q3-sf-hero-play { color: var(--q3-text-muted); font-size: 0.88rem; margin: 18px 0 0; }
+.q3-storefront .q3-sf-hero-play a { border-bottom: 1px solid var(--q3-border-gold); }
+
+.q3-storefront .q3-sf-challenge {
+    align-items: center;
+    background:
+        radial-gradient(90% 140% at 100% 50%, rgba(var(--q3-gold-rgb), 0.12) 0%, transparent 60%),
+        var(--q3-surface);
+    border: 1px solid var(--q3-border-gold);
+    border-radius: var(--q3-radius-lg);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    justify-content: space-between;
+    margin-top: 22px;
+    padding: 22px 26px;
+}
+.q3-storefront .q3-sf-challenge h3 {
+    color: var(--q3-text);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+.q3-storefront .q3-sf-challenge p { color: var(--q3-text-muted); font-size: 0.9rem; margin: 0; }
+
+/* ==========================================================================
    13. Responsive — these pages are mostly read on a phone
    ========================================================================== */
 

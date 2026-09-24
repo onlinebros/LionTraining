@@ -81,6 +81,11 @@
 
                 <a class="q3-sf-btn q3-sf-btn--gold" href="#enquire">Order this system</a>
                 <a class="q3-sf-btn q3-sf-btn--ghost ms-2" href="#specs">View specifications</a>
+                @if (! empty($product['challenge']))
+                    <p class="q3-sf-hero-play">
+                        or <a href="{{ route('vendor.challenge', [$member->referral_code, $vendorSlug, $productKey]) }}">take the 30-second challenge against the PRO &rarr;</a>
+                    </p>
+                @endif
             </div>
 
             @if ($heroImage)
@@ -184,6 +189,19 @@
                 </div>
             </article>
         </div>
+
+        @if (! empty($product['challenge']))
+            <div class="q3-sf-challenge">
+                <div>
+                    <h3>Think you can keep up by hand?</h3>
+                    <p>Thirty seconds, the same germs, you against the PRO’s ions.</p>
+                </div>
+                <a class="q3-sf-btn q3-sf-btn--gold"
+                   href="{{ route('vendor.challenge', [$member->referral_code, $vendorSlug, $productKey]) }}">
+                    Take the challenge
+                </a>
+            </div>
+        @endif
     </div>
 </section>
 @endif

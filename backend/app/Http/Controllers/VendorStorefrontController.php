@@ -46,6 +46,28 @@ class VendorStorefrontController extends Controller
         ]);
     }
 
+    /**
+     * The challenge game: the visitor against the product, then back to order.
+     * Same partner resolution as the product page; 404 for any product that
+     * has not opted in.
+     */
+    public function challenge(string $code, string $vendor, string $product)
+    {
+        [$member, $vendorConfig, $productConfig] = $this->resolve($code, $vendor, $product);
+
+        if (empty($productConfig['challenge'])) {
+            throw new NotFoundHttpException('No challenge for this product.');
+        }
+
+        return view('public.vendor.challenge', [
+            'member'     => $member,
+            'vendorSlug' => $vendor,
+            'vendor'     => $vendorConfig,
+            'productKey' => $product,
+            'product'    => $productConfig,
+        ]);
+    }
+
     public function store(Request $request, string $code, string $vendor, string $product)
     {
         [$member, , $productConfig] = $this->resolve($code, $vendor, $product);

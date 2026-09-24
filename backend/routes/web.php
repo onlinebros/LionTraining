@@ -113,6 +113,10 @@ Route::prefix('p')->name('vendor.')->group(function () {
         ->middleware('throttle:10,1')->name('order.pay');
     Route::get('/complete/{reference}',        [VendorStorefrontController::class, 'complete'])->name('complete');
 
+    // "Can you keep up?" — a game on the product's page, for products whose
+    // config turns it on. Member-coded like the product page so a visitor who
+    // plays and then orders still reaches the partner who sent them.
+    Route::get('/{code}/{vendor}/{product}/challenge', [VendorStorefrontController::class, 'challenge'])->name('challenge');
     Route::get('/{code}/{vendor}/{product}',  [VendorStorefrontController::class, 'show'])->name('product');
     Route::post('/{code}/{vendor}/{product}', [VendorStorefrontController::class, 'store'])
         ->middleware('throttle:10,1')

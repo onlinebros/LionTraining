@@ -580,6 +580,14 @@ return [
                     'ambient' => 'ion-field',
 
                     /*
+                    | The "Can you keep up?" game at /p/{code}/…/challenge: the
+                    | visitor tapping germs by hand against the product's ions
+                    | clearing the same germs. A game, and the page says so —
+                    | it states no figure and makes no claim of its own.
+                    */
+                    'challenge' => true,
+
+                    /*
                     | "Beyond spray and wipe" — the everyday cleaning routine set
                     | against continuous treatment. No cleaning product is named.
                     |
