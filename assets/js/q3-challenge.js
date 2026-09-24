@@ -391,7 +391,9 @@
             summary = 'Impressive. Now picture doing that all day, in every room, every day. '
                 + 'The PRO does its side without anyone lifting a finger.';
         }
+        if (player) { verdict = verdict.replace('The PRO wins.', 'Nice try, ' + player + '. The PRO wins.'); }
         $('cg-verdict').textContent = verdict;
+        report(p, y, lp, ly);
         $('cg-summary').textContent = summary;
         var result = overlay.querySelector('[data-panel="result"]');
         result.classList.add('is-arming');
@@ -440,7 +442,82 @@
         hud();
     });
 
-    $('cg-start').addEventListener('click', begin);
+    /* ---- Entry: who is taking the PRO on -------------------------------
+       Name and email are posted before the first round; the reply carries a
+       token that each finished round is reported against. Play again reuses
+       it — they are not asked twice. The name and email are also kept in
+       this browser (when storage allows) to pre-fill a later visit.
+
+       A server or network failure does not stop the game: losing a lead is
+       better than a broken page in front of a prospect. A validation error
+       does, with the message beside the fields.                             */
+    var entry = $('cg-entry'), errEl = $('cg-err');
+    var token = null, player = null;
+    var STORE = 'q3-cg-entrant';
+
+    try {
+        var saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+        if (saved) { $('cg-name').value = saved.n || ''; $('cg-email').value = saved.e || ''; }
+    } catch (e) { /* private mode: no pre-fill */ }
+
+    function csrf() {
+        var m = document.querySelector('meta[name="csrf-token"]');
+        return m ? m.getAttribute('content') : '';
+    }
+
+    function post(url, body) {
+        return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() },
+            body: JSON.stringify(body)
+        });
+    }
+
+    function fail(msg) { errEl.textContent = msg; errEl.hidden = false; }
+
+    entry.addEventListener('submit', function (e) {
+        e.preventDefault();
+        errEl.hidden = true;
+
+        var name = $('cg-name').value.trim(), email = $('cg-email').value.trim();
+        if (!name) { fail('Your first name, so we know who took on the PRO.'); $('cg-name').focus(); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fail('That email doesn’t look right.'); $('cg-email').focus(); return; }
+
+        var btn = $('cg-start');
+        btn.disabled = true;
+        btn.textContent = 'Getting ready…';
+
+        post(entry.action, { first_name: name, email: email, website_url: $('cg-website').value })
+            .then(function (res) {
+                if (res.status === 422) {
+                    return res.json().then(function (j) {
+                        var errs = j.errors || {}, k = Object.keys(errs)[0];
+                        throw { user: k ? errs[k][0] : 'Please check your details.' };
+                    });
+                }
+                return res.ok ? res.json() : {};
+            })
+            .then(function (j) {
+                token = j.token || null;
+                player = (j && j.name) || name;
+                try { localStorage.setItem(STORE, JSON.stringify({ n: name, e: email })); } catch (e2) {}
+                begin();
+            })
+            .catch(function (err) {
+                if (err && err.user) { fail(err.user); return; }
+                player = name;
+                begin();     // network trouble: play anyway
+            })
+            .then(function () { btn.disabled = false; btn.textContent = 'Start the challenge'; });
+    });
+
+    function report(p, y, lp, ly) {
+        if (!token) { return; }
+        post(entry.dataset.result, { token: token, you: y, pro: p, you_left: ly, pro_left: lp })
+            .catch(function () { /* the round still happened for them */ });
+    }
+
     $('cg-again').addEventListener('click', begin);
 
     var rt;

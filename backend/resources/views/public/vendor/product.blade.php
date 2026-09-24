@@ -338,6 +338,13 @@
                     <div class="q3-sf-alert">{{ $errors->first() }}</div>
                 @endif
 
+                @if (! empty($prefill))
+                    <p class="q3-sf-prefill">
+                        We’ve filled in what you gave us in the challenge. Change anything that isn’t right —
+                        this is what your order goes out under.
+                    </p>
+                @endif
+
                 {{-- Honeypot. A real browser never renders this field. --}}
                 <div class="q3-sf-hp" aria-hidden="true">
                     <label for="website_url">Website</label>
@@ -347,7 +354,7 @@
                 <div class="q3-sf-row">
                     <div class="q3-sf-field">
                         <label for="first_name">First name</label>
-                        <input type="text" id="first_name" name="first_name" value="{{ old('first_name') }}"
+                        <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $prefill['first_name'] ?? '') }}"
                                class="@error('first_name') is-invalid @enderror" required autocomplete="given-name">
                         @error('first_name') <div class="q3-sf-err">{{ $message }}</div> @enderror
                     </div>
@@ -360,7 +367,7 @@
 
                 <div class="q3-sf-field">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" value="{{ old('email') }}"
+                    <input type="email" id="email" name="email" value="{{ old('email', $prefill['email'] ?? '') }}"
                            class="@error('email') is-invalid @enderror" required autocomplete="email">
                     @error('email') <div class="q3-sf-err">{{ $message }}</div> @enderror
                 </div>

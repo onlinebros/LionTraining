@@ -5,14 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\VendorLead;
 use App\Rules\NotPoBox;
+use App\Models\CrmContact;
 use App\Services\Vendor\AddressCheck;
+use App\Services\Vendor\ChallengeToCrm;
 use App\Services\Vendor\Shipping\AddressVerification;
 use App\Services\Vendor\VendorOrderService;
 use App\Services\Vendor\VendorStripeClient;
 use App\Services\Vendor\VendorReferralService;
 use App\Support\Vendors;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -43,6 +49,7 @@ class VendorStorefrontController extends Controller
             'vendor'        => $vendorConfig,
             'productKey'    => $product,
             'product'       => $productConfig,
+            'prefill'       => $this->entrant($member, $vendor, $product),
         ]);
     }
 
@@ -66,6 +73,100 @@ class VendorStorefrontController extends Controller
             'productKey' => $product,
             'product'    => $productConfig,
         ]);
+    }
+
+    /**
+     * The challenger's name and email, taken before they play. Goes into the
+     * sharing partner's CRM (see ChallengeToCrm) and returns a token the page
+     * sends back with each finished round.
+     *
+     * The token is the contact id, encrypted with a short expiry — so a round
+     * can only be recorded against the contact this visitor just entered as,
+     * and nobody can post results into an arbitrary CRM record.
+     */
+    public function challengeEnter(Request $request, ChallengeToCrm $crm, string $code, string $vendor, string $product): JsonResponse
+    {
+        [$member, , $productConfig] = $this->resolve($code, $vendor, $product);
+        abort_if(empty($productConfig['challenge']), 404);
+
+        // Honeypot, answered like a success so a bot learns nothing.
+        if (filled($request->input('website_url'))) {
+            Log::info('Challenge honeypot triggered', ['ip' => $request->ip()]);
+
+            return response()->json(['token' => null, 'name' => 'there']);
+        }
+
+        // Validated by hand: this app renders validation failures as JSON only
+        // under api/*, and here a redirect would reach fetch() as a page of
+        // HTML — the visitor would play on with nothing captured.
+        $v = Validator::make($request->all(), [
+            'first_name' => ['required', 'string', 'max:60'],
+            'email'      => ['required', 'email', 'max:190'],
+        ], [
+            'first_name.required' => 'Your first name, so we know who took on the PRO.',
+            'email.required'      => 'An email, so we can send how you did.',
+            'email.email'         => 'That email doesn’t look right.',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json(['message' => $v->errors()->first(), 'errors' => $v->errors()], 422);
+        }
+
+        $data = $v->validated();
+
+        $key = "{$vendor}/{$product}";
+        $contact = $crm->enter($member, $key, $productConfig['name'], trim($data['first_name']), $data['email']);
+
+        // Remembered for the order form on this same partner's link: prefill,
+        // and the enquiry then updates this contact (see store()).
+        $request->session()->put(self::ENTRANT.'.'.$this->entrantKey($vendor, $product), [
+            'contact'    => $contact->id,
+            'owner'      => $member->id,
+            'created'    => $contact->wasRecentlyCreated,
+            'first_name' => trim($data['first_name']),
+            'email'      => mb_strtolower(trim($data['email'])),
+        ]);
+
+        return response()->json([
+            'token' => Crypt::encryptString(json_encode([
+                'c' => $contact->id, 'k' => $key, 'x' => now()->addHours(3)->timestamp,
+            ])),
+            'name'  => trim($data['first_name']),
+        ]);
+    }
+
+    /** A finished round, recorded against the contact the token names. */
+    public function challengeResult(Request $request, ChallengeToCrm $crm, string $code, string $vendor, string $product)
+    {
+        [, , $productConfig] = $this->resolve($code, $vendor, $product);
+        abort_if(empty($productConfig['challenge']), 404);
+
+        $v = Validator::make($request->all(), [
+            'token'    => ['required', 'string', 'max:1000'],
+            'you'      => ['required', 'integer', 'min:0', 'max:100000'],
+            'pro'      => ['required', 'integer', 'min:0', 'max:100000'],
+            'you_left' => ['required', 'integer', 'min:0', 'max:500'],
+            'pro_left' => ['required', 'integer', 'min:0', 'max:500'],
+        ]);
+        abort_if($v->fails(), 422);
+        $r = $v->validated();
+
+        try {
+            $t = json_decode(Crypt::decryptString($r['token']), true);
+        } catch (DecryptException) {
+            abort(422);
+        }
+
+        if (! is_array($t) || ($t['k'] ?? null) !== "{$vendor}/{$product}" || ($t['x'] ?? 0) < now()->timestamp) {
+            abort(422);
+        }
+
+        $contact = CrmContact::find($t['c'] ?? 0);
+        if ($contact !== null) {
+            $crm->result($contact, $t['k'], array_map('intval', array_diff_key($r, ['token' => 1])));
+        }
+
+        return response()->noContent();
     }
 
     public function store(Request $request, string $code, string $vendor, string $product)
@@ -114,11 +215,36 @@ class VendorStorefrontController extends Controller
             $data['qualifiers'] = ($data['qualifiers'] ?? []) + ['furnace_count' => (int) $data['furnace_count']];
         }
 
+        // A challenger moving on to order. Their email is carried onto the
+        // contact their game created BEFORE the enquiry files itself into the
+        // CRM by email — so both land on one record. Never allowed to stand
+        // between them and the order.
+        $challenge = null;
+        if ($entrant = $this->entrant($member, $vendor, $product)) {
+            try {
+                if ($contact = CrmContact::find($entrant['contact'])) {
+                    $challenge = [$contact, (bool) $entrant['created'],
+                        app(ChallengeToCrm::class)->claimEmail($contact, (bool) $entrant['created'], $data['email'])];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Challenge contact email not carried to enquiry', ['error' => $e->getMessage()]);
+            }
+        }
+
         $lead = $this->referrals->capture($vendor, $product, $member, $data, [
             'ip'         => $request->ip(),
             'user_agent' => $request->userAgent(),
             'utm'        => $request->only(['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) ?: null,
         ]);
+
+        if ($challenge) {
+            try {
+                [$contact, $created, $lines] = $challenge;
+                app(ChallengeToCrm::class)->ordered($contact, $created, "{$vendor}/{$product}", $data, $lead->public_ref, $lines);
+            } catch (\Throwable $e) {
+                Log::warning('Challenge contact not updated from enquiry', ['lead' => $lead->public_ref, 'error' => $e->getMessage()]);
+            }
+        }
 
         // Payment-link vendors still hand off to their hosted page; direct
         // vendors continue to stage two on our own checkout.
@@ -401,6 +527,26 @@ class VendorStorefrontController extends Controller
     /**
      * @return array{0: User, 1: array<string,mixed>, 2: array<string,mixed>}
      */
+    private const ENTRANT = 'challenge_entrant';
+
+    /** Session keys are dot-paths; a product key has a slash, never a dot. */
+    private function entrantKey(string $vendor, string $product): string
+    {
+        return str_replace('.', '_', "{$vendor}/{$product}");
+    }
+
+    /**
+     * This visitor's challenge entry for this product — but only on the same
+     * partner's link. Arriving through another partner's page, they are that
+     * partner's prospect, and the first partner's contact is not theirs to see.
+     */
+    private function entrant(User $member, string $vendor, string $product): ?array
+    {
+        $e = session(self::ENTRANT.'.'.$this->entrantKey($vendor, $product));
+
+        return is_array($e) && ($e['owner'] ?? null) === $member->id ? $e : null;
+    }
+
     private function resolve(string $code, string $vendor, string $product): array
     {
         $vendorConfig  = Vendors::find($vendor);

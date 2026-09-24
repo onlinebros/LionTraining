@@ -117,6 +117,12 @@ Route::prefix('p')->name('vendor.')->group(function () {
     // config turns it on. Member-coded like the product page so a visitor who
     // plays and then orders still reaches the partner who sent them.
     Route::get('/{code}/{vendor}/{product}/challenge', [VendorStorefrontController::class, 'challenge'])->name('challenge');
+    // The challenger's name and email (into the partner's CRM), then each
+    // round's result. Unauthenticated writes, so throttled.
+    Route::post('/{code}/{vendor}/{product}/challenge', [VendorStorefrontController::class, 'challengeEnter'])
+        ->middleware('throttle:6,1')->name('challenge.enter');
+    Route::post('/{code}/{vendor}/{product}/challenge/result', [VendorStorefrontController::class, 'challengeResult'])
+        ->middleware('throttle:20,1')->name('challenge.result');
     Route::get('/{code}/{vendor}/{product}',  [VendorStorefrontController::class, 'show'])->name('product');
     Route::post('/{code}/{vendor}/{product}', [VendorStorefrontController::class, 'store'])
         ->middleware('throttle:10,1')

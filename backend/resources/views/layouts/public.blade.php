@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="{{ asset('assets/css/color-1.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/responsive.css') }}">
     @include('partials.q3-head')
+    {{-- Per-page social previews (og:/twitter:) — see vendor/challenge. --}}
+    @stack('meta')
     @stack('styles')
 </head>
 {{-- Auth screens opt into the dark Q3 shell with @section('body-class', 'q3-auth');

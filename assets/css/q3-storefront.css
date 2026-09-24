@@ -730,6 +730,19 @@ body.q3-storefront {
     padding: 12px 16px;
 }
 
+/* Details carried over from the challenge — said out loud, so nobody orders
+   under a name they did not mean to give. */
+.q3-storefront .q3-sf-prefill {
+    background: var(--q3-gold-tint);
+    border: 1px solid var(--q3-border-gold);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text-body);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    margin: 0 0 18px;
+    padding: 11px 14px;
+}
+
 /* Off-screen, not display:none — some bots skip anything explicitly hidden. */
 .q3-storefront .q3-sf-hp {
     height: 1px;
@@ -1607,6 +1620,42 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
     font-weight: 600;
     line-height: 1;
     text-shadow: 0 0 40px rgba(var(--q3-gold-rgb), 0.5);
+}
+
+/* ---- Entry form on the intro panel ------------------------------------- */
+.q3-storefront .q3-cg-fields { display: grid; gap: 10px; grid-template-columns: 1fr; margin-bottom: 12px; }
+.q3-storefront .q3-cg-fields input {
+    background: var(--q3-surface-2);
+    border: 1px solid var(--q3-border-strong);
+    border-radius: var(--q3-radius-sm);
+    color: var(--q3-text);
+    font-family: inherit;
+    font-size: 16px;               /* 16px or iOS zooms the page on focus */
+    padding: 12px 14px;
+    width: 100%;
+}
+.q3-storefront .q3-cg-fields input::placeholder { color: var(--q3-text-muted); }
+.q3-storefront .q3-cg-fields input:focus {
+    border-color: var(--q3-gold-soft);
+    box-shadow: 0 0 0 3px var(--q3-gold-ring);
+    outline: none;
+}
+.q3-storefront .q3-cg-err {
+    color: var(--q3-sf-danger-ink);
+    font-size: 0.84rem;
+    margin: -2px 0 10px;
+}
+.q3-storefront .q3-cg-consent {
+    color: var(--q3-text-muted);
+    font-size: 0.74rem;
+    line-height: 1.55;
+    margin: 12px 0 0;
+}
+.q3-storefront .q3-cg-panel ul { margin-bottom: 18px; }
+@media (max-width: 767.98px) {
+    .q3-storefront .q3-cg-panel { padding: 22px 18px 20px; }
+    .q3-storefront .q3-cg-panel h2 { font-size: 1.7rem; margin-bottom: 10px; }
+    .q3-storefront .q3-cg-panel ul { font-size: 0.84rem; }
 }
 
 .q3-storefront .q3-cg-over { font-size: clamp(3rem, 12vw, 4.6rem); }
