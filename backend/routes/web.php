@@ -33,6 +33,7 @@ use App\Http\Controllers\MemberCrmController;
 use App\Http\Controllers\MemberPayoutController;
 use App\Http\Controllers\MemberSupportController;
 use App\Http\Controllers\PartnerClaimController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\VendorStorefrontController;
 use App\Http\Controllers\MemberVendorLeadController;
@@ -124,6 +125,15 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [UserAuthController::class, 'login'])->name('login.post');
     Route::get('/register', [UserAuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [UserAuthController::class, 'register'])->name('register.post');
+
+    // Forgot password. The names are Laravel's: the reset email builds its
+    // link from route('password.reset').
+    Route::get('/forgot-password', [PasswordResetController::class, 'showRequest'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])
+        ->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])
+        ->middleware('throttle:10,1')->name('password.update');
 });
 
 // User logout

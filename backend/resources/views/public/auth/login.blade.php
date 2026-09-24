@@ -34,7 +34,7 @@
             <div class="mb-3">
                 <label class="form-label d-flex justify-content-between align-items-center" for="password">
                     <span>Password</span>
-                    <a href="#" class="link">Forgot password?</a>
+                    <a href="{{ route('password.request') }}" class="link">Forgot password?</a>
                 </label>
                 <input class="form-control" id="password" type="password" name="password"
                        placeholder="••••••••" required autocomplete="current-password">
