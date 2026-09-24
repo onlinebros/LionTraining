@@ -1478,10 +1478,27 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
     color: var(--q3-gold-ink);
 }
 
-/* Before a round (intro and countdown) the side labels and timer sit above
-   the overlay's blur, and the visitor's surface is outlined, so it is plain
-   which box is theirs before they press start. */
-.q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-head,
+/* Before a round the visitor must be able to see which box is theirs, and
+   the entry form must never share space with anything.
+
+   Intro: the overlay stops being an overlay. It drops into the board's flow
+   ABOVE the two arenas (flex order), so the form and both labelled boxes each
+   get their own space at every width — nothing layered, nothing to collide.
+   The script scrolls the arenas into view when the round starts.
+
+   Countdown: the panel is only a number, so the labels are simply lifted
+   above the overlay's blur. */
+.q3-storefront .q3-cg-board { display: flex; flex-direction: column; }
+.q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: transparent;
+    order: -1;
+    padding: 4px 0 20px;
+    position: static;
+}
+.q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-panel { max-width: 520px; }
+.q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-timer { display: none; }
 .q3-storefront .q3-cg-board[data-phase="count"] .q3-cg-head {
     position: relative;
     z-index: 4;
@@ -1533,9 +1550,6 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
     .q3-storefront .q3-cg-board { padding: 14px 12px; }
     .q3-storefront .q3-cg-arena--pro canvas { height: 190px; }
     .q3-storefront .q3-cg-arena--you canvas { height: min(52vh, 360px); }
-    /* Stacked, a centred intro panel would sit on the "You" label; drop it
-       onto the visitor's own surface instead. */
-    .q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-overlay { align-items: flex-end; }
     .q3-storefront .q3-cg-who { font-size: 0.9rem; }
 }
 

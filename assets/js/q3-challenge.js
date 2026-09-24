@@ -361,6 +361,13 @@
         $('cg-count').textContent = '3';
         show('count');
         hud();
+
+        // Before play the entry form sat above the arenas; with it gone,
+        // bring the playing surface into view for the countdown.
+        var r = you.canvas.getBoundingClientRect();
+        if (r.top < 0 || r.bottom > window.innerHeight) {
+            board.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     function timeUp() {
