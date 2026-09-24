@@ -18,7 +18,7 @@
 @php
     $ogTitle = 'Can you beat the PlasmaGuard PRO?';
     $ogDesc  = '30 seconds. Same germs. You tap — the PRO’s ions do the rest. Think you can keep up?';
-    $ogImage = url(\App\Support\Asset::v('assets/images/og/plasmaguard-challenge.png'));
+    $ogImage = url(\App\Support\Asset::v('assets/images/og/plasmaguard-challenge.jpg'));
 @endphp
 {{-- What a phone or a social feed shows when this link is shared: the
      challenge, not the site's app icon. The image is 1200×630, built from

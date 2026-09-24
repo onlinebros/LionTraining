@@ -92,7 +92,7 @@ class ChallengeTest extends TestCase
     {
         $this->get('/p/PARTNER1/plasmaguard/pro-in-duct/challenge')
             ->assertSee('<meta property="og:title" content="Can you beat the PlasmaGuard PRO?">', false)
-            ->assertSee('assets/images/og/plasmaguard-challenge.png', false)
+            ->assertSee('assets/images/og/plasmaguard-challenge.jpg', false)
             ->assertSee('<meta name="twitter:card" content="summary_large_image">', false);
     }
 
