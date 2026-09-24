@@ -1438,11 +1438,52 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
     padding: 0 4px;
 }
 .q3-storefront .q3-cg-who {
-    color: var(--q3-text-muted);
-    font-size: 0.74rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    align-items: center;
+    color: var(--q3-text);
+    display: inline-flex;
+    flex-wrap: wrap;
+    font-size: 1rem;
+    font-weight: 650;
+    gap: 8px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
+}
+
+/* What each side is, in a word: the PRO runs itself, the other is yours. */
+.q3-storefront .q3-cg-tag {
+    border: 1px solid var(--q3-border-gold);
+    border-radius: 999px;
+    color: var(--q3-gold-soft);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    padding: 3px 10px;
+}
+.q3-storefront .q3-cg-tag--you {
+    background: linear-gradient(180deg, var(--q3-gold-high), var(--q3-gold-soft));
+    border-color: var(--q3-gold-soft);
+    color: var(--q3-gold-ink);
+}
+
+/* Before a round (intro and countdown) the side labels and timer sit above
+   the overlay's blur, and the visitor's surface is outlined, so it is plain
+   which box is theirs before they press start. */
+.q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-head,
+.q3-storefront .q3-cg-board[data-phase="count"] .q3-cg-head {
+    position: relative;
+    z-index: 4;
+}
+.q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-arena--you canvas,
+.q3-storefront .q3-cg-board[data-phase="count"] .q3-cg-arena--you canvas {
+    animation: q3-cg-yours 1.8s ease-in-out infinite;
+    border-color: var(--q3-gold-soft);
+}
+@keyframes q3-cg-yours {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(var(--q3-gold-rgb), 0.35), 0 0 18px rgba(var(--q3-gold-rgb), 0.12); }
+    50%      { box-shadow: 0 0 0 2px rgba(var(--q3-gold-rgb), 0.75), 0 0 32px rgba(var(--q3-gold-rgb), 0.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .q3-storefront .q3-cg-board .q3-cg-arena--you canvas { animation: none !important; }
 }
 .q3-storefront .q3-cg-arena--pro .q3-cg-who { color: var(--q3-gold-soft); }
 .q3-storefront .q3-cg-score {
@@ -1479,6 +1520,10 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
     .q3-storefront .q3-cg-board { padding: 14px 12px; }
     .q3-storefront .q3-cg-arena--pro canvas { height: 190px; }
     .q3-storefront .q3-cg-arena--you canvas { height: min(52vh, 360px); }
+    /* Stacked, a centred intro panel would sit on the "You" label; drop it
+       onto the visitor's own surface instead. */
+    .q3-storefront .q3-cg-board[data-phase="intro"] .q3-cg-overlay { align-items: flex-end; }
+    .q3-storefront .q3-cg-who { font-size: 0.9rem; }
 }
 
 /* How much of the surface is still contaminated. */
@@ -1562,6 +1607,21 @@ html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
     font-weight: 600;
     line-height: 1;
     text-shadow: 0 0 40px rgba(var(--q3-gold-rgb), 0.5);
+}
+
+.q3-storefront .q3-cg-over { font-size: clamp(3rem, 12vw, 4.6rem); }
+
+/* The result's buttons stay dim and inert for a beat after it appears (the
+   script removes .is-arming), so a last frantic tap cannot land on one. */
+.q3-storefront .q3-cg-panel .q3-sf-btn { transition: opacity 250ms var(--q3-ease); }
+.q3-storefront .q3-cg-panel.is-arming .q3-sf-btn {
+    opacity: 0.35;
+    pointer-events: none;
+}
+.q3-storefront .q3-cg-panel[data-panel="result"]:not([hidden]) { animation: q3-cg-rise 400ms var(--q3-ease) both; }
+@keyframes q3-cg-rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
 }
 
 .q3-storefront .q3-cg-final {

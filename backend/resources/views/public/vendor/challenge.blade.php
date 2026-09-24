@@ -48,7 +48,7 @@
             own. On the other, it's just you. Tap every germ before it spreads — for thirty seconds.
         </p>
 
-        <div class="q3-cg-board" id="cg-board"
+        <div class="q3-cg-board" id="cg-board" data-phase="intro"
              data-seconds="30"
              data-pro-label="PlasmaGuard PRO">
 
@@ -59,7 +59,7 @@
             <div class="q3-cg-arenas">
                 <div class="q3-cg-arena q3-cg-arena--pro">
                     <div class="q3-cg-head">
-                        <span class="q3-cg-who">PlasmaGuard PRO</span>
+                        <span class="q3-cg-who">PlasmaGuard PRO <span class="q3-cg-tag">Automatic</span></span>
                         <span class="q3-cg-score" id="cg-pro-score">0</span>
                     </div>
                     <canvas id="cg-pro" aria-label="The PlasmaGuard PRO's ions clearing germs"></canvas>
@@ -69,7 +69,7 @@
 
                 <div class="q3-cg-arena q3-cg-arena--you">
                     <div class="q3-cg-head">
-                        <span class="q3-cg-who">You</span>
+                        <span class="q3-cg-who">You <span class="q3-cg-tag q3-cg-tag--you">You play here</span></span>
                         <span class="q3-cg-score" id="cg-you-score">0</span>
                     </div>
                     <canvas id="cg-you" aria-label="Your surface: tap each germ to wipe it"></canvas>
@@ -95,6 +95,10 @@
 
                 <div class="q3-cg-panel q3-cg-panel--count" data-panel="count" hidden>
                     <div class="q3-cg-count" id="cg-count">3</div>
+                </div>
+
+                <div class="q3-cg-panel q3-cg-panel--count" data-panel="over" hidden>
+                    <div class="q3-cg-count q3-cg-over">Time’s up!</div>
                 </div>
 
                 <div class="q3-cg-panel" data-panel="result" hidden>

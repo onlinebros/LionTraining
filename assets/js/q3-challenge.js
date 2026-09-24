@@ -325,11 +325,24 @@
 
     var state = 'intro', clock = 0, plan = [], next = 0, count = 0, last = 0, raf = 0;
 
+    /* A round ends mid-frenzy: on a phone the visitor is still tapping as
+       fast as they can. So the end comes in two beats: "Time's up!" with
+       nothing to press, then the result with its buttons disarmed for a
+       moment longer. Without this, the next panicked tap lands on whatever
+       button appeared under the finger and they are on another page before
+       they have seen their score.                                            */
+    var OVER_HOLD = 1.5;      // seconds of "Time's up!"
+    var ARM_DELAY = 1100;     // ms before the result's buttons respond
+    var overLeft = 0, armTimer = 0;
+
     function show(panel) {
         overlay.hidden = panel === null;
         var panels = overlay.querySelectorAll('[data-panel]');
         for (var i = 0; i < panels.length; i++) { panels[i].hidden = panels[i].dataset.panel !== panel; }
         board.classList.toggle('is-playing', panel === null);
+        // The CSS keeps the two side labels above the overlay before a round,
+        // so the visitor knows which surface is theirs before they start.
+        board.dataset.phase = panel || 'play';
     }
 
     function hud() {
@@ -348,6 +361,12 @@
         $('cg-count').textContent = '3';
         show('count');
         hud();
+    }
+
+    function timeUp() {
+        state = 'over';
+        overLeft = OVER_HOLD;
+        show('over');
     }
 
     function finish() {
@@ -374,12 +393,21 @@
         }
         $('cg-verdict').textContent = verdict;
         $('cg-summary').textContent = summary;
+        var result = overlay.querySelector('[data-panel="result"]');
+        result.classList.add('is-arming');
         show('result');
+        clearTimeout(armTimer);
+        armTimer = setTimeout(function () { result.classList.remove('is-arming'); }, ARM_DELAY);
     }
 
     function frame(now) {
         var dt = Math.min(0.05, (now - last) / 1000 || 0.016);
         last = now;
+
+        if (state === 'over') {
+            overLeft -= dt;
+            if (overLeft <= 0) { finish(); }
+        }
 
         if (state === 'count') {
             count -= dt;
@@ -394,7 +422,7 @@
                 pro.add(s.x, s.y, s.s);
                 you.add(s.x, s.y, s.s);
             }
-            if (clock >= ROUND) { finish(); }
+            if (clock >= ROUND) { timeUp(); }
             hud();
         }
 
