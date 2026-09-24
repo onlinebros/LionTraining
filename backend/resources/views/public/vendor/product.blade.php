@@ -5,6 +5,11 @@
 {{--
     Member-coded vendor product page, in the Q3 black-and-gold treatment.
 
+    Behind the content, for products that set `ambient` in config, a canvas
+    of drifting ions clearing contamination (assets/js/q3-ionfield.js). It is
+    decoration only: aria-hidden, pointer-events off, and absent entirely
+    under prefers-reduced-motion.
+
     Deliberately NOT dressed as the vendor's own site. This is an authorised
     referral partner's page: it carries the Q3 mark, names the manufacturer,
     uses no logo or branding of theirs, and discloses in the footer that they
@@ -36,6 +41,8 @@
     $unitPrice = $product['price'] ?? null;
     $heroImage = $product['images']['hero']    ?? null;
     $gallery   = $product['images']['gallery'] ?? [];
+    $ambient   = $product['ambient'] ?? null;
+    $routine   = $product['routine'] ?? null;
 
     // Lead metric first — it is the only one rendered in gold.
     $heroStats = [
@@ -45,6 +52,10 @@
         ['5 years',  'generator warranty',                           false],
     ];
 @endphp
+
+@if ($ambient === 'ion-field')
+    <canvas class="q3-sf-ionfield" id="q3-sf-ionfield" aria-hidden="true"></canvas>
+@endif
 
 {{-- ── Brand bar ────────────────────────────────────────────────────────── --}}
 <header class="q3-sf-brandbar">
@@ -65,7 +76,7 @@
         <div class="q3-sf-hero-grid">
             <div class="q3-sf-hero-copy">
                 <div class="q3-sf-eyebrow">{{ $vendor['name'] }} · Commercial Air Purification</div>
-                <h1>{{ $product['name'] }}</h1>
+                <h1><span class="q3-sf-gilt">{{ $product['name'] }}</span></h1>
                 <p class="q3-sf-tagline">{{ $product['tagline'] }}</p>
 
                 <a class="q3-sf-btn q3-sf-btn--gold" href="#enquire">Order this system</a>
@@ -74,6 +85,12 @@
 
             @if ($heroImage)
                 <div class="q3-sf-hero-media">
+                    {{-- Ion rings and a passing sheen. Drawn around the photo,
+                         never on it: the vendor's image is untouched. --}}
+                    <span class="q3-sf-ring" aria-hidden="true"></span>
+                    <span class="q3-sf-ring" aria-hidden="true"></span>
+                    <span class="q3-sf-ring" aria-hidden="true"></span>
+                    <span class="q3-sf-sheen" aria-hidden="true"></span>
                     {{-- Eager, and the only image on the page that is: it is the
                          one thing above the fold that says what this actually is. --}}
                     <img src="{{ asset($heroImage['src']) }}"
@@ -112,6 +129,64 @@
         </div>
     </div>
 </section>
+
+{{-- ── Beyond spray and wipe ────────────────────────────────────────────── --}}
+@if ($routine)
+<section class="q3-sf-section q3-sf-routine">
+    <div class="q3-sf-wrap">
+        <div class="q3-sf-eyebrow">{{ $routine['eyebrow'] }}</div>
+        <h2 class="q3-sf-h2">{{ $routine['heading'] }}</h2>
+        <p class="q3-sf-lede">{{ $routine['lede'] }}</p>
+
+        <div class="q3-sf-versus">
+            {{-- The routine: spots come back after every pass of the cloth. --}}
+            <article class="q3-sf-vs q3-sf-vs--old">
+                <div class="q3-sf-scene" aria-hidden="true">
+                    {{-- --d staggers each spot so it clears as the cloth
+                         reaches its x position: 25% of a 9s cycle across 100%. --}}
+                    @foreach ([[14, 30], [32, 62], [48, 24], [63, 58], [80, 34], [88, 70]] as $i => [$x, $y])
+                        <span class="q3-sf-germ" style="--x:{{ $x }}%; --y:{{ $y }}%; --d:{{ $x * 0.0225 }}s;"></span>
+                    @endforeach
+                    <span class="q3-sf-wipe"></span>
+                    <div class="q3-sf-meter"><span></span></div>
+                </div>
+                <div class="q3-sf-vs-body">
+                    <div class="q3-sf-vs-label">{{ $routine['old']['label'] }}</div>
+                    <h3>{{ $routine['old']['title'] }}</h3>
+                    <ul>
+                        @foreach ($routine['old']['points'] as $point)
+                            <li>{{ $point }}</li>
+                        @endforeach
+                    </ul>
+                    <div class="q3-sf-vs-meterlabel">{{ $routine['old']['meter'] }}</div>
+                </div>
+            </article>
+
+            {{-- Continuous: ions keep moving, and anything that lands is met. --}}
+            <article class="q3-sf-vs q3-sf-vs--new">
+                <div class="q3-sf-scene" aria-hidden="true">
+                    @foreach ([[14, 30], [32, 62], [48, 24], [63, 58], [80, 34], [88, 70]] as $i => [$x, $y])
+                        <span class="q3-sf-germ" style="--x:{{ $x }}%; --y:{{ $y }}%; --i:{{ $i }};"></span>
+                    @endforeach
+                    @for ($i = 0; $i < 14; $i++)
+                        <span class="q3-sf-ion" style="--x:{{ ($i * 37 + 5) % 100 }}%; --i:{{ $i }};"></span>
+                    @endfor
+                    <div class="q3-sf-meter"><span></span></div>
+                </div>
+                <div class="q3-sf-vs-body">
+                    <div class="q3-sf-vs-label">{{ $routine['new']['label'] }}</div>
+                    <h3>{{ $routine['new']['title'] }}</h3>
+                    <blockquote class="q3-sf-quote">
+                        <p>{{ $routine['new']['quote'] }}</p>
+                        <cite>— {{ $routine['new']['source'] }}</cite>
+                    </blockquote>
+                    <div class="q3-sf-vs-meterlabel">{{ $routine['new']['meter'] }}</div>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+@endif
 
 {{-- ── What arrives ─────────────────────────────────────────────────────── --}}
 @if (! empty($gallery))
@@ -405,6 +480,9 @@
 @endsection
 
 @push('scripts')
+@if ($ambient === 'ion-field')
+<script src="{{ \App\Support\Asset::v('assets/js/q3-ionfield.js') }}" defer></script>
+@endif
 <script>
 (function () {
     var furnaces = document.getElementById('furnace_count');

@@ -11,8 +11,13 @@
    office, which has its own treatment of the same tokens.
 
    These pages are seen by prospects who have never heard of us, on a phone,
-   once. So: no heavy gradients, no glow for its own sake, one serif heading,
-   and gold spent only where it means something.
+   once. So: no heavy gradients, one serif heading, and gold spent only where
+   it means something.
+
+   The one exception is §14: a product page may opt into a moving ion field
+   and a gold sheen on the product itself (config `ambient`). That is the
+   product being shown working, and all of it switches off under
+   prefers-reduced-motion.
    ========================================================================== */
 
 /* ==========================================================================
@@ -37,6 +42,12 @@
 
     /* Gold lifted one notch, for the primary CTA hover only. */
     --q3-sf-gold-lift:   color-mix(in srgb, var(--q3-gold-high) 76%, #FFF);
+
+    /* Contamination in the §14 illustrations, as an r,g,b triplet so both
+       the CSS and the canvas script (q3-ionfield.js) can set their own alpha.
+       The --q3-danger hue: a triplet cannot be derived with color-mix, so
+       keep the two in step by hand. */
+    --q3-sf-germ-rgb:    180, 72, 63;
 }
 
 /* color-mix landed in every current browser, but a 2022-era phone saved to a
@@ -288,6 +299,9 @@ body.q3-storefront {
     font-weight: 600;
     padding: 13px 30px;
     text-align: center;
+    /* The gold button clips its glint (overflow: hidden), which moves an
+       inline-block's baseline to its bottom edge; middle keeps pairs level. */
+    vertical-align: middle;
     transition: background var(--q3-transition), box-shadow var(--q3-transition),
                 border-color var(--q3-transition), color var(--q3-transition);
 }
@@ -929,6 +943,448 @@ body.q3-storefront {
 }
 
 /* ==========================================================================
+   14. Ion field and gold shine — product pages with `ambient` set
+   --------------------------------------------------------------------------
+   The product shown working: ions drifting through the page and clearing
+   contamination (canvas, q3-ionfield.js), gold light on the product and its
+   call to action, and the spray-and-wipe comparison.
+
+   Everything here is decoration layered around content, never on it: the
+   vendor's photography is not filtered or overlaid, and text stays on solid
+   surfaces so the moving field can never cost contrast.
+   ========================================================================== */
+
+/* ---- Canvas layer -------------------------------------------------------
+   Fixed behind everything. Content sections sit above it at z-index 1; the
+   transparent ones let it show between cards, the solid ones (brand bar,
+   enquiry, footer) keep it out of where people read and type.              */
+.q3-storefront .q3-sf-ionfield {
+    height: 100%;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    transition: opacity 1.6s var(--q3-ease);
+    width: 100%;
+    z-index: 0;
+}
+.q3-storefront .q3-sf-ionfield.is-live { opacity: 1; }
+
+.q3-storefront .q3-sf-brandbar,
+.q3-storefront .q3-sf-hero,
+.q3-storefront .q3-sf-section,
+.q3-storefront .q3-sf-footer { position: relative; z-index: 1; }
+
+/* The hero lets the field through so the waves can be seen leaving the unit;
+   the black is thinned, not removed, and the copy sits on it unchanged. */
+.q3-storefront:has(.q3-sf-ionfield) .q3-sf-hero {
+    background:
+        radial-gradient(900px 520px at 18% -20%, rgba(var(--q3-gold-rgb), 0.12) 0%, transparent 60%),
+        radial-gradient(700px 420px at 85% 60%, rgba(var(--q3-gold-rgb), 0.06) 0%, transparent 65%),
+        color-mix(in srgb, var(--q3-black) 58%, transparent);
+}
+
+/* ---- Gilt: gold text with a travelling highlight ------------------------ */
+.q3-storefront .q3-sf-gilt,
+.q3-storefront .q3-sf-stat-value--gold {
+    -webkit-background-clip: text;
+    background-clip: text;
+    background-image: linear-gradient(100deg,
+        var(--q3-gold-deep) 0%, var(--q3-gold) 20%, var(--q3-gold-high) 36%,
+        var(--q3-text) 46%, var(--q3-gold-high) 56%, var(--q3-gold) 74%,
+        var(--q3-gold-soft) 100%);
+    background-size: 260% 100%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: q3-sf-gleam 8s var(--q3-ease) infinite;
+}
+.q3-storefront .q3-sf-gilt { filter: drop-shadow(0 0 22px rgba(var(--q3-gold-rgb), 0.16)); }
+.q3-storefront .q3-sf-stat-value--gold { animation-delay: 1.4s; }
+
+@keyframes q3-sf-gleam {
+    0%, 12%  { background-position: 100% 0; }
+    60%, 100% { background-position: 0% 0; }
+}
+
+/* ---- Product plate: rotating edge light, ion rings, a passing sheen ------ */
+.q3-storefront .q3-sf-hero-media {
+    background: transparent;
+    border: 0;
+    isolation: isolate;
+    overflow: hidden;
+    position: relative;
+}
+/* The 1px frame is this conic gradient showing round the inner plate: a faint
+   gold edge all the way round, with one bright arc travelling it. */
+.q3-storefront .q3-sf-hero-media::before {
+    animation: q3-sf-rot 9s linear infinite;
+    background: conic-gradient(from 0deg,
+        var(--q3-border-gold) 0deg 200deg,
+        var(--q3-gold-high) 250deg,
+        var(--q3-border-gold) 300deg 360deg);
+    content: "";
+    inset: -60%;
+    position: absolute;
+    z-index: 0;
+}
+.q3-storefront .q3-sf-hero-media::after {
+    background:
+        radial-gradient(58% 48% at 50% 62%, rgba(var(--q3-gold-rgb), 0.16) 0%, transparent 70%),
+        var(--q3-surface);
+    border-radius: calc(var(--q3-radius-lg) - 1px);
+    content: "";
+    inset: 1px;
+    position: absolute;
+    z-index: 0;
+}
+.q3-storefront .q3-sf-hero-media img {
+    animation: q3-sf-float 7s ease-in-out infinite;
+    filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.55));
+    position: relative;
+    z-index: 2;
+}
+@keyframes q3-sf-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-7px); }
+}
+
+/* Ion rings — emitted from behind the unit and fading as they widen. */
+.q3-storefront .q3-sf-ring {
+    animation: q3-sf-ring 4.2s var(--q3-ease) infinite;
+    aspect-ratio: 1;
+    border: 1px solid rgba(var(--q3-gold-rgb), 0.55);
+    border-radius: 50%;
+    box-shadow: 0 0 18px rgba(var(--q3-gold-rgb), 0.18) inset;
+    left: 50%;
+    opacity: 0;
+    position: absolute;
+    top: 52%;
+    width: 180px;
+    z-index: 1;
+}
+.q3-storefront .q3-sf-ring:nth-of-type(2) { animation-delay: 1.4s; }
+.q3-storefront .q3-sf-ring:nth-of-type(3) { animation-delay: 2.8s; }
+@keyframes q3-sf-ring {
+    0%   { opacity: 0;    transform: translate(-50%, -50%) scale(0.35); }
+    15%  { opacity: 0.85; }
+    100% { opacity: 0;    transform: translate(-50%, -50%) scale(2.1); }
+}
+
+/* A band of light crossing the plate — behind the photograph, so it lights
+   the case around the unit rather than the vendor's image. */
+.q3-storefront .q3-sf-sheen {
+    animation: q3-sf-sheen 6.5s var(--q3-ease) infinite;
+    background: linear-gradient(100deg, transparent 0%,
+        rgba(var(--q3-gold-rgb), 0.16) 45%, rgba(var(--q3-gold-rgb), 0.28) 50%,
+        rgba(var(--q3-gold-rgb), 0.16) 55%, transparent 100%);
+    bottom: 0;
+    left: 0;
+    position: absolute;
+    top: 0;
+    transform: translateX(-120%);
+    width: 70%;
+    z-index: 1;
+}
+@keyframes q3-sf-sheen {
+    0%, 55% { transform: translateX(-120%); }
+    85%, 100% { transform: translateX(260%); }
+}
+
+/* ---- Gold button: an occasional glint ----------------------------------- */
+.q3-storefront .q3-sf-btn--gold {
+    box-shadow: 0 6px 24px -8px rgba(var(--q3-gold-rgb), 0.5);
+    isolation: isolate;
+    overflow: hidden;
+    position: relative;
+}
+.q3-storefront .q3-sf-btn--gold::after {
+    animation: q3-sf-glint 5.5s var(--q3-ease) infinite;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    bottom: 0;
+    content: "";
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    transform: translateX(-150%) skewX(-18deg);
+    width: 40%;
+    z-index: -1;
+}
+@keyframes q3-sf-glint {
+    0%, 62%  { transform: translateX(-150%) skewX(-18deg); }
+    82%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+
+/* Over empty background the ion field takes clicks (q3-ionfield.js plants a
+   germ there), so the cursor says so. The class is only set while the
+   pointer is on open ground, never over text or a control. */
+html.q3-sf-seeding,
+html.q3-sf-seeding body,
+html.q3-sf-seeding .q3-storefront * { cursor: pointer; }
+
+/* Benefit cards lift toward the gold on hover. */
+.q3-storefront .q3-sf-benefit {
+    transition: transform var(--q3-transition), border-color var(--q3-transition),
+                box-shadow var(--q3-transition);
+}
+.q3-storefront .q3-sf-benefit:hover {
+    border-color: var(--q3-border-gold);
+    border-left-color: var(--q3-gold);
+    box-shadow: 0 14px 34px -18px rgba(var(--q3-gold-rgb), 0.45);
+    transform: translateY(-2px);
+}
+
+/* ---- Beyond spray and wipe ---------------------------------------------- */
+.q3-storefront .q3-sf-versus {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+    .q3-storefront .q3-sf-versus { grid-template-columns: 1fr 1fr; }
+}
+
+.q3-storefront .q3-sf-vs {
+    background: var(--q3-surface);
+    border: 1px solid var(--q3-border);
+    border-radius: var(--q3-radius-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.q3-storefront .q3-sf-vs--new {
+    background:
+        radial-gradient(120% 60% at 50% 0%, rgba(var(--q3-gold-rgb), 0.08) 0%, transparent 60%),
+        var(--q3-surface);
+    border-color: var(--q3-border-gold);
+    box-shadow: 0 22px 60px -30px rgba(var(--q3-gold-rgb), 0.45);
+}
+
+/* The surface: a countertop seen from above, faintly textured. */
+.q3-storefront .q3-sf-scene {
+    background:
+        repeating-linear-gradient(135deg, transparent 0 14px, rgba(255, 255, 255, 0.018) 14px 15px),
+        var(--q3-surface-2);
+    border-bottom: 1px solid var(--q3-border);
+    height: 170px;
+    overflow: hidden;
+    position: relative;
+}
+.q3-storefront .q3-sf-vs--new .q3-sf-scene {
+    background:
+        radial-gradient(70% 90% at 50% 115%, rgba(var(--q3-gold-rgb), 0.16) 0%, transparent 70%),
+        repeating-linear-gradient(135deg, transparent 0 14px, rgba(255, 255, 255, 0.018) 14px 15px),
+        var(--q3-surface-2);
+}
+
+/* A spot of contamination. The box only positions; ::before is the stain and
+   ::after the gold flash, so each can fade on its own. */
+.q3-storefront .q3-sf-germ {
+    height: 30px;
+    left: var(--x);
+    margin: -15px 0 0 -15px;
+    position: absolute;
+    top: var(--y);
+    width: 30px;
+}
+.q3-storefront .q3-sf-germ::before,
+.q3-storefront .q3-sf-germ::after {
+    border-radius: 50%;
+    content: "";
+    inset: 0;
+    position: absolute;
+}
+.q3-storefront .q3-sf-germ::before {
+    background:
+        radial-gradient(circle at 32% 38%, rgba(var(--q3-sf-germ-rgb), 0.75) 0 16%, transparent 34%),
+        radial-gradient(circle at 66% 58%, rgba(var(--q3-sf-germ-rgb), 0.65) 0 14%, transparent 32%),
+        radial-gradient(circle at 44% 72%, rgba(var(--q3-sf-germ-rgb), 0.55) 0 10%, transparent 26%),
+        radial-gradient(circle at 50% 50%, rgba(var(--q3-sf-germ-rgb), 0.28) 0%, transparent 68%);
+}
+.q3-storefront .q3-sf-germ::after { opacity: 0; }
+
+/* The routine: the cloth passes, the spots go, and then they come back. */
+.q3-storefront .q3-sf-vs--old .q3-sf-germ::before {
+    animation: q3-sf-germ-return 9s linear infinite both;
+    animation-delay: var(--d, 0s);
+}
+@keyframes q3-sf-germ-return {
+    0%, 20% { opacity: 1; transform: scale(1); }
+    24%     { opacity: 0; transform: scale(0.4); }
+    50%     { opacity: 0; transform: scale(0.4); }
+    78%     { opacity: 0.6; transform: scale(0.75); }
+    100%    { opacity: 1; transform: scale(1); }
+}
+
+.q3-storefront .q3-sf-wipe {
+    animation: q3-sf-wipe 9s var(--q3-ease) infinite;
+    background: linear-gradient(90deg, transparent,
+        rgba(255, 255, 255, 0.07) 30%, rgba(255, 255, 255, 0.16) 70%, rgba(255, 255, 255, 0.03));
+    border-right: 1px solid rgba(255, 255, 255, 0.14);
+    bottom: 0;
+    left: -24%;
+    position: absolute;
+    top: 0;
+    width: 22%;
+}
+@keyframes q3-sf-wipe {
+    0%, 18%  { left: -24%; }
+    46%      { left: 104%; }
+    100%     { left: 104%; }
+}
+
+/* Continuous: spots settle and are met at once — a stain that never takes. */
+.q3-storefront .q3-sf-vs--new .q3-sf-germ::before {
+    animation: q3-sf-germ-cleared 7s var(--q3-ease) infinite both;
+    animation-delay: calc(var(--i) * 1.15s);
+    opacity: 0;
+}
+.q3-storefront .q3-sf-vs--new .q3-sf-germ::after {
+    animation: q3-sf-flash 7s var(--q3-ease) infinite both;
+    animation-delay: calc(var(--i) * 1.15s);
+    border: 1px solid var(--q3-gold-high);
+    box-shadow: 0 0 14px rgba(var(--q3-gold-rgb), 0.6);
+}
+@keyframes q3-sf-germ-cleared {
+    0%        { opacity: 0;    transform: scale(0.4); }
+    10%       { opacity: 0.55; transform: scale(0.8); }
+    18%, 100% { opacity: 0;    transform: scale(0.15); }
+}
+@keyframes q3-sf-flash {
+    0%, 12%   { opacity: 0;    transform: scale(0.3); }
+    16%       { opacity: 0.9;  transform: scale(0.8); }
+    28%, 100% { opacity: 0;    transform: scale(1.9); }
+}
+
+/* Ions rising from the vent along the bottom edge. */
+.q3-storefront .q3-sf-ion {
+    animation: q3-sf-ion 5.2s linear infinite both;
+    animation-delay: calc(var(--i) * -0.37s);
+    background: var(--q3-gold-high);
+    border-radius: 50%;
+    bottom: -6px;
+    box-shadow: 0 0 8px 1px rgba(var(--q3-gold-rgb), 0.8);
+    height: 4px;
+    left: var(--x);
+    position: absolute;
+    width: 4px;
+}
+.q3-storefront .q3-sf-ion:nth-of-type(3n)   { animation-duration: 6.4s; height: 3px; width: 3px; }
+.q3-storefront .q3-sf-ion:nth-of-type(3n+1) { animation-duration: 4.6s; }
+@keyframes q3-sf-ion {
+    0%   { opacity: 0;   transform: translate(0, 0); }
+    12%  { opacity: 0.9; }
+    50%  { transform: translate(-14px, -95px); }
+    88%  { opacity: 0.7; }
+    100% { opacity: 0;   transform: translate(10px, -190px); }
+}
+
+/* Protection meter along the foot of each surface. */
+.q3-storefront .q3-sf-meter {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    bottom: 12px;
+    height: 4px;
+    left: 14px;
+    overflow: hidden;
+    position: absolute;
+    right: 14px;
+    z-index: 2;
+}
+.q3-storefront .q3-sf-meter span { border-radius: inherit; display: block; height: 100%; }
+.q3-storefront .q3-sf-vs--old .q3-sf-meter span {
+    animation: q3-sf-drain 9s linear infinite;
+    background: linear-gradient(90deg, rgba(var(--q3-sf-germ-rgb), 0.9), var(--q3-text-muted));
+    width: 30%;
+}
+@keyframes q3-sf-drain {
+    0%   { width: 18%; }
+    20%  { width: 12%; }
+    46%  { width: 100%; }
+    100% { width: 18%; }
+}
+.q3-storefront .q3-sf-vs--new .q3-sf-meter span {
+    animation: q3-sf-gleam 4s linear infinite;
+    background: linear-gradient(90deg, var(--q3-gold-deep), var(--q3-gold-high), var(--q3-text),
+        var(--q3-gold-high), var(--q3-gold-deep));
+    background-size: 260% 100%;
+    width: 100%;
+}
+
+.q3-storefront .q3-sf-vs-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 24px 26px 26px;
+}
+.q3-storefront .q3-sf-vs-label {
+    color: var(--q3-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+.q3-storefront .q3-sf-vs--new .q3-sf-vs-label { color: var(--q3-gold-soft); }
+.q3-storefront .q3-sf-vs h3 {
+    color: var(--q3-text);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+}
+.q3-storefront .q3-sf-vs--new h3 { color: var(--q3-gold-high); }
+
+.q3-storefront .q3-sf-vs ul {
+    color: var(--q3-text-body);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.q3-storefront .q3-sf-vs ul li { padding-left: 18px; position: relative; }
+.q3-storefront .q3-sf-vs ul li + li { margin-top: 8px; }
+.q3-storefront .q3-sf-vs ul li::before {
+    color: var(--q3-text-muted);
+    content: "—";
+    left: 0;
+    position: absolute;
+}
+
+/* The manufacturer's words, set as a quotation so it is plain whose they are. */
+.q3-storefront .q3-sf-quote {
+    border-left: 2px solid var(--q3-gold-deep);
+    margin: 0;
+    padding: 2px 0 2px 16px;
+}
+.q3-storefront .q3-sf-quote p {
+    color: var(--q3-text-body);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin: 0 0 8px;
+}
+.q3-storefront .q3-sf-quote cite {
+    color: var(--q3-text-muted);
+    font-size: 0.78rem;
+    font-style: normal;
+}
+
+.q3-storefront .q3-sf-vs-meterlabel {
+    border-top: 1px solid var(--q3-border);
+    color: var(--q3-text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    margin-top: auto;
+    padding-top: 16px;
+    text-transform: uppercase;
+}
+.q3-storefront .q3-sf-vs ul + .q3-sf-vs-meterlabel,
+.q3-storefront .q3-sf-quote + .q3-sf-vs-meterlabel { margin-top: 22px; }
+.q3-storefront .q3-sf-vs--new .q3-sf-vs-meterlabel { color: var(--q3-gold-soft); }
+
+/* ==========================================================================
    13. Responsive — these pages are mostly read on a phone
    ========================================================================== */
 
@@ -966,4 +1422,23 @@ body.q3-storefront {
 @media (prefers-reduced-motion: reduce) {
     .q3-storefront .q3-sf-spin { animation: none; }
     .q3-storefront * { transition-duration: 0.01ms !important; }
+
+    /* §14 at rest: gold stays, motion goes. The routine surface keeps its
+       stains and the continuous one stays clean, so the comparison still
+       reads as a pair of stills. */
+    .q3-storefront .q3-sf-gilt,
+    .q3-storefront .q3-sf-stat-value--gold,
+    .q3-storefront .q3-sf-hero-media::before,
+    .q3-storefront .q3-sf-hero-media img,
+    .q3-storefront .q3-sf-btn--gold::after,
+    .q3-storefront .q3-sf-germ::before,
+    .q3-storefront .q3-sf-germ::after,
+    .q3-storefront .q3-sf-meter span { animation: none !important; }
+    .q3-storefront .q3-sf-gilt,
+    .q3-storefront .q3-sf-stat-value--gold { background-position: 30% 0; }
+    .q3-storefront .q3-sf-ring,
+    .q3-storefront .q3-sf-sheen,
+    .q3-storefront .q3-sf-wipe,
+    .q3-storefront .q3-sf-ion,
+    .q3-storefront .q3-sf-ionfield { display: none; }
 }

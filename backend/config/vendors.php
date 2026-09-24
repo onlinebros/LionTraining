@@ -570,6 +570,52 @@ return [
                         'Installs into existing HVAC — no separate ductwork or floor space',
                     ],
 
+                    /*
+                    | The page's moving background: ions drifting through the
+                    | page and clearing contamination as they pass. Per-product
+                    | because it illustrates THIS product's mechanism — a
+                    | second product that works differently should not inherit
+                    | it. null renders a still page.
+                    */
+                    'ambient' => 'ion-field',
+
+                    /*
+                    | "Beyond spray and wipe" — the everyday cleaning routine set
+                    | against continuous treatment. No cleaning product is named.
+                    |
+                    | Two kinds of copy, kept apart on purpose:
+                    |   old.*          — ours. Describes the chore, claims nothing
+                    |                    about the product.
+                    |   new.title/quote — PlasmaGuard's, VERBATIM, as mirrored on
+                    |                    sites/q3.life/src/pages/system.html (read
+                    |                    2026-09-21). Every efficacy statement in
+                    |                    this block lives there and nowhere else.
+                    | Change a quote only by re-reading plasmaguard.com.
+                    */
+                    'routine' => [
+                        'eyebrow' => 'Beyond spray and wipe',
+                        'heading' => 'Stop chasing germs one surface at a time',
+                        'lede'    => 'Spraying and wiping cleans the spot you reach, at the moment you reach it — then people touch it again. The PlasmaGuard PRO works from inside the heating and cooling system your building already runs.',
+                        'old' => [
+                            'label'  => 'The daily routine',
+                            'title'  => 'Spray. Wipe. Wait. Repeat.',
+                            'points' => [
+                                'Counters, handles, desks and rails — one at a time, by hand.',
+                                'Clean until the next touch, cough or open door.',
+                                'A missed spot stays missed until the next round.',
+                                'Someone has to remember to do it, every single day.',
+                            ],
+                            'meter' => 'Fades after every wipe',
+                        ],
+                        'new' => [
+                            'label'  => 'With the PlasmaGuard PRO™',
+                            'title'  => 'Continuously cleans indoor air and surfaces',
+                            'quote'  => 'These ions travel through the air ducts and into the occupied spaces, making every vent in the building an air purification unit. Our technology works at the source of the problem, removing airborne pathogens and particulates while cleansing surfaces.',
+                            'source' => 'PlasmaGuard',
+                            'meter'  => 'Continuously, with the building’s airflow',
+                        ],
+                    ],
+
                     'specs' => [
                         'Generator' => [
                             'Dimensions'        => '12 × 8.5 × 14 in (305 × 216 × 356 mm)',
