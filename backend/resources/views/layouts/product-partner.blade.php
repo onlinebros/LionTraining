@@ -43,6 +43,7 @@
             @include('partials.product-partner-sidebar')
 
             <div class="page-body">
+                @include('partials.impersonation-banner')
                 @if (!empty($viewingAs))
                     {{-- Borrowed eyes. This must never be quiet: the page is
                          indistinguishable from the real thing, which is the

@@ -52,6 +52,7 @@
             @include('partials.member-sidebar')
 
             <div class="page-body">
+                @include('partials.impersonation-banner')
                 <div class="container-fluid">
                     <div class="page-title">
                         <div class="row">

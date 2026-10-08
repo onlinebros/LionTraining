@@ -51,6 +51,14 @@
                             </button>
                         </form>
                         @endif
+
+                        @if(\App\Support\Impersonation::refusal(auth()->user(), $user) === null)
+                        <form method="POST" action="{{ route('admin.users.impersonate', $user) }}"
+                              onsubmit="return confirm('Sign in as {{ addslashes($user->name) }}? You will be acting as them until you click Back to admin.')">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-warning btn-sm">Impersonate</button>
+                        </form>
+                        @endif
                     </div>
                 </div>
             </div>

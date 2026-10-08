@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\TrainingCategoryController;
 use App\Http\Controllers\Admin\TrainingContentBlockController;
 use App\Http\Controllers\Admin\TrainingLessonController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\VideoAssetController;
 use App\Http\Controllers\Admin\BillingController as AdminBillingController;
 use App\Http\Controllers\Admin\ConnectAccountController;
@@ -419,6 +420,11 @@ Route::prefix('flow')->name('funnels.')->group(function () {
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
+// The way back from signing in as a member. Not under the admin group: the
+// session asking is the member's, and it has no admin role to pass with.
+Route::post('impersonation/stop', [ImpersonationController::class, 'stop'])
+    ->middleware('auth')->name('impersonation.stop');
+
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AdminAuthController::class, 'showLogin'])->name('auth.login')->middleware('guest');
     Route::post('login', [AdminAuthController::class, 'login'])->name('auth.login.post')->middleware('guest');
@@ -430,6 +436,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Users — support admins can view/edit, only super admin can delete
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+
+        // Sign in as a member, from their row or their page. Super admin only,
+        // and never as another member of staff — see Support\Impersonation.
+        Route::post('users/{user}/impersonate', [ImpersonationController::class, 'start'])
+            ->middleware('super_admin')->name('users.impersonate');
 
         // Which business lines a member holds — see config/opportunities.php.
         // This decides what they see and whether a card is asked for, so it is

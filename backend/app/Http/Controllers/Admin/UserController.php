@@ -24,6 +24,12 @@ class UserController extends Controller
         // a second line should not appear under both.
         $opportunity = Opportunity::sanitise($request->query('opportunity'));
 
+        // Free-text lookup: name, email or referral code, and the account
+        // number when the term is all digits. ILIKE with the LIKE wildcards
+        // escaped, so a search for "50%" means the characters, not a pattern.
+        $search = trim((string) $request->query('q', ''));
+        $term   = '%'.addcslashes($search, '%_\\').'%';
+
         $users = User::with('role')
             ->activated()
             ->withCount(['sponsees', 'sponsors'])
@@ -32,6 +38,15 @@ class UserController extends Controller
                 // Null is the default: every account that predates the feature.
                 ? $q->where(fn ($q2) => $q2->whereNull('primary_opportunity')->orWhere('primary_opportunity', $key))
                 : $q->where('primary_opportunity', $key))
+            ->when($search !== '', fn ($q) => $q->where(function ($q2) use ($search, $term) {
+                $q2->where('name', 'ilike', $term)
+                    ->orWhere('email', 'ilike', $term)
+                    ->orWhere('referral_code', 'ilike', $term);
+
+                if (ctype_digit($search) && strlen($search) <= 18) {
+                    $q2->orWhere('id', (int) $search);
+                }
+            }))
             ->latestRegistered()
             ->paginate(20)
             ->withQueryString();
@@ -40,6 +55,7 @@ class UserController extends Controller
             'users'         => $users,
             'opportunity'   => $opportunity,
             'opportunities' => Opportunity::all(),
+            'search'        => $search,
         ]);
     }
 
