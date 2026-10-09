@@ -6,6 +6,7 @@ use App\Services\Vendor\Shipping\AddressVerification;
 use App\Support\Vendors;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -94,6 +95,17 @@ class VendorLead extends Model
     }
 
     // ── Relationships ─────────────────────────────────────────────────────────
+
+    /**
+     * What the vendor's Stripe last said about this order. Read-only; see
+     * VendorPaymentAuditor.
+     *
+     * @return HasOne<VendorPaymentAudit, $this>
+     */
+    public function paymentAudit(): HasOne
+    {
+        return $this->hasOne(VendorPaymentAudit::class, 'vendor_lead_id');
+    }
 
     /**
      * The partner whose share link was used.

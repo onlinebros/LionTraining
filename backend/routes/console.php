@@ -12,6 +12,10 @@ Artisan::command('inspire', function () {
 // the scheduler does: `php artisan schedule:run` every minute.
 Schedule::command('vendors:sync-events')->everyFifteenMinutes()->withoutOverlapping();
 
+// Records what the vendor's Stripe says became of each order — declines,
+// abandoned Affirm checkouts, and any payment we failed to record. Read-only.
+Schedule::command('vendors:audit-payments')->hourly()->withoutOverlapping();
+
 // Starts billing for partners who waited on commissions and have reached the
 // threshold, and keeps everyone else's hold clear of Stripe's two-year limit.
 Schedule::command('billing:commission-holds')->dailyAt('06:00')->withoutOverlapping();

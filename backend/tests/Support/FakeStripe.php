@@ -32,6 +32,15 @@ class FakeStripe implements ClientInterface
     /** @var list<array<string, mixed>> the account's event log */
     public array $events = [];
 
+    /** @var array<string, array<string, mixed>> payment intents, as GET /v1/payment_intents/{id} returns them */
+    public array $paymentIntents = [];
+
+    /** @var list<array<string, mixed>> the account's webhook endpoints */
+    public array $webhookEndpoints = [];
+
+    /** @var list<string> path prefixes a restricted key is refused, as Stripe refuses them */
+    public array $denied = [];
+
     /** An event in the account's log, as GET /v1/events returns it. */
     public function event(string $id, string $type, array $object, \DateTimeInterface $created): string
     {
@@ -125,6 +134,34 @@ class FakeStripe implements ClientInterface
 
         $this->requests[] = [$method, $path];
         $this->calls[] = ['method' => $method, 'path' => $path, 'params' => $params];
+
+        foreach ($this->denied as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return $this->respond(['error' => [
+                    'type' => 'invalid_request_error',
+                    'message' => "The provided key 'rk_test_...fake' does not have the required permissions for this endpoint. "
+                        ."Enabling Charges and Refunds Read ('charge_read') permissions on this key would allow this request to continue.",
+                ]], 403);
+            }
+        }
+
+        if ($method === 'get' && preg_match('#^/v1/payment_intents/([^/]+)$#', $path, $m)) {
+            return isset($this->paymentIntents[$m[1]])
+                ? $this->respond($this->paymentIntents[$m[1]])
+                : $this->respond(['error' => ['type' => 'invalid_request_error', 'code' => 'resource_missing', 'message' => "No such payment_intent: '{$m[1]}'"]], 404);
+        }
+
+        if ($method === 'get' && $path === '/v1/webhook_endpoints') {
+            return $this->respond(['object' => 'list', 'url' => $path, 'has_more' => false, 'data' => $this->webhookEndpoints]);
+        }
+
+        if ($method === 'get' && in_array($path, ['/v1/payment_intents', '/v1/customers', '/v1/charges', '/v1/payouts'], true)) {
+            return $this->respond(['object' => 'list', 'url' => $path, 'has_more' => false, 'data' => []]);
+        }
+
+        if ($method === 'get' && $path === '/v1/balance') {
+            return $this->respond(['object' => 'balance', 'available' => [], 'pending' => []]);
+        }
 
         if (preg_match('#^/v1/payment_methods/([^/]+)(?:/(attach|detach))?$#', $path, $m) && isset($this->paymentMethods[$m[1]])) {
             match ($m[2] ?? null) {

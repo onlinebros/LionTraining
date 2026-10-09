@@ -168,6 +168,50 @@
     </div>
 
     <div class="col-lg-5">
+        @if ($lead->provider_payment_intent_id)
+            @php $audit = $lead->paymentAudit; @endphp
+            {{-- What the vendor's Stripe says, so a stuck order explains itself. --}}
+            <div class="card">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Payment on {{ $vendor['name'] ?? 'vendor' }}'s Stripe</h5>
+                    <form method="POST" action="{{ route('admin.vendor-leads.payment-audit.lead', $lead) }}">
+                        @csrf
+                        <button class="btn btn-sm btn-outline-primary">Check now</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    @if (! $audit)
+                        <p class="text-muted small mb-0">Not checked yet. <code>{{ $lead->provider_payment_intent_id }}</code></p>
+                    @else
+                        <p class="mb-2">
+                            <span class="badge bg-{{ $audit->badge() }}">{{ $audit->label() }}</span>
+                            <span class="text-muted small ms-1">{{ $audit->intent_status }} · checked {{ $audit->checked_at->diffForHumans() }}</span>
+                        </p>
+                        @if ($audit->reason())
+                            <p class="small mb-1">{{ $audit->methodLabel() ? $audit->methodLabel().': ' : '' }}{{ $audit->reason() }}
+                                @if ($audit->decline_code ?: $audit->failure_code) <code>{{ $audit->decline_code ?: $audit->failure_code }}</code> @endif
+                            </p>
+                        @endif
+                        <p class="text-muted small mb-1">{{ $audit->advice() }}</p>
+                        @if ($audit->check_error)
+                            <p class="text-danger small mb-1">Last read failed: {{ $audit->check_error }}</p>
+                        @endif
+                        @if (count($audit->attempts ?? []))
+                            <ol class="small mb-0 mt-2 ps-3">
+                                @foreach ($audit->attempts as $a)
+                                    <li>{{ \Illuminate\Support\Carbon::createFromTimestamp($a['at'] ?? 0)->format('d M H:i') }}
+                                        — {{ str_replace('_', ' ', $a['type'] ?? '?') }}
+                                        @if (! empty($a['method'])) ({{ \App\Models\VendorPaymentAudit::methodName($a['method']) }}) @endif
+                                        @if (! empty($a['decline']) || ! empty($a['code'])) <code>{{ $a['decline'] ?? $a['code'] }}</code> @endif
+                                    </li>
+                                @endforeach
+                            </ol>
+                        @endif
+                    @endif
+                </div>
+            </div>
+        @endif
+
         <div class="card">
             <div class="card-header py-3"><h5 class="mb-0">Confirmation</h5></div>
             <div class="card-body">

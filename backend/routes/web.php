@@ -39,6 +39,7 @@ use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\VendorStorefrontController;
 use App\Http\Controllers\MemberVendorLeadController;
 use App\Http\Controllers\Admin\VendorLeadController;
+use App\Http\Controllers\Admin\VendorPaymentAuditController;
 use App\Http\Controllers\Admin\CtaItemController as AdminCtaItemController;
 use App\Http\Controllers\Admin\PresentationController as AdminPresentationController;
 use App\Http\Controllers\Admin\PresentationFunnelController as AdminFunnelController;
@@ -610,6 +611,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/reconciliation',    [VendorLeadController::class, 'reconciliation'])->name('reconciliation');
             // The running sales promotion: every order holding a place.
             Route::get('/promotion',         [VendorLeadController::class, 'promotion'])->name('promotion');
+            // What the vendor's Stripe says happened to each order, and what our
+            // key into their account can read. Read-only on both sides.
+            Route::get('/payment-audit',          [VendorPaymentAuditController::class, 'index'])->name('payment-audit');
+            Route::post('/payment-audit/refresh', [VendorPaymentAuditController::class, 'refresh'])->name('payment-audit.refresh');
+            Route::post('/{vendorLead}/payment-audit', [VendorPaymentAuditController::class, 'refreshLead'])->name('payment-audit.lead');
             Route::post('/invoice',          [VendorLeadController::class, 'invoice'])->name('invoice');
             Route::post('/settle',           [VendorLeadController::class, 'settle'])->name('settle');
             Route::post('/{vendorLead}/fulfil', [VendorLeadController::class, 'fulfil'])->name('fulfil');

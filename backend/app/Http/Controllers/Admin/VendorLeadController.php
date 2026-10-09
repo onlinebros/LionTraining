@@ -193,7 +193,7 @@ class VendorLeadController extends Controller
     {
         return view('admin.vendor.lead-show', [
             'lead'   => $vendorLead->load([
-                'member', 'crmContact', 'confirmedBy',
+                'member', 'crmContact', 'confirmedBy', 'paymentAudit',
                 'buyer.sponsor', 'creditedMember', 'earner', 'attributionResolvedBy', 'addressReviewedBy',
             ]),
             'vendor' => Vendors::find($vendorLead->vendor),
