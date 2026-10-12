@@ -79,6 +79,8 @@
                      Q3 theme is dark-only, and toggling it off would strip the
                      .dark-only class and leave the UI half-styled. --}}
 
+                @include('partials.request-assistant-button')
+
                 {{-- Support ticket button --}}
                 <li>
                     <a href="#" id="supportTicketBtn"

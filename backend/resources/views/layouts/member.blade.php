@@ -248,6 +248,7 @@
     <script src="{{ asset('assets/js/slick/slick.js') }}"></script>
     <script src="{{ asset('assets/js/header-slick.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    @include('partials.request-assistant-modal')
     @stack('scripts')
     <script>
     (function () {

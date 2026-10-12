@@ -136,6 +136,7 @@
     <script src="{{ asset('assets/js/config.js') }}"></script>
     <script src="{{ asset('assets/js/sidebar-menu.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    @include('partials.request-assistant-modal')
     @stack('scripts')
 </body>
 </html>

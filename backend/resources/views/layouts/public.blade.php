@@ -27,6 +27,8 @@
     <script src="{{ asset('assets/js/icons/feather-icon/feather-icon.js') }}"></script>
     <script src="{{ asset('assets/js/config.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    @include('partials.request-assistant-floating')
+    @include('partials.request-assistant-modal')
     @stack('scripts')
 </body>
 </html>

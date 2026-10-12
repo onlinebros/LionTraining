@@ -28,6 +28,23 @@ class RequestingTest extends RequestAssistantTestCase
         $this->actingAs($this->user(Role::SUPPORT_ADMIN))->get('/admin/dashboard')->assertOk()->assertDontSee('requestAssistantModal', false);
     }
 
+    public function test_the_button_is_on_member_pages_for_a_super_admin_and_never_for_a_member(): void
+    {
+        $this->actingAs($this->michael)->get('/member/dashboard')
+            ->assertOk()->assertSee('requestAssistantModal', false)->assertSee(route('admin.change-requests.store'), false);
+        $this->actingAs($this->user(Role::PAID_MEMBER))->get('/member/dashboard')
+            ->assertOk()->assertDontSee('requestAssistantModal', false);
+    }
+
+    public function test_pages_without_a_header_get_a_floating_button_for_super_admins_only(): void
+    {
+        $this->actingAs($this->michael);
+        $this->assertStringContainsString('Suggest a change to this page', view('partials.request-assistant-floating')->render());
+
+        $this->actingAs($this->user(Role::PAID_MEMBER));
+        $this->assertStringNotContainsString('Suggest a change', view('partials.request-assistant-floating')->render());
+    }
+
     public function test_starting_a_request_from_a_page_keeps_it_here_and_waits_for_dev(): void
     {
         $this->actingAs($this->michael)->post('/admin/change-requests', [

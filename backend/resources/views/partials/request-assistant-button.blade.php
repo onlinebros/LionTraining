@@ -1,6 +1,7 @@
 {{-- Header button for the Request Assistant: suggest a change to the page
-     you are on. Super admins only. Pairs with partials.request-assistant-modal,
-     which the admin layout includes. --}}
+     you are on. Super admins only, in the admin, member and product-partner
+     headers (public pages get partials.request-assistant-floating). Pairs with
+     partials.request-assistant-modal, which each layout includes. --}}
 @if(auth()->user()?->isSuperAdmin())
 <li>
     <a href="#" data-bs-toggle="modal" data-bs-target="#requestAssistantModal"

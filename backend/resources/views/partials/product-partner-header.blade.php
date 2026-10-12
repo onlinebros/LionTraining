@@ -36,6 +36,8 @@
                     </span>
                 </li>
 
+                @include('partials.request-assistant-button')
+
                 <li class="profile-nav onhover-dropdown pe-0 py-0">
                     <div class="d-flex profile-media align-items-center gap-2">
                         <div class="q3-avatar">{{ strtoupper(substr((string) $partner?->name, 0, 1)) }}</div>
