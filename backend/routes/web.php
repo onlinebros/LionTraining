@@ -20,6 +20,8 @@ use App\Http\Controllers\Admin\PartnerWebhookController;
 use App\Http\Controllers\Admin\SpotImportController;
 use App\Http\Controllers\Admin\SponsorController;
 use App\Http\Controllers\Admin\SupportTicketController;
+use App\Http\Controllers\Admin\ChangeRequestController as AdminChangeRequestController;
+use App\Http\Controllers\Admin\ReviewRequestController;
 use App\Http\Controllers\Admin\TrainingCategoryController;
 use App\Http\Controllers\Admin\TrainingContentBlockController;
 use App\Http\Controllers\Admin\TrainingLessonController;
@@ -577,6 +579,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{ticket}',                 [SupportTicketController::class, 'show'])->name('show');
             Route::post('/{ticket}/reply',          [SupportTicketController::class, 'reply'])->name('reply');
             Route::patch('/{ticket}/status',        [SupportTicketController::class, 'updateStatus'])->name('status');
+        });
+
+
+
+        // The Request Assistant (memory-bank/request-assistant.md). Super admins
+        // only. Requests are kept on this server (the live site) and decided on
+        // dev, in Review Requests, which exists only once dev is connected here.
+        Route::prefix('change-requests')->name('change-requests.')->middleware('super_admin')->group(function () {
+            Route::get('/',                          [AdminChangeRequestController::class, 'index'])->name('index');
+            Route::post('/',                         [AdminChangeRequestController::class, 'store'])->name('store');
+            Route::get('/{changeRequest}',           [AdminChangeRequestController::class, 'show'])->name('show');
+            Route::get('/{changeRequest}/status',    [AdminChangeRequestController::class, 'status'])->name('status');
+            Route::post('/{changeRequest}/message',  [AdminChangeRequestController::class, 'message'])->name('message');
+            Route::post('/{changeRequest}/plan',     [AdminChangeRequestController::class, 'draftPlan'])->name('plan');
+            Route::post('/{changeRequest}/submit',   [AdminChangeRequestController::class, 'submit'])->name('submit');
+        });
+        Route::prefix('review-requests')->name('review-requests.')->middleware(['super_admin', 'review_console'])->group(function () {
+            Route::get('/',                          [ReviewRequestController::class, 'index'])->name('index');
+            Route::get('/{changeRequest}',           [ReviewRequestController::class, 'show'])->whereNumber('changeRequest')->name('show');
+            Route::get('/{changeRequest}/export',    [ReviewRequestController::class, 'export'])->whereNumber('changeRequest')->name('export');
+            Route::patch('/{changeRequest}/review',  [ReviewRequestController::class, 'review'])->whereNumber('changeRequest')->name('review');
+            Route::post('/{changeRequest}/comment',  [ReviewRequestController::class, 'comment'])->whereNumber('changeRequest')->name('comment');
         });
 
         // Billing oversight (C3)

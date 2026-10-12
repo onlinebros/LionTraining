@@ -33,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // The vendor portal: a product partner with at least one product
             // linked to their account, or an admin looking at what they see.
             'product_partner' => \App\Http\Middleware\RequireProductPartner::class,
+            // The Request Assistant: dev's review screens, and the API dev calls.
+            'review_console' => \App\Http\Middleware\RequireReviewConsole::class,
+            'request_assistant_token' => \App\Http\Middleware\RequireRequestAssistantToken::class,
         ]);
 
         // Check is_active on every authenticated web request

@@ -102,6 +102,7 @@
     <script src="{{ asset('assets/js/header-slick.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
     {{-- Customizer removed — settings are admin-controlled site-wide --}}
+    @include('partials.request-assistant-modal')
     @stack('scripts')
 </body>
 </html>

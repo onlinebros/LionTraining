@@ -69,6 +69,8 @@
                      Q3 theme is dark-only, and toggling it off would strip the
                      .dark-only class and leave the UI half-styled. --}}
 
+                @include('partials.request-assistant-button')
+
                 {{-- Notifications --}}
                 <li class="onhover-dropdown">
                     <div class="notification-box">

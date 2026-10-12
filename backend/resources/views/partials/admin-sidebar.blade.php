@@ -303,6 +303,31 @@
                         </a>
                     </li>
 
+                    {{-- Request Assistant: super admins only. Requests are made and kept
+                         here; Review Requests exists only on dev, where they are decided. --}}
+                    @if(auth()->user()->isSuperAdmin())
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link {{ request()->routeIs('admin.change-requests.*') ? 'active' : '' }}"
+                           href="{{ route('admin.change-requests.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-form') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-form') }}"></use></svg>
+                            <span>Change Requests</span>
+                        </a>
+                    </li>
+                    @if(\App\Services\RequestAssistant\Upstream::isConnected())
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link {{ request()->routeIs('admin.review-requests.*') ? 'active' : '' }}"
+                           href="{{ route('admin.review-requests.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-learning') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-learning') }}"></use></svg>
+                            <span>Review Requests</span>
+                        </a>
+                    </li>
+                    @endif
+                    @endif
+
                     {{-- Error Logs --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>

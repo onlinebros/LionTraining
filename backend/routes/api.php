@@ -85,3 +85,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::patch('/{sponsorship}/status', [SponsorController::class, 'updateSponsorshipStatus']);
     });
 });
+
+// The Request Assistant API, called only by dev (see memory-bank/request-assistant.md).
+// Dev collects waiting turns, answers them on its own Claude CLI and posts the
+// answer back (relay), and reviews the requests kept here (review). A 404 unless
+// a token has been issued with request-assistant:token.
+Route::prefix('request-assistant')->name('request-assistant.')
+    ->middleware(['request_assistant_token', 'throttle:240,1'])
+    ->controller(\App\Http\Controllers\Api\RequestAssistantController::class)
+    ->group(function () {
+        Route::post('/relay/claim', 'claim')->name('claim');
+        Route::post('/relay/{changeRequest}/complete', 'complete')->name('complete');
+        Route::post('/relay/{changeRequest}/fail', 'fail')->name('fail');
+
+        Route::get('/review/requests', 'index')->name('index');
+        Route::get('/review/requests/{changeRequest}', 'show')->name('show');
+        Route::patch('/review/requests/{changeRequest}', 'review')->name('review');
+        Route::post('/review/requests/{changeRequest}/comment', 'comment')->name('comment');
+    });
