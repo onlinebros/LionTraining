@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\VendorPaymentIncomplete;
 use App\Models\User;
 use App\Models\VendorLead;
 use App\Rules\NotPoBox;
 use App\Models\CrmContact;
 use App\Services\Vendor\AddressCheck;
 use App\Services\Vendor\ChallengeToCrm;
+use App\Services\Vendor\PaymentState;
 use App\Services\Vendor\Shipping\AddressVerification;
 use App\Services\Vendor\VendorOrderService;
 use App\Services\Vendor\VendorStripeClient;
@@ -16,8 +18,10 @@ use App\Support\Vendors;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -404,6 +408,19 @@ class VendorStorefrontController extends Controller
             return response()->json(['error' => 'Please confirm the delivery address before paying.'], 422);
         }
 
+        /*
+         * A bank payment that is still clearing would be paid twice by a second
+         * attempt: once the idempotency key expires, place() builds a fresh
+         * intent. Only a payment that has definitely not happened may be retried.
+         */
+        if (filled($lead->provider_payment_intent_id)
+            && PaymentState::for($lead, $this->stripe)->isInFlight()) {
+            return response()->json([
+                'error' => 'A payment for this order is already being processed. '
+                    .'Please wait for it to clear rather than paying again.',
+            ], 409);
+        }
+
         try {
             $result = $this->orders->place($lead);
         } catch (\RuntimeException $e) {
@@ -425,42 +442,65 @@ class VendorStorefrontController extends Controller
     }
 
     /**
-     * Where the customer lands after paying.
+     * Where the customer lands after paying — or after leaving Affirm, Klarna
+     * or their bank part-way through, which redirects here just the same.
      *
      * Like the old thank-you page, this does NOT mark anything converted — it is
      * reached by a redirect the customer controls. The webhook is what confirms
-     * the sale; this only reports what we already know.
+     * the sale. What the page SAYS comes from the intent's real status, read
+     * server-side: only a payment Stripe reports as succeeded is called an
+     * order. Stripe's `redirect_status` on the URL is editable and ignored.
+     *
+     * A buyer whose payment is not finished is also emailed, once per state,
+     * so the message survives them closing the tab.
      */
     public function complete(Request $request, string $reference)
     {
-        $lead = $this->lead($reference);
+        $lead    = $this->lead($reference);
+        $payment = PaymentState::for($lead, $this->stripe);
+        $vendor  = Vendors::find($lead->vendor);
 
-        /*
-         * Read the intent's real status rather than trusting the redirect.
-         * Stripe appends `redirect_status` to the return URL and a customer can
-         * edit it, so it is a hint about what to render and never a reason to
-         * mark anything sold. The webhook does that.
-         */
-        $status = null;
-
-        if (filled($lead->provider_payment_intent_id)) {
-            try {
-                $intent = $this->stripe->for($lead->vendor)
-                    ->paymentIntents->retrieve($lead->provider_payment_intent_id);
-                $status = $intent->status;
-            } catch (\Throwable $e) {
-                Log::info('Could not read payment status for completion page', [
-                    'lead'  => $lead->public_ref,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        if ($payment->isIncomplete()) {
+            $this->noticeIncompletePayment($lead, $payment);
         }
 
         return view('public.vendor.complete', [
-            'lead'   => $lead,
-            'vendor' => Vendors::find($lead->vendor),
-            'status' => $status,
+            'lead'    => $lead,
+            'vendor'  => $vendor,
+            'payment' => $payment,
         ]);
+    }
+
+    /**
+     * Email the buyer that their payment is not finished and nothing ships yet.
+     *
+     * Once per order and state: reloading the page sends nothing more, but a
+     * bank payment that moves from "verify" to "clearing", or a retry that is
+     * declined after an abandoned one, does get its own message. A mail outage
+     * must not break the page, so failures are logged and swallowed.
+     */
+    private function noticeIncompletePayment(VendorLead $lead, PaymentState $payment): void
+    {
+        if (! filled($lead->email)) {
+            return;
+        }
+
+        $key = "vendor-payment-notice:{$lead->public_ref}:{$lead->provider_payment_intent_id}:{$payment->state}";
+
+        if (! Cache::add($key, true, now()->addDays(30))) {
+            return;
+        }
+
+        try {
+            Mail::to($lead->email)->queue(new VendorPaymentIncomplete($lead, $payment->state, $payment->method, $payment->abandoned, $payment->nextAction));
+        } catch (\Throwable $e) {
+            Cache::forget($key);
+
+            Log::error('Could not queue the incomplete-payment email', [
+                'lead'  => $lead->public_ref,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

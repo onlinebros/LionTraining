@@ -317,13 +317,7 @@ class VendorPaymentAuditor
      */
     private function abandoned(array $error, array $charge): bool
     {
-        $decline = (string) ($error['decline_code'] ?? '');
-        $reason  = (string) ($charge['outcome']['reason'] ?? '');
-
-        return ($error['code'] ?? null) === 'payment_intent_payment_attempt_expired'
-            || str_ends_with($decline, '_canceled')
-            || str_ends_with($reason, '_canceled')
-            || $reason === 'customer_request_expired';
+        return PaymentState::abandoned($error, $charge);
     }
 
     /**
