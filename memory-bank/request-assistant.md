@@ -33,7 +33,10 @@ Dev always calls out; the live site never calls dev.
   assistant is marked as waiting in the row (`assistant_pending`). Every super admin sees
   every request; only its author can continue it. The page polls until the answer lands.
 - **The relay** (`php artisan request-assistant:relay`, run as `ai` by
-  `scripts/request-assistant-worker.sh`, `@reboot` in `ai`'s crontab) checks every 5 s.
+  `scripts/request-assistant-worker.sh`) checks every 5 s. `ai`'s crontab starts the
+  script `@reboot` and every 5 minutes; its flock keeps one copy, so a worker that died
+  is back within 5 minutes. (2026-10-13: a worker started from a Claude session died with
+  that session. Start it by hand only with `setsid nohup …`.)
   It claims the oldest waiting turn: live builds the prompt from its own record and also
   sends a whole-conversation fallback for when the CLI session cannot be resumed. The relay
   runs the CLI and posts `complete` or `fail`. An unanswered claim is offered again after
