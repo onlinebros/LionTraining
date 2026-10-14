@@ -29,8 +29,9 @@ All under `/api/owner-status`, names `owner-status.*`.
 | | |
 |---|---|
 | `GET /summary` | Headline counts from every section below (no lists), `generated_at`, `app` (site name). |
-| `GET /sales?days=30` (1–365) | Vendor sales per vendor (converted, refunds, awaiting purchase, our share owed / invoiced / settled, last 10 sales), subscriptions (by status, entitling, new, canceled, past due, active amount), sign-ups by opportunity. |
+| `GET /sales?days=30&limit=100` (1–365, 1–500) | Vendor sales per vendor (converted, refunds, awaiting purchase, our share owed / invoiced / settled), every sale in the window with the credited partner, that partner's direct sponsor and the commission earner; subscriptions (by status, entitling, new, canceled, past due, active amount); activated sign-ups by opportunity. Sign-ups count activated accounts only: `users.created_at` is unindexed on ~1.3M mostly imported rows and counting all of them took ~25 s on production (2026-10-14). |
 | `GET /tickets` | Support tickets by status and open ones by priority, up to 50 open / in progress; change requests by status, up to 20 submitted / needs info. |
+| `GET /tickets/{id}` | One ticket and its whole conversation, oldest first, internal notes marked, email addresses masked. `requester_has_account` false = website-form ticket, which panel replies never reach. |
 | `GET /errors?days=7` (1–90) | Unresolved error logs grouped by message, failed jobs, failed or bad-signature Stripe webhooks, failed partner webhooks, vendor payments needing attention, past-due subscriptions, failed payout transfers. |
 | `GET /approvals` | Pending sponsorships, pending commission ledger, payouts pending and approved-not-paid, product partner payments to confirm, vendor leads waiting on attribution or address review. |
 

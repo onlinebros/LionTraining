@@ -23,12 +23,22 @@ class OwnerStatusController extends Controller
 
     public function sales(Request $request): JsonResponse
     {
-        return response()->json($this->report->sales($this->days($request, 30, 365)));
+        $limit = is_numeric($request->query('limit')) ? max(1, min(500, (int) $request->query('limit'))) : 100;
+
+        return response()->json($this->report->sales($this->days($request, 30, 365), $limit));
     }
 
     public function tickets(): JsonResponse
     {
         return response()->json($this->report->tickets());
+    }
+
+    public function ticket(int $ticket): JsonResponse
+    {
+        $data = $this->report->ticket($ticket);
+        abort_if($data === null, 404);
+
+        return response()->json($data);
     }
 
     public function errors(Request $request): JsonResponse

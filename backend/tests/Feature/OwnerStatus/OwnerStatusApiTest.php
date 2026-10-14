@@ -159,8 +159,8 @@ class OwnerStatusApiTest extends TestCase
         $this->assertSame(123456, $vendor['vendor_gross_cents']);
         $this->assertSame(20050, $vendor['our_share_cents']);
         $this->assertSame(20050, $vendor['our_share_uninvoiced_cents']);
-        $this->assertSame(123456, $sales['vendor_sales']['recent_converted'][0]['amount_total_cents']);
-        $this->assertSame('Pat Partner', $sales['vendor_sales']['recent_converted'][0]['member']);
+        $this->assertSame(123456, $sales['vendor_sales']['sales'][0]['amount_total_cents']);
+        $this->assertSame('Pat Partner', $sales['vendor_sales']['sales'][0]['member']);
         $this->assertSame(4999, $sales['subscriptions']['active_amount_by_currency'][0]['active_amount_cents']);
 
         $approvals = $this->api()->getJson('/api/owner-status/approvals')->assertOk();
@@ -240,5 +240,30 @@ class OwnerStatusApiTest extends TestCase
         $this->assertArrayHasKey('Wendy Website', $open->all());
 
         $this->assertStringNotContainsString('@', $response->getContent());
+    }
+
+    public function test_one_ticket_returns_its_whole_thread_without_email_addresses(): void
+    {
+        $this->issueToken();
+        $staff = $this->user('Sam Staff', 'sam.staff@example.com');
+        $member = $this->user('Mia Member', 'mia.member@example.com');
+        $ticket = SupportTicket::create([
+            'user_id' => $member->id, 'subject' => 'Order not shipped', 'category' => 'orders', 'priority' => 'high', 'status' => 'open',
+        ]);
+        SupportTicketReply::create(['ticket_id' => $ticket->id, 'user_id' => $member->id, 'body' => '<p>Paid with Affirm, mail me at mia.member@example.com</p>']);
+        SupportTicketReply::create(['ticket_id' => $ticket->id, 'user_id' => $staff->id, 'body' => 'Checking Stripe', 'is_internal' => true]);
+
+        $response = $this->api()->getJson("/api/owner-status/tickets/{$ticket->id}")->assertOk();
+        $response->assertJsonPath('ticket.subject', 'Order not shipped')
+            ->assertJsonPath('ticket.requester_has_account', true)
+            ->assertJsonCount(2, 'messages')
+            ->assertJsonPath('messages.0.from_requester', true)
+            ->assertJsonPath('messages.1.internal_note', true)
+            ->assertJsonPath('messages.1.author', 'Sam Staff');
+        $this->assertStringStartsWith('Paid with Affirm', $response->json('messages.0.body'));
+        $this->assertStringNotContainsString('@', $response->getContent());
+
+        $this->api()->getJson('/api/owner-status/tickets/999999')->assertNotFound();
+        $this->api()->postJson("/api/owner-status/tickets/{$ticket->id}")->assertStatus(405);
     }
 }

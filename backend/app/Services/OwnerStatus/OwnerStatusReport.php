@@ -60,7 +60,7 @@ class OwnerStatusReport
                 'subscriptions_entitling_count' => $sales['subscriptions']['entitling_count'],
                 'subscriptions_new_count' => $sales['subscriptions']['new_in_window_count'],
                 'subscriptions_canceled_count' => $sales['subscriptions']['canceled_in_window_count'],
-                'signups_count' => $sales['signups']['total_count'],
+                'activated_signups_count' => $sales['signups']['activated_count'],
             ],
             'tickets' => [
                 'open_count' => $tickets['support']['by_status']['open'] ?? 0,
@@ -90,7 +90,7 @@ class OwnerStatusReport
     }
 
     /** @return array<string, mixed> */
-    public function sales(int $days): array
+    public function sales(int $days, int $limit = 100): array
     {
         $since = now()->subDays($days);
 
@@ -98,7 +98,7 @@ class OwnerStatusReport
             'generated_at' => $this->now(),
             'days' => $days,
             'since' => $since->toIso8601String(),
-            'vendor_sales' => $this->vendorSales($since),
+            'vendor_sales' => $this->vendorSales($since, $limit),
             'subscriptions' => $this->subscriptions($since),
             'signups' => $this->signups($since),
         ];
@@ -152,6 +152,51 @@ class OwnerStatusReport
                     'submitted_at' => $this->iso($r->submitted_at),
                     'author' => $r->user?->name,
                 ])->values()->all(),
+            ],
+        ];
+    }
+
+    /**
+     * One support ticket and its whole conversation, for the owner's assistant to draft a reply.
+     * Internal staff notes are included and marked. Email addresses in text are masked.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function ticket(int $id): ?array
+    {
+        $ticket = $this->hasTable('support_tickets')
+            ? SupportTicket::with(['user:id,name', 'assignee:id,name', 'replies' => fn ($q) => $q->orderBy('created_at')->orderBy('id'), 'replies.user:id,name'])->find($id)
+            : null;
+        if (! $ticket) {
+            return null;
+        }
+
+        return [
+            'generated_at' => $this->now(),
+            'ticket' => [
+                'id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number,
+                'subject' => $this->clean($ticket->subject),
+                'status' => $ticket->status,
+                'priority' => $ticket->priority,
+                'category' => $ticket->category,
+                'channel' => $ticket->channel,
+                'created_at' => $this->iso($ticket->created_at),
+                'closed_at' => $this->iso($ticket->closed_at),
+                'assigned_to' => $ticket->assignee?->name,
+                'requester' => $this->clean($ticket->requesterDisplayName(), 120),
+                'requester_has_account' => $ticket->user_id !== null,
+            ],
+            'messages' => $ticket->replies->map(fn ($r) => [
+                'at' => $this->iso($r->created_at),
+                'author' => $r->user?->name ?? $this->clean($ticket->requesterDisplayName(), 120),
+                'from_requester' => $r->user_id === null || $r->user_id === $ticket->user_id,
+                'internal_note' => (bool) $r->is_internal,
+                'body' => $this->clean(trim(html_entity_decode(strip_tags((string) $r->body))), 4000),
+            ])->values()->all(),
+            'notes' => [
+                'messages' => 'Oldest first. internal_note = staff-only note the requester never sees. Text is truncated to 4000 characters and email addresses are masked.',
+                'requester_has_account' => 'false = the ticket came from the website form: panel replies never reach that person; email them instead.',
             ],
         ];
     }
@@ -232,10 +277,10 @@ class OwnerStatusReport
     // ── Sales parts ───────────────────────────────────────────────────────
 
     /** @return array<string, mixed> */
-    private function vendorSales(Carbon $since): array
+    private function vendorSales(Carbon $since, int $limit = 100): array
     {
         if (! $this->hasTable('vendor_leads')) {
-            return ['vendors' => [], 'recent_converted' => [], 'notes' => $this->vendorNotes()];
+            return ['vendors' => [], 'sales' => [], 'notes' => $this->vendorNotes()];
         }
 
         $vendors = VendorLead::query()->distinct()->orderBy('vendor')->pluck('vendor');
@@ -268,10 +313,13 @@ class OwnerStatusReport
             ];
         })->values()->all();
 
-        $recent = VendorLead::converted()
-            ->with(['member:id,name', 'creditedMember:id,name'])
+        // Every sale converted in the window (newest first, capped), with who it counts for and
+        // who is paid: the credited partner, that partner's direct sponsor, and the earner.
+        $sales = VendorLead::converted()
+            ->where('converted_at', '>=', $since)
+            ->with(['member:id,name', 'creditedMember:id,name,sponsor_id', 'creditedMember.sponsor:id,name', 'earner:id,name'])
             ->latest('converted_at')
-            ->limit(10)
+            ->limit($limit)
             ->get()
             ->map(fn (VendorLead $l) => [
                 'converted_at' => $this->iso($l->converted_at),
@@ -283,9 +331,12 @@ class OwnerStatusReport
                 'our_share_cents' => (int) $l->our_share_amount,
                 'attribution' => $l->attribution,
                 'member' => $l->creditedMember?->name ?? $l->member?->name,
+                'member_sponsor' => $l->creditedMember?->sponsor?->name,
+                'earner' => $l->earner?->name,
+                'refunded' => $l->refunded_at !== null,
             ])->values()->all();
 
-        return ['vendors' => $rows, 'recent_converted' => $recent, 'notes' => $this->vendorNotes()];
+        return ['vendors' => $rows, 'sales' => $sales, 'notes' => $this->vendorNotes()];
     }
 
     /** @return array<string, string> */
@@ -296,6 +347,7 @@ class OwnerStatusReport
             'amount_total_cents' => 'Vendor gross, collected by the vendor. Not company revenue.',
             'our_share_cents' => 'The company revenue share of those sales, owed to us by the vendor.',
             'window' => 'Converted and refunded counts are for the window; awaiting purchase and the uninvoiced / invoiced / settled share totals are all-time state.',
+            'sales' => 'Each sale converted in the window, newest first (capped by ?limit). member = the partner the sale is credited to; member_sponsor = that partner\'s direct sponsor; earner = who the commission is recorded for (on a partner\'s own purchase that is their sponsor). Commission amounts are not included.',
         ];
     }
 
@@ -340,20 +392,22 @@ class OwnerStatusReport
     /** @return array<string, mixed> */
     private function signups(Carbon $since): array
     {
-        $created = fn () => User::where('created_at', '>=', $since);
+        // Activated accounts only. users holds ~1.3M rows, mostly imported unclaimed spots, and
+        // created_at is not indexed: counting every row took ~25 s on production. The
+        // account_status index keeps this in milliseconds, and real sign-ups are what matter.
+        $activated = fn () => User::where('created_at', '>=', $since)->activated();
 
-        $byLine = $created()
+        $byLine = $activated()
             ->selectRaw('primary_opportunity, count(*) as n')
             ->groupBy('primary_opportunity')->orderBy('primary_opportunity')->toBase()->get()
             ->mapWithKeys(fn ($r) => [$r->primary_opportunity ?? 'default' => (int) $r->n]);
 
         return [
-            'total_count' => $created()->count(),
-            'activated_count' => $created()->activated()->count(),
+            'activated_count' => $activated()->count(),
             'by_opportunity' => $byLine->all(),
             'notes' => [
-                'by_opportunity' => 'Keyed by users.primary_opportunity; "default" is the default line (no opportunity recorded).',
-                'activated_count' => 'Of those, accounts with account_status active (excludes unclaimed imported spots and merged accounts).',
+                'activated_count' => 'Accounts created in the window with account_status active. Imported unclaimed spots and merged accounts are not counted.',
+                'by_opportunity' => 'Those activated accounts keyed by users.primary_opportunity; "default" is the default line.',
             ],
         ];
     }
