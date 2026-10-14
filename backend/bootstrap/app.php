@@ -36,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // The Request Assistant: dev's review screens, and the API dev calls.
             'review_console' => \App\Http\Middleware\RequireReviewConsole::class,
             'request_assistant_token' => \App\Http\Middleware\RequireRequestAssistantToken::class,
+            // The read-only owner-status API, read by the owner's assistant.
+            'owner_status_token' => \App\Http\Middleware\RequireOwnerStatusToken::class,
         ]);
 
         // Check is_active on every authenticated web request
