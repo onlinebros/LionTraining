@@ -114,6 +114,7 @@ Route::prefix('owner-status')->name('owner-status.')
         Route::get('/summary', 'summary')->name('summary');
         Route::get('/sales', 'sales')->name('sales');
         Route::get('/tickets', 'tickets')->name('tickets');
+        Route::get('/tickets/{ticket}', 'ticket')->whereNumber('ticket')->name('ticket');
         Route::get('/errors', 'errors')->name('errors');
         Route::get('/approvals', 'approvals')->name('approvals');
     });
