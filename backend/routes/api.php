@@ -103,3 +103,17 @@ Route::prefix('request-assistant')->name('request-assistant.')
         Route::patch('/review/requests/{changeRequest}', 'review')->name('review');
         Route::post('/review/requests/{changeRequest}/comment', 'comment')->name('comment');
     });
+
+// The owner-status API, read by the owner's assistant (see
+// memory-bank/owner-status-api.md). Read-only: GET routes only, no writes, no
+// calls out. A 404 unless a token has been issued with owner-status:token.
+Route::prefix('owner-status')->name('owner-status.')
+    ->middleware(['owner_status_token', 'throttle:60,1'])
+    ->controller(\App\Http\Controllers\Api\OwnerStatusController::class)
+    ->group(function () {
+        Route::get('/summary', 'summary')->name('summary');
+        Route::get('/sales', 'sales')->name('sales');
+        Route::get('/tickets', 'tickets')->name('tickets');
+        Route::get('/errors', 'errors')->name('errors');
+        Route::get('/approvals', 'approvals')->name('approvals');
+    });
