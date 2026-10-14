@@ -266,4 +266,41 @@ class OwnerStatusApiTest extends TestCase
         $this->api()->getJson('/api/owner-status/tickets/999999')->assertNotFound();
         $this->api()->postJson("/api/owner-status/tickets/{$ticket->id}")->assertStatus(405);
     }
+
+    public function test_a_sale_under_an_unclaimed_sponsor_names_the_compressed_sponsor_both_ways(): void
+    {
+        $this->issueToken();
+        $root = $this->user('Rita Root', 'rita@example.com');
+        $placer = $this->user('Paul Placement', 'paul@example.com');
+        $spot = $this->user('Spot iHub-1', 'spot1@example.com');
+        $member = $this->user('Mo Member', 'mo@example.com');
+
+        // Sponsor line: Rita > spot > Mo. Placement tree: Paul > spot > Mo. The spot is unclaimed.
+        $root->forceFill(['account_status' => User::ACCOUNT_ACTIVE, 'enrollment_path' => "{$root->id}", 'placement_path' => "{$root->id}"])->save();
+        $placer->forceFill(['account_status' => User::ACCOUNT_ACTIVE, 'enrollment_path' => "{$placer->id}", 'placement_path' => "{$placer->id}"])->save();
+        $spot->forceFill(['account_status' => User::ACCOUNT_HOLDING, 'sponsor_id' => $root->id,
+            'enrollment_path' => "{$root->id}.{$spot->id}", 'placement_path' => "{$placer->id}.{$spot->id}"])->save();
+        $member->forceFill(['account_status' => User::ACCOUNT_ACTIVE, 'sponsor_id' => $spot->id,
+            'enrollment_path' => "{$root->id}.{$spot->id}.{$member->id}", 'placement_path' => "{$placer->id}.{$spot->id}.{$member->id}"])->save();
+
+        $lead = VendorLead::create([
+            'public_ref' => 'QLV-'.strtoupper(Str::random(10)), 'vendor' => 'plasmaguard', 'product_key' => 'pro-in-duct',
+            'member_id' => $member->id, 'first_name' => 'Dana', 'email' => 'dana@example.com', 'quantity' => 1,
+            'status' => VendorLead::STATUS_CONVERTED, 'converted_at' => now()->subDay(), 'amount_total' => 600000,
+            'our_share_amount' => 300000, 'currency' => 'usd',
+        ]);
+        $lead->forceFill(['credited_member_id' => $member->id])->save();
+
+        $sale = $this->api()->getJson('/api/owner-status/sales')->assertOk()->json('vendor_sales.sales.0');
+        $this->assertSame('Spot iHub-1', $sale['member_sponsor']);
+        $this->assertFalse($sale['member_sponsor_claimed']);
+        $this->assertSame('Rita Root', $sale['compressed_sponsor']);
+        $this->assertSame('Paul Placement', $sale['compressed_placement_upline']);
+
+        // A claimed sponsor needs no compression.
+        $spot->forceFill(['account_status' => User::ACCOUNT_ACTIVE])->save();
+        $sale = $this->api()->getJson('/api/owner-status/sales')->assertOk()->json('vendor_sales.sales.0');
+        $this->assertTrue($sale['member_sponsor_claimed']);
+        $this->assertNull($sale['compressed_sponsor']);
+    }
 }

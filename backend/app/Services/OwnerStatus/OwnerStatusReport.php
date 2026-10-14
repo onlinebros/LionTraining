@@ -16,6 +16,7 @@ use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\VendorLead;
 use App\Models\VendorPaymentAudit;
+use App\Services\Genealogy\GenealogyService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -37,6 +38,8 @@ use Illuminate\Support\Str;
  */
 class OwnerStatusReport
 {
+    public function __construct(private GenealogyService $genealogy) {}
+
     private const TEXT_LIMIT = 200;
 
     // ── Sections ──────────────────────────────────────────────────────────
@@ -317,7 +320,7 @@ class OwnerStatusReport
         // who is paid: the credited partner, that partner's direct sponsor, and the earner.
         $sales = VendorLead::converted()
             ->where('converted_at', '>=', $since)
-            ->with(['member:id,name', 'creditedMember:id,name,sponsor_id', 'creditedMember.sponsor:id,name', 'earner:id,name'])
+            ->with(['member:id,name', 'creditedMember:id,name,sponsor_id', 'creditedMember.sponsor:id,name,account_status,enrollment_path,placement_path', 'earner:id,name'])
             ->latest('converted_at')
             ->limit($limit)
             ->get()
@@ -332,11 +335,38 @@ class OwnerStatusReport
                 'attribution' => $l->attribution,
                 'member' => $l->creditedMember?->name ?? $l->member?->name,
                 'member_sponsor' => $l->creditedMember?->sponsor?->name,
+                'member_sponsor_claimed' => $l->creditedMember?->sponsor ? ! $l->creditedMember->sponsor->isHolding() : null,
+                ...$this->compressedSponsor($l->creditedMember?->sponsor),
                 'earner' => $l->earner?->name,
                 'refunded' => $l->refunded_at !== null,
             ])->values()->all();
 
         return ['vendors' => $rows, 'sales' => $sales, 'notes' => $this->vendorNotes()];
+    }
+
+    /**
+     * When a sale's direct sponsor is an unclaimed imported spot, nobody can be paid at that
+     * position. These name the nearest real (activated) member above it, both ways the
+     * structure can be climbed, because the commission plan has not decided which applies:
+     * the sponsor (enrollment) line, and the placement tree that
+     * GenealogyService::nearestActivatedAncestor() documents as the commission walk.
+     *
+     * @return array{compressed_sponsor: ?string, compressed_placement_upline: ?string}
+     */
+    private function compressedSponsor(?User $sponsor): array
+    {
+        if (! $sponsor || ! $sponsor->isHolding()) {
+            return ['compressed_sponsor' => null, 'compressed_placement_upline' => null];
+        }
+
+        $enrollmentIds = array_reverse($this->genealogy->pathIds($sponsor->enrollment_path));
+        $active = $enrollmentIds === [] ? collect() : User::query()->whereIn('id', $enrollmentIds)->activated()->get(['id', 'name'])->keyBy('id');
+        $nearest = collect($enrollmentIds)->first(fn (int $id) => $id !== $sponsor->id && $active->has($id));
+
+        return [
+            'compressed_sponsor' => $nearest ? $active->get($nearest)->name : null,
+            'compressed_placement_upline' => $this->genealogy->nearestActivatedAncestor($sponsor)?->name,
+        ];
     }
 
     /** @return array<string, string> */
@@ -347,7 +377,7 @@ class OwnerStatusReport
             'amount_total_cents' => 'Vendor gross, collected by the vendor. Not company revenue.',
             'our_share_cents' => 'The company revenue share of those sales, owed to us by the vendor.',
             'window' => 'Converted and refunded counts are for the window; awaiting purchase and the uninvoiced / invoiced / settled share totals are all-time state.',
-            'sales' => 'Each sale converted in the window, newest first (capped by ?limit). member = the partner the sale is credited to; member_sponsor = that partner\'s direct sponsor; earner = who the commission is recorded for (on a partner\'s own purchase that is their sponsor). Commission amounts are not included.',
+            'sales' => 'Each sale converted in the window, newest first (capped by ?limit). member = the partner the sale is credited to; member_sponsor = that partner\'s direct sponsor; earner = who the commission is recorded for (on a partner\'s own purchase that is their sponsor). Commission amounts are not included. member_sponsor_claimed=false means the recorded sponsor is an unclaimed imported spot nobody can be paid at; then compressed_sponsor = the nearest activated member above it in the sponsor (enrollment) line, and compressed_placement_upline = the nearest activated member above it in the placement tree (GenealogyService::nearestActivatedAncestor). Which one a commission follows is for the commission plan to decide.',
         ];
     }
 
