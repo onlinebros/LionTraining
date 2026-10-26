@@ -36,6 +36,9 @@ return [
     // Messages one person may send per hour, across all their requests.
     'hourly_limit' => (int) env('REQUEST_ASSISTANT_HOURLY_LIMIT', 30),
 
+    // Questions one member of staff may put to Q3-AI on support tickets per hour.
+    'support_hourly_limit' => (int) env('SUPPORT_ASSISTANT_HOURLY_LIMIT', 40),
+
     /*
      | The copy of the project the assistant reads. Built from the committed
      | tree (git archive HEAD), so .env, storage/, vendor/ and anything

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SupportTicket extends Model
 {
@@ -58,6 +59,12 @@ class SupportTicket extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(SupportTicketReply::class, 'ticket_id')->orderBy('created_at');
+    }
+
+    /** The Q3-AI Assistant's conversation about this ticket. */
+    public function assist(): HasOne
+    {
+        return $this->hasOne(SupportAssist::class, 'ticket_id');
     }
 
     // ── Channel / requester ───────────────────────────────────────────────────

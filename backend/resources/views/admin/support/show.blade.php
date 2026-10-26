@@ -11,12 +11,14 @@
 @section('content')
 <div class="container-fluid">
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+    @foreach(['success' => 'success', 'error' => 'danger'] as $flash => $class)
+        @if(session($flash))
+            <div class="alert alert-{{ $class }} alert-dismissible fade show" role="alert">
+                {{ session($flash) }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+    @endforeach
 
     <div class="row g-3">
 
@@ -208,6 +210,10 @@
                         @endif
                     @endforeach
 
+                    @if(\App\Services\SupportAssistant\SupportAssistService::available())
+                        @include('admin.support._assistant')
+                    @endif
+
                     {{-- Admin reply form --}}
                     <hr>
                     @if($ticket->isFromWebsite())
@@ -220,7 +226,7 @@
                         @csrf
                         <div class="mb-3">
                             <textarea class="form-control @error('body') is-invalid @enderror"
-                                      name="body" rows="5"
+                                      name="body" id="support-reply-body" rows="5"
                                       placeholder="Type your reply to the member…" required>{{ old('body') }}</textarea>
                             @error('body')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>

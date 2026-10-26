@@ -32,7 +32,7 @@ class SupportTicketController extends Controller
 
     public function show(SupportTicket $ticket)
     {
-        $ticket->load('replies.user', 'user', 'assignee');
+        $ticket->load('replies.user', 'user', 'assignee', 'assist.messages.user', 'assist.changeRequest');
 
         if ($ticket->status === 'open') {
             $ticket->update(['status' => 'in_progress']);

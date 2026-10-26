@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ChangeRequest;
 use App\Models\ChangeRequestMessage;
+use App\Models\SupportAssist;
 use App\Services\RequestAssistant\Payload;
 use App\Services\RequestAssistant\TurnService;
+use App\Services\SupportAssistant\TurnService as SupportTurnService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,21 +17,33 @@ use Illuminate\Http\Request;
  * guarded (RequireRequestAssistantToken). Two jobs:
  *
  *  - relay: dev collects a waiting turn, runs it on its own Claude CLI, and
- *    sends back the answer or the failure.
+ *    sends back the answer or the failure. Turns are change requests, and
+ *    Q3-AI questions on support tickets for a relay that asks for them.
  *  - review: dev's review screens read every request and record decisions
  *    and comments. Decisions are made only there.
  */
 class RequestAssistantController extends Controller
 {
-    public function __construct(private TurnService $turns) {}
+    public function __construct(private TurnService $turns, private SupportTurnService $supportTurns) {}
 
     // ── Relay ─────────────────────────────────────────────────────────────
 
     public function claim(Request $request): JsonResponse
     {
-        $data = $request->validate(['commit' => ['required', 'regex:/^[0-9a-f]{40}$/']]);
+        $data = $request->validate([
+            'commit' => ['required', 'regex:/^[0-9a-f]{40}$/'],
+            'kinds' => 'nullable|array',
+            'kinds.*' => 'string',
+        ]);
 
-        return response()->json(['turn' => $this->turns->claim($data['commit'])]);
+        $turn = $this->turns->claim($data['commit']);
+        // Only a relay that says it answers support turns gets one: an older
+        // relay would post the answer to a change request with the same id.
+        if ($turn === null && in_array(SupportTurnService::KIND, $data['kinds'] ?? [], true)) {
+            $turn = $this->supportTurns->claim($data['commit']);
+        }
+
+        return response()->json(['turn' => $turn]);
     }
 
     public function complete(Request $request, ChangeRequest $changeRequest): JsonResponse
@@ -65,6 +79,42 @@ class RequestAssistantController extends Controller
         }
 
         $this->turns->fail($changeRequest, $data['error']);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function completeSupport(Request $request, SupportAssist $supportAssist): JsonResponse
+    {
+        $data = $request->validate([
+            'mode' => 'required|in:'.SupportTurnService::MODE_REPLY,
+            'text' => 'required|string|max:200000',
+            'session_id' => 'nullable|uuid',
+            'meta' => 'nullable|array',
+            'commit' => ['required', 'regex:/^[0-9a-f]{40}$/'],
+        ]);
+
+        if ($supportAssist->pending !== $data['mode'] || $supportAssist->claimed_at === null) {
+            return response()->json(['message' => 'That turn is no longer waiting.'], 409);
+        }
+
+        $this->supportTurns->complete($supportAssist, [
+            'text' => $data['text'],
+            'session_id' => $data['session_id'] ?? null,
+            'meta' => $data['meta'] ?? [],
+        ], $data['commit']);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function failSupport(Request $request, SupportAssist $supportAssist): JsonResponse
+    {
+        $data = $request->validate(['error' => 'required|string|max:5000']);
+
+        if ($supportAssist->pending === null) {
+            return response()->json(['message' => 'That turn is no longer waiting.'], 409);
+        }
+
+        $this->supportTurns->fail($supportAssist, $data['error']);
 
         return response()->json(['ok' => true]);
     }
