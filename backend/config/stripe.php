@@ -135,8 +135,17 @@ return [
     */
 
     'connect' => [
-        'enabled'         => (bool) env('STRIPE_CONNECT_ENABLED', true),
-        'account_country' => env('STRIPE_CONNECT_COUNTRY', 'US'),
+        'enabled' => (bool) env('STRIPE_CONNECT_ENABLED', true),
+
+        // Where a partner's payout account can be opened, as ISO codes. With more
+        // than one, Get Paid asks before creating the account (its country is
+        // permanent). A US platform can pay out to the US, UK, EEA, Canada and
+        // Switzerland under the full service agreement; anywhere else needs
+        // Global Payouts. Cross-border payouts must also be on for the platform.
+        'countries' => array_values(array_filter(array_map(
+            fn ($code) => strtoupper(trim($code)),
+            explode(',', (string) env('STRIPE_CONNECT_COUNTRIES', 'US,CA')),
+        ))),
 
         // What Stripe's review sees on every partner account. The company site,
         // not a partner's referral link, which does not pass Stripe's website check.
@@ -157,7 +166,8 @@ return [
         'requirement_collection' => env('STRIPE_CONNECT_REQUIREMENT_COLLECTION', 'application'),
 
         // Have Stripe collect filing-grade tax details and file partners' 1099s.
-        // Stripe treats the capability as permanent once requested.
+        // Stripe treats the capability as permanent once requested. US accounts
+        // only: Stripe has no 1099 capability for an account outside the US.
         'tax_reporting' => (bool) env('STRIPE_CONNECT_TAX_REPORTING', true),
 
         // Who pays Stripe's Connect fees and covers negative balances. Must both

@@ -251,6 +251,7 @@ Route::prefix('member')->name('member.')->middleware(['auth', 'subscribed'])->gr
     // into. The POSTs call Stripe, so they are throttled per partner.
     Route::prefix('payouts')->name('payouts.')->group(function () {
         Route::get('/',                 [MemberPayoutController::class, 'index'])->name('index');
+        Route::post('/country',         [MemberPayoutController::class, 'country'])->middleware('throttle:20,10')->name('country');
         Route::post('/account-session', [MemberPayoutController::class, 'accountSession'])->middleware('throttle:30,10')->name('account-session');
         Route::post('/refresh',         [MemberPayoutController::class, 'refresh'])->middleware('throttle:20,10')->name('refresh');
         Route::get('/hosted',           [MemberPayoutController::class, 'hosted'])->middleware('throttle:10,10')->name('hosted');

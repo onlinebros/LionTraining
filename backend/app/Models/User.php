@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 
 /**
  * @property string|null $stripe_connect_account_id
+ * @property string|null $connect_country
  * @property bool $connect_charges_enabled
  * @property bool $connect_payouts_enabled
  * @property bool $connect_details_submitted

@@ -39,6 +39,13 @@ use Stripe\Exception\ApiErrorException;
  * capability; `_misc` collects the data, and the form type is a Dashboard
  * setting.)
  *
+ * ── Country ───────────────────────────────────────────────────────────────────
+ * An account's country is fixed when it is created and decides Stripe's whole
+ * form (ID, tax number, bank format). The partner chooses it on Get Paid from
+ * `stripe.connect.countries`. Accounts outside the US are cross-border payouts
+ * under the full service agreement (the recipient agreement rules
+ * cross-border out), and get no 1099 capability, which is US-only.
+ *
  * ── Business type is the partner's choice ─────────────────────────────────────
  * Accounts are created without `business_type`, so Stripe's form opens on the
  * business-type step and a partner paid through an LLC or corporation can pick
@@ -104,6 +111,74 @@ class StripeConnectService
         return $controller;
     }
 
+    // ── Country ───────────────────────────────────────────────────────────────
+
+    /** @return array<string, string> ISO code => name, in config order. */
+    public function countries(): array
+    {
+        $names = [];
+
+        foreach ((array) config('stripe.connect.countries', []) as $code) {
+            $names[$code] = class_exists(\Locale::class)
+                ? \Locale::getDisplayRegion('-'.$code, 'en')
+                : $code;
+        }
+
+        return $names ?: ['US' => 'United States'];
+    }
+
+    /**
+     * The country the partner's account is (or will be) opened in, or null
+     * while they still have to choose. With one country on offer there is
+     * nothing to choose.
+     */
+    public function countryFor(User $user): ?string
+    {
+        if ($user->connect_country) {
+            return $user->connect_country;
+        }
+
+        // Accounts from before countries were offered are all US ones; the next
+        // sync writes Stripe's own answer.
+        if ($user->hasConnectAccount()) {
+            return 'US';
+        }
+
+        $countries = $this->countries();
+
+        return count($countries) === 1 ? array_key_first($countries) : null;
+    }
+
+    /** The profile's free-text country as one of ours, to preselect the choice. */
+    public function suggestedCountry(User $user): ?string
+    {
+        $typed = strtoupper(trim((string) $user->country));
+        $typed = ['USA' => 'US', 'U.S.' => 'US', 'U.S.A.' => 'US', 'UK' => 'GB'][$typed] ?? $typed;
+
+        foreach ($this->countries() as $code => $name) {
+            if ($typed === $code || $typed === strtoupper($name)) {
+                return $code;
+            }
+        }
+
+        return null;
+    }
+
+    /** Record the partner's choice. Only before the account exists. */
+    public function chooseCountry(User $user, string $country): void
+    {
+        if ($user->hasConnectAccount()) {
+            throw BillingException::connectCountryLocked();
+        }
+
+        if (! array_key_exists($country, $this->countries())) {
+            throw BillingException::connectCountryNeeded();
+        }
+
+        $user->connect_country = $country;
+        $user->save();
+    }
+
     // ── Account creation ──────────────────────────────────────────────────────
 
     /** The partner's connected account id, creating the account on first use. */
@@ -113,6 +188,12 @@ class StripeConnectService
 
         if ($user->stripe_connect_account_id) {
             return $user->stripe_connect_account_id;
+        }
+
+        // Never fall back to the US: a wrong country can only be fixed by
+        // deleting the account.
+        if (! $this->countryFor($user)) {
+            throw BillingException::connectCountryNeeded();
         }
 
         try {
@@ -131,6 +212,7 @@ class StripeConnectService
         try {
             // Assigned directly: the account id is never mass-assignable.
             $user->stripe_connect_account_id = $account->id;
+            $user->connect_country = $account->country ?? $this->countryFor($user);
             $user->save();
         } catch (QueryException) {
             Log::error('Connect account id collision', ['user_id' => $user->id, 'account' => $account->id]);
@@ -153,13 +235,15 @@ class StripeConnectService
     /** What every account is created with, prefill or not. */
     private function baseAccountParams(User $user): array
     {
+        $country = $this->countryFor($user);
+
         return [
-            'country' => config('stripe.connect.account_country', 'US'),
+            'country' => $country,
             'email'   => $user->email,
 
             // Money only ever flows out to these accounts. The tax capability adds
             // no funds flow; it makes Stripe collect what a 1099 needs.
-            'capabilities' => $this->requestedCapabilities(),
+            'capabilities' => $this->requestedCapabilities($country),
 
             // `controller` replaces `type`; Stripe rejects a request with both.
             'controller' => $this->controllerParams(),
@@ -180,11 +264,11 @@ class StripeConnectService
     }
 
     /** @return array<string, array{requested: bool}> */
-    private function requestedCapabilities(): array
+    private function requestedCapabilities(string $country): array
     {
         $capabilities = ['transfers' => ['requested' => true]];
 
-        if (config('stripe.connect.tax_reporting')) {
+        if (config('stripe.connect.tax_reporting') && $country === 'US') {
             $capabilities[self::TAX_CAPABILITY] = ['requested' => true];
         }
 
@@ -307,6 +391,7 @@ class StripeConnectService
         $user->connect_charges_enabled   = (bool) $account->charges_enabled;
         $user->connect_payouts_enabled   = (bool) $account->payouts_enabled;
         $user->connect_details_submitted = (bool) $account->details_submitted;
+        $user->connect_country           = $account->country ?? $user->connect_country;
 
         // Stripe omits a capability until it is requested, so absence means
         // "never asked for" rather than "not ready".

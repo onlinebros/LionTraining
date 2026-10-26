@@ -62,6 +62,20 @@ class BillingException extends RuntimeException
         );
     }
 
+    public static function connectCountryNeeded(): self
+    {
+        return new self(
+            'Choose the country your payout account is in before you start.'
+        );
+    }
+
+    public static function connectCountryLocked(): self
+    {
+        return new self(
+            'Your payout account has already been opened, so its country cannot be changed here. Contact support if it is wrong.'
+        );
+    }
+
     public static function duplicateConnectIdentity(): self
     {
         return new self(
