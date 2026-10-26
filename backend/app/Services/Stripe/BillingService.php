@@ -412,6 +412,12 @@ class BillingService
             return $subscription;
         }
 
+        // Set to cancel: the partner asked not to be charged. Ending the trial
+        // now would bill them for one period before the cancellation landed.
+        if ($subscription->cancel_at_period_end) {
+            return $subscription;
+        }
+
         [$trialEnd, $isPrelaunch] = $this->resolveTrialEnd();
 
         if ($trialEnd === null) {
@@ -578,6 +584,47 @@ class BillingService
         );
 
         return $this->syncSubscription($subscription->user, $remote);
+    }
+
+    /**
+     * Stop a partner being charged, for someone who has asked not to be (admin).
+     *
+     * Still trialing means never charged, so the subscription ends now: a
+     * commission hold parks 700 days out, and cancelling it at period end would
+     * leave it trialing all that time, still able to start billing and still
+     * holding the card. A paying partner keeps what they paid for and is not
+     * renewed — there are no refunds.
+     */
+    public function cancelForPartner(SubscriptionModel $subscription): SubscriptionModel
+    {
+        if ($subscription->status !== SubscriptionModel::STATUS_TRIALING) {
+            return $this->cancelAtPeriodEnd($subscription);
+        }
+
+        $remote = $this->stripe->client()->subscriptions->cancel($subscription->provider_subscription_id);
+
+        return $this->syncSubscription($subscription->user, $remote);
+    }
+
+    /**
+     * Remove every saved card, for a partner with nothing left to bill.
+     *
+     * @return int how many were removed
+     */
+    public function removeCards(User $user): int
+    {
+        if ($user->activeSubscription() !== null) {
+            throw BillingException::cardsOnActiveSubscription();
+        }
+
+        $removed = 0;
+
+        foreach ($user->paymentMethods()->get() as $method) {
+            $this->detachPaymentMethod($user, $method);
+            $removed++;
+        }
+
+        return $removed;
     }
 
     // ── Role entitlement ──────────────────────────────────────────────────────

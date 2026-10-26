@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\BillingException;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessPaymentWebhookJob;
 use App\Models\StripeWebhookEvent;
@@ -25,7 +26,8 @@ class BillingController extends Controller
 
     public function subscriptions(Request $request)
     {
-        $query = Subscription::query()->with('user');   // eager-loaded: this list must survive 10k rows
+        // Eager-loaded: this list must survive 10k rows.
+        $query = Subscription::query()->with(['user' => fn ($q) => $q->withCount('paymentMethods')]);
 
         if ($status = $request->string('status')->toString()) {
             $query->where('status', $status);
@@ -122,6 +124,88 @@ class BillingController extends Controller
         ]);
 
         return back()->with('status', 'Billing started for this partner.');
+    }
+
+    /**
+     * Stop charging a partner who has asked not to be (CR-0001).
+     *
+     * Never charged: ended now and, unless unticked, their cards removed in the
+     * same step, so cancelling cannot leave a card behind. Paying: not renewed,
+     * access kept to the end of the period they paid for.
+     */
+    public function cancel(Request $request, Subscription $subscription)
+    {
+        $neverCharged = $subscription->status === Subscription::STATUS_TRIALING;
+        $removed = 0;
+
+        try {
+            $subscription = $this->billing->cancelForPartner($subscription);
+
+            if ($neverCharged && $request->boolean('remove_cards')) {
+                $removed = $this->billing->removeCards($subscription->user);
+            }
+        } catch (ApiErrorException $e) {
+            return back()->withErrors(['subscription' => 'Provider refused: ' . $e->getMessage()]);
+        } catch (BillingException $e) {
+            return back()->withErrors(['subscription' => $e->getMessage()]);
+        }
+
+        Log::info('Subscription cancelled by admin', [
+            'subscription_id' => $subscription->id,
+            'user_id'         => $subscription->user_id,
+            'actor_id'        => auth()->id(),
+            'immediately'     => $neverCharged,
+            'cards_removed'   => $removed,
+        ]);
+
+        if (! $neverCharged) {
+            return back()->with('status', 'Will not renew. Access continues until '
+                . ($subscription->current_period_end?->format('j M Y') ?? 'the end of the period') . '.');
+        }
+
+        return back()->with('status', 'Cancelled. This partner will not be charged'
+            . ($removed > 0 ? " and {$removed} saved " . str('card')->plural($removed) . ' removed.' : '.'));
+    }
+
+    /** Undo a cancel-at-period-end made by mistake, before the period runs out. */
+    public function resume(Subscription $subscription)
+    {
+        try {
+            $this->billing->resume($subscription);
+        } catch (ApiErrorException $e) {
+            return back()->withErrors(['subscription' => 'Provider refused: ' . $e->getMessage()]);
+        } catch (BillingException $e) {
+            return back()->withErrors(['subscription' => $e->getMessage()]);
+        }
+
+        Log::info('Subscription resumed by admin', [
+            'subscription_id' => $subscription->id,
+            'user_id'         => $subscription->user_id,
+            'actor_id'        => auth()->id(),
+        ]);
+
+        return back()->with('status', 'Resumed. This partner renews as normal.');
+    }
+
+    /** Remove the saved cards of a partner whose subscription has ended. */
+    public function removeCards(Subscription $subscription)
+    {
+        try {
+            $removed = $this->billing->removeCards($subscription->user);
+        } catch (BillingException $e) {
+            return back()->withErrors(['subscription' => $e->getMessage()]);
+        }
+
+        Log::info('Saved cards removed by admin', [
+            'subscription_id' => $subscription->id,
+            'user_id'         => $subscription->user_id,
+            'actor_id'        => auth()->id(),
+            'cards_removed'   => $removed,
+        ]);
+
+        return back()->with('status', $removed > 0
+            ? "{$removed} saved " . str('card')->plural($removed) . ' removed.'
+            : 'This partner has no saved cards.');
     }
 
     public function webhooks(Request $request)

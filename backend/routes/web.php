@@ -609,6 +609,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/subscriptions/{subscription}/sync', [AdminBillingController::class, 'sync'])->name('subscriptions.sync');
             Route::post('/subscriptions/{subscription}/extend-trial', [AdminBillingController::class, 'extendTrial'])->name('subscriptions.extend-trial');
             Route::post('/subscriptions/{subscription}/start-billing', [AdminBillingController::class, 'startBilling'])->name('subscriptions.start-billing');
+            Route::post('/subscriptions/{subscription}/cancel', [AdminBillingController::class, 'cancel'])->name('subscriptions.cancel');
+            Route::post('/subscriptions/{subscription}/resume', [AdminBillingController::class, 'resume'])->name('subscriptions.resume');
+            Route::post('/subscriptions/{subscription}/remove-cards', [AdminBillingController::class, 'removeCards'])->name('subscriptions.remove-cards');
 
             Route::get('/webhooks', [AdminBillingController::class, 'webhooks'])->name('webhooks');
             Route::post('/webhooks/{event}/replay', [AdminBillingController::class, 'replay'])->name('webhooks.replay');
