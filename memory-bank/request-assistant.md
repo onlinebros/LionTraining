@@ -93,6 +93,41 @@ Not an OS sandbox. The CLI still runs as `ai`, which can read most of the server
 unix user that can read only the copy (or bubblewrap) needs root. Unprivileged user namespaces
 are blocked by AppArmor on this host.
 
+## Q3-AI Assistant on support tickets (2026-10-22)
+
+The same relay also helps support staff answer tickets. On a ticket (Admin → Support →
+a ticket), **Ask Q3-AI for a draft** queues a turn. Q3-AI reads the ticket against the
+code and notes, and answers to fixed headings: a **verdict** (`ANSWERABLE`,
+`MANUAL_ACTION` with the admin steps, or `NOT_BUILT`), *what the system does today*, a
+plain-text **draft reply**, and for `NOT_BUILT` the **change needed**. Staff can ask it
+to adjust ("shorter", "they already tried X"); every answer repeats the headings.
+
+Owner's choices (2026-10-22):
+- **All support admins** can use it, not only super admins.
+- **The member's identity is stripped before the ticket leaves the server**
+  (`SupportAssistant\Redactor`): their name becomes `[member]`, and emails, numbers of 9+
+  digits and URL query strings are masked. Staff names are sent as "Support staff". The
+  draft says `{name}`, filled in with the first name when staff press *Use this draft* or *Copy*.
+- **`NOT_BUILT` → a "Start a change request" button** (super admins; others see the
+  finding and are told to ask one). It opens a change request from the redacted ticket and
+  the finding, which the Request Assistant then works into a plan. One per ticket.
+
+How it runs:
+- Kept in `support_assists` / `support_assist_messages` (one conversation per ticket,
+  shared by all staff); `support_tickets` is not altered.
+- The panel shows only where a relay will answer: on dev once connected, on live once a
+  token is issued (`SupportAssistService::available()`).
+- The relay answers **dev's own tickets locally first**, so it can be tried on dev, then
+  claims from live with `kinds: [support]`. Live hands out support turns **only** to a
+  relay that sends that (an older relay would post the answer to `relay/{id}`, a change
+  request's path). Waiting change requests go before support turns. Answers go to
+  `relay/support/{id}/complete|fail`.
+- Same CLI, same six guardrails, own role (`SupportAssistant\Prompts::system()`, passed
+  to `ClaudeRunner::run()`). It never sees the member's account, payments or any live
+  data, only the ticket text, so `MANUAL_ACTION` answers say what staff should check.
+- `support_hourly_limit` (40 questions per person per hour) in `config/request-assistant.php`.
+- First real turn (dev, sample ticket TKT-00001): 51 s, 18 steps, ≈$0.19 at API prices.
+
 ## Things to know
 
 - Requesters can see the code and memory-bank notes through the assistant, including the

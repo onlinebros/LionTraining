@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\SponsorController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\ChangeRequestController as AdminChangeRequestController;
 use App\Http\Controllers\Admin\ReviewRequestController;
+use App\Http\Controllers\Admin\SupportAssistController;
 use App\Http\Controllers\Admin\TrainingCategoryController;
 use App\Http\Controllers\Admin\TrainingContentBlockController;
 use App\Http\Controllers\Admin\TrainingLessonController;
@@ -579,6 +580,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{ticket}',                 [SupportTicketController::class, 'show'])->name('show');
             Route::post('/{ticket}/reply',          [SupportTicketController::class, 'reply'])->name('reply');
             Route::patch('/{ticket}/status',        [SupportTicketController::class, 'updateStatus'])->name('status');
+
+            // The Q3-AI Assistant (memory-bank/request-assistant.md): a draft reply
+            // and whether the ticket needs something not built yet, answered by
+            // the Request Assistant's relay on dev.
+            Route::post('/{ticket}/assist',                [SupportAssistController::class, 'ask'])->name('assist');
+            Route::get('/{ticket}/assist/status',          [SupportAssistController::class, 'status'])->name('assist.status');
+            Route::post('/{ticket}/assist/change-request',  [SupportAssistController::class, 'changeRequest'])->middleware('super_admin')->name('assist.change-request');
         });
 
 

@@ -32,16 +32,17 @@ class ClaudeRunner
     public function __construct(private Workspace $workspace) {}
 
     /**
+     * @param  ?string  $system  the role for this turn; the Request Assistant's by default
      * @return array{text: string, session_id: ?string, meta: array<string, mixed>}
      */
-    public function run(string $prompt, string $sessionId, bool $resume): array
+    public function run(string $prompt, string $sessionId, bool $resume, ?string $system = null): array
     {
         $workspace = $this->workspace->path();
 
         $result = Process::path($workspace)
             ->timeout((int) config('request-assistant.timeout_seconds'))
             ->input($prompt)
-            ->run($this->command($sessionId, $resume));
+            ->run($this->command($sessionId, $resume, $system));
 
         $decoded = json_decode($result->output(), true);
         if (! is_array($decoded)) {
@@ -74,7 +75,7 @@ class ClaudeRunner
     }
 
     /** @return list<string> */
-    public function command(string $sessionId, bool $resume): array
+    public function command(string $sessionId, bool $resume, ?string $system = null): array
     {
         $workspace = $this->workspace->path();
 
@@ -116,7 +117,7 @@ class ClaudeRunner
             '--settings', json_encode($settings, JSON_UNESCAPED_SLASHES),
             '--strict-mcp-config',
             '--disable-slash-commands',
-            '--append-system-prompt', Prompts::system(),
+            '--append-system-prompt', $system ?? Prompts::system(),
             ...($resume ? ['--resume', $sessionId] : ['--session-id', $sessionId]),
         ];
     }

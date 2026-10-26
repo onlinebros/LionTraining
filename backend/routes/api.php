@@ -97,6 +97,8 @@ Route::prefix('request-assistant')->name('request-assistant.')
         Route::post('/relay/claim', 'claim')->name('claim');
         Route::post('/relay/{changeRequest}/complete', 'complete')->name('complete');
         Route::post('/relay/{changeRequest}/fail', 'fail')->name('fail');
+        Route::post('/relay/support/{supportAssist}/complete', 'completeSupport')->name('support.complete');
+        Route::post('/relay/support/{supportAssist}/fail', 'failSupport')->name('support.fail');
 
         Route::get('/review/requests', 'index')->name('index');
         Route::get('/review/requests/{changeRequest}', 'show')->name('show');
