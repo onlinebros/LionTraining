@@ -51,18 +51,22 @@ class Subscription extends Model
      * Parked until the partner's paid commissions reach the threshold.
      *
      * Only while still trialing: once the trial ends the partner is paying, and
-     * the option they joined under no longer holds anything back.
+     * the option they joined under no longer holds anything back. A hold set to
+     * cancel is not waiting on anything: reaching the threshold must not charge
+     * someone who asked not to be.
      */
     public function isCommissionHold(): bool
     {
         return $this->billing_trigger === self::TRIGGER_COMMISSION
-            && $this->status === self::STATUS_TRIALING;
+            && $this->status === self::STATUS_TRIALING
+            && ! $this->cancel_at_period_end;
     }
 
     public function scopeCommissionHolds(Builder $query): Builder
     {
         return $query->where('billing_trigger', self::TRIGGER_COMMISSION)
-            ->where('status', self::STATUS_TRIALING);
+            ->where('status', self::STATUS_TRIALING)
+            ->where('cancel_at_period_end', false);
     }
 
     public function user()

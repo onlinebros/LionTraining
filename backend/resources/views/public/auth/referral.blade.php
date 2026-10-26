@@ -51,7 +51,7 @@
             <div class="q3-avatar q3-avatar-lg">{{ strtoupper(substr($sponsor->name, 0, 1)) }}</div>
             <div>
                 <div class="q3-sponsor-name">{{ $sponsor->name }}</div>
-                <div class="q3-sponsor-sub">is inviting you to join {{ $opportunity->name() }} as their sponsored member.</div>
+                <div class="q3-sponsor-sub">is inviting you to join {{ $opportunity->inviteName() }} as their sponsored member.</div>
             </div>
         </div>
 
@@ -64,7 +64,7 @@
              charge for. --}}
         @unless($opportunity->requiresMembership())
             <p class="q3-auth-sub" style="margin-top:-8px;">
-                <strong>No card needed.</strong> {{ $opportunity->name() }} is free to join — there is
+                <strong>No card needed.</strong> {{ $opportunity->inviteName() }} is free to join — there is
                 nothing to pay and no payment details to enter.
             </p>
         @endunless

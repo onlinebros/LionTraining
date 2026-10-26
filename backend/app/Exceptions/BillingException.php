@@ -82,4 +82,11 @@ class BillingException extends RuntimeException
             'This membership has already ended and cannot be resumed. Start a new one instead.'
         );
     }
+
+    public static function cardsOnActiveSubscription(): self
+    {
+        return new self(
+            'This partner still has a live subscription. Cancel it before removing their cards.'
+        );
+    }
 }
