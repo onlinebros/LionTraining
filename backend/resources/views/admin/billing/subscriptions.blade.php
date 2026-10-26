@@ -90,6 +90,7 @@
                             </span>
                             @if($sub->isCommissionHold())<span class="badge bg-info ms-1">waiting on commissions</span>
                             @elseif($sub->is_prelaunch_trial)<span class="badge bg-info ms-1">parked</span>@endif
+                            @if($sub->cancel_at_period_end && $sub->status !== 'canceled')<span class="badge bg-warning text-dark ms-1">not renewing</span>@endif
                         </td>
                         <td class="small">{{ $sub->trial_ends_at?->format('j M Y') ?? '—' }}</td>
                         <td class="small">{{ $sub->current_period_end?->format('j M Y') ?? '—' }}</td>
@@ -103,6 +104,41 @@
                                       onsubmit="return confirm('Start billing for this partner now? They will be charged when the training program opens, or today if it already has.')">
                                     @csrf
                                     <button class="btn btn-sm btn-outline-primary py-0">Start billing</button>
+                                </form>
+                            @endif
+                            {{-- Cancel (CR-0001). Never charged ends now, and takes the
+                                 card with it unless unticked. Paying stops renewing and
+                                 keeps access to the end of the paid period: no refunds. --}}
+                            @if($sub->status === 'trialing')
+                                <form method="POST" action="{{ route('admin.billing.subscriptions.cancel', $sub) }}" class="d-inline"
+                                      onsubmit="return confirm('Cancel now? This partner has not been charged and never will be on this subscription.')">
+                                    @csrf
+                                    @if(($sub->user?->payment_methods_count ?? 0) > 0)
+                                        <label class="small text-muted me-1" title="Also remove their saved card">
+                                            <input type="checkbox" name="remove_cards" value="1" checked class="form-check-input mt-0"> card
+                                        </label>
+                                    @endif
+                                    <button class="btn btn-sm btn-outline-danger py-0">Cancel</button>
+                                </form>
+                            @elseif(in_array($sub->status, ['active', 'past_due']) && ! $sub->cancel_at_period_end)
+                                <form method="POST" action="{{ route('admin.billing.subscriptions.cancel', $sub) }}" class="d-inline"
+                                      onsubmit="return confirm('Stop renewing? This partner is not charged again and keeps access until {{ $sub->current_period_end?->format('j M Y') ?? 'the end of the period' }}. Nothing is refunded.')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-danger py-0">Cancel</button>
+                                </form>
+                            @endif
+                            @if($sub->cancel_at_period_end && in_array($sub->status, ['active', 'past_due']))
+                                <form method="POST" action="{{ route('admin.billing.subscriptions.resume', $sub) }}" class="d-inline"
+                                      onsubmit="return confirm('Resume? This partner renews and is charged as normal.')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-primary py-0">Resume</button>
+                                </form>
+                            @endif
+                            @if(! in_array($sub->status, ['trialing', 'active', 'past_due']) && ($sub->user?->payment_methods_count ?? 0) > 0)
+                                <form method="POST" action="{{ route('admin.billing.subscriptions.remove-cards', $sub) }}" class="d-inline"
+                                      onsubmit="return confirm('Remove this partner\'s saved {{ $sub->user->payment_methods_count === 1 ? 'card' : 'cards' }}?')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-danger py-0">Remove card</button>
                                 </form>
                             @endif
                             <form method="POST" action="{{ route('admin.billing.subscriptions.sync', $sub) }}" class="d-inline">

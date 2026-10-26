@@ -88,6 +88,10 @@ return [
         'q3-training' => [
             'name'       => 'Training Program',
             'short_name' => 'Training',
+
+            // What the invite page (/join/CODE) calls it — owner, 2026-10-19.
+            // The rest of the app keeps `name`, which is the add-on itself.
+            'invite_name' => 'The Quantum Solution',
             'tagline'    => 'The Q3 video training program. An optional add-on to a partner account.',
 
             // The public site this opportunity is sold from. Recorded on the
