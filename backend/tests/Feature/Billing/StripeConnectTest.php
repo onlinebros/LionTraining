@@ -40,6 +40,7 @@ class StripeConnectTest extends TestCase
             'stripe.connect.enabled' => true,
             'stripe.connect.requirement_collection' => 'application',
             'stripe.connect.tax_reporting' => true,
+            'stripe.connect.countries' => ['US', 'CA'],
             'stripe.safeguards.enforce_connect_uniqueness' => true,
         ]);
 
@@ -54,10 +55,10 @@ class StripeConnectTest extends TestCase
         parent::tearDown();
     }
 
-    /** A partner past the card gate; card capture is SubscriptionGateTest's concern. */
+    /** A partner past the card gate who has chosen the US for their payout account. */
     private function partner(array $attributes = []): User
     {
-        return User::factory()->create($attributes + ['billing_exempt' => true]);
+        return User::factory()->create($attributes + ['billing_exempt' => true, 'connect_country' => 'US']);
     }
 
     private function partnerWithAccount(array $account = []): User
@@ -156,6 +157,103 @@ class StripeConnectTest extends TestCase
 
         $this->assertSame($user->stripe_connect_account_id, $this->connect()->accountFor($user));
         $this->assertSame([], $this->stripe->paramsFor('post', '/v1/accounts'));
+    }
+
+    // ── Country ───────────────────────────────────────────────────────────────
+
+    public function test_a_canadian_partner_gets_a_canadian_account_without_the_1099_capability(): void
+    {
+        $user = $this->partner(['connect_country' => null, 'country' => 'Canada']);
+
+        $this->actingAs($user)
+            ->post(route('member.payouts.country'), ['country' => 'ca'])
+            ->assertRedirect(route('member.payouts.index'));
+
+        $this->actingAs($user->fresh())
+            ->get(route('member.payouts.index'))
+            ->assertOk()
+            ->assertSee('Social Insurance Number')
+            ->assertDontSee('Social Security number')
+            ->assertSee('https://connect-js.stripe.com/v1.0/connect.js', false);
+
+        $this->connect()->accountFor($user->fresh());
+        $params = $this->stripe->paramsFor('post', '/v1/accounts')[0];
+
+        $this->assertSame('CA', $params['country']);
+        $this->assertSame('true', $params['capabilities']['transfers']['requested']);
+        $this->assertArrayNotHasKey(StripeConnectService::TAX_CAPABILITY, $params['capabilities']);
+
+        // Cross-border payouts need the full agreement; `recipient` rules them out.
+        $this->assertArrayNotHasKey('tos_acceptance', $params);
+        $this->assertSame('CA', $user->fresh()->connect_country);
+    }
+
+    public function test_no_account_is_created_until_the_partner_chooses_a_country(): void
+    {
+        $user = $this->partner(['connect_country' => null, 'country' => 'canada']);
+
+        $this->actingAs($user)
+            ->get(route('member.payouts.index'))
+            ->assertOk()
+            ->assertSee('Where do you live and bank?')
+            ->assertSee('<option value="CA" selected>Canada</option>', false)
+            ->assertDontSee('https://connect-js.stripe.com/v1.0/connect.js', false);
+
+        $this->actingAs($user)
+            ->postJson(route('member.payouts.account-session'))
+            ->assertStatus(422)
+            ->assertJson(['error' => BillingException::connectCountryNeeded()->getMessage()]);
+
+        $this->assertSame([], $this->stripe->calls);
+    }
+
+    public function test_a_country_not_on_offer_is_refused(): void
+    {
+        $user = $this->partner(['connect_country' => null]);
+
+        $this->actingAs($user)
+            ->post(route('member.payouts.country'), ['country' => 'MX'])
+            ->assertSessionHas('error', BillingException::connectCountryNeeded()->getMessage());
+
+        $this->assertNull($user->fresh()->connect_country);
+    }
+
+    public function test_the_country_cannot_be_changed_once_the_account_exists(): void
+    {
+        $user = $this->partnerWithAccount();
+
+        $this->actingAs($user)
+            ->post(route('member.payouts.country'), ['country' => 'CA'])
+            ->assertSessionHas('error', BillingException::connectCountryLocked()->getMessage());
+
+        $this->assertSame('US', $user->fresh()->connect_country);
+    }
+
+    public function test_with_one_country_on_offer_there_is_nothing_to_choose(): void
+    {
+        config(['stripe.connect.countries' => ['US']]);
+        $user = $this->partner(['connect_country' => null]);
+
+        $this->actingAs($user)
+            ->get(route('member.payouts.index'))
+            ->assertDontSee('Where do you live and bank?')
+            ->assertSee('Social Security number');
+
+        $this->connect()->accountFor($user);
+
+        $this->assertSame('US', $this->stripe->paramsFor('post', '/v1/accounts')[0]['country']);
+    }
+
+    public function test_sync_records_the_country_stripe_holds(): void
+    {
+        $user = $this->partnerWithAccount(['country' => 'CA']);
+        $user->forceFill(['connect_country' => null])->save();
+
+        $this->assertSame('US', $this->connect()->countryFor($user));
+
+        $this->connect()->syncAccount($user);
+
+        $this->assertSame('CA', $user->fresh()->connect_country);
     }
 
     // ── Get Paid ──────────────────────────────────────────────────────────────

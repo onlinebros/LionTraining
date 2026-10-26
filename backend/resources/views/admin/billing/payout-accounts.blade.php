@@ -159,7 +159,10 @@
                                         <div class="small text-danger mt-1">{{ \App\Support\ConnectRequirements::label($row['disabled_reason']) }}</div>
                                     @endif
 
-                                    @if($row['tax_status'] && $row['tax_status'] !== 'active')
+                                    {{-- No 1099 outside the US, so nothing to report there. --}}
+                                    @if($row['country'] !== 'US')
+                                        <div class="small text-muted mt-1">{{ $row['country'] ?? 'Country unknown' }} account, no 1099</div>
+                                    @elseif($row['tax_status'] && $row['tax_status'] !== 'active')
                                         <div class="small text-muted mt-1">1099 details: {{ str_replace('_', ' ', $row['tax_status']) }}</div>
                                     @endif
                                 </td>

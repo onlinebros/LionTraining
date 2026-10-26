@@ -93,6 +93,8 @@ class ResetConnectAccount extends Command
         $user->connectIdentityClaims()->delete();
 
         $user->stripe_connect_account_id = null;
+        // Asked again on Get Paid, which is how a wrong country gets fixed.
+        $user->connect_country = null;
         $user->connect_charges_enabled = false;
         $user->connect_payouts_enabled = false;
         $user->connect_details_submitted = false;

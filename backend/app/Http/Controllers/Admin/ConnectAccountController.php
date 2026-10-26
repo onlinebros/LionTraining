@@ -95,6 +95,7 @@ class ConnectAccountController extends Controller
                     'account_id'        => $user->stripe_connect_account_id,
                     'payouts_enabled'   => (bool) $user->connect_payouts_enabled,
                     'details_submitted' => (bool) $user->connect_details_submitted,
+                    'country'           => $user->connect_country,
                     'tax_status'        => $user->connect_tax_reporting_status,
                     'synced_at'         => $user->connect_synced_at,
                     'deadline'          => $user->connectRequirementDeadline(),

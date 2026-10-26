@@ -46,6 +46,10 @@ class MemberPayoutController extends Controller
         return view('member.payouts.index', [
             'user'           => $user,
             'publishableKey' => $this->stripe->publishableKey(),
+            // Null until the partner has chosen; the form waits for it.
+            'country'        => $this->connect->countryFor($user),
+            'countries'      => $this->connect->countries(),
+            'suggested'      => $this->connect->suggestedCountry($user),
             'connectEnabled' => $this->connect->enabled() && $this->stripe->isConfigured(),
             'hostedFallback' => (bool) config('stripe.connect.hosted_fallback'),
             'outstanding'    => ConnectRequirements::summarise($user->connectOutstandingRequirements()),
@@ -53,6 +57,20 @@ class MemberPayoutController extends Controller
             // The concrete reason to finish setup, rather than an abstract nag.
             'unpaidBalance'  => $commissions->getBalance($user),
         ]);
+    }
+
+    /** The country the payout account will be opened in, chosen before it exists. */
+    public function country(Request $request)
+    {
+        $request->validate(['country' => 'required|string|size:2']);
+
+        try {
+            $this->connect->chooseCountry($request->user(), strtoupper($request->input('country')));
+        } catch (BillingException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('member.payouts.index');
     }
 
     /** A fresh Account Session secret for the embedded components. */

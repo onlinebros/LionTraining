@@ -120,18 +120,49 @@
             </div>
             <div class="card-body">
 
+                {{-- Stripe fixes an account's country when it is created, so it
+                     is chosen here first and the form only loads afterwards. --}}
+                @if(! $country)
+                    <form action="{{ route('member.payouts.country') }}" method="POST" class="py-2" style="max-width: 420px">
+                        @csrf
+                        <label for="payout-country" class="form-label fw-semibold">Where do you live and bank?</label>
+                        <select id="payout-country" name="country" class="form-select mb-2" required>
+                            <option value="" @selected(! $suggested) disabled>Choose a country</option>
+                            @foreach($countries as $code => $name)
+                                <option value="{{ $code }}" @selected($suggested === $code)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-muted small mb-3">
+                            Choose the country you are a resident of for tax and where your bank account is.
+                            It can't be changed once your payout account is opened.
+                            If your country isn't listed, contact support.
+                        </p>
+                        <button class="btn btn-primary">Continue</button>
+                    </form>
+                @else
+
                 @if(! $user->canReceivePayouts())
                     <div class="alert alert-light border small mb-4">
                         <p class="mb-2">
                             <strong>The form starts by asking your business type.</strong>
-                            If you are paid through a registered business such as an LLC or corporation, choose it
+                            If you are paid through a registered business such as
+                            {{ $country === 'US' ? 'an LLC or corporation' : 'a corporation' }}, choose it
                             there and enter the business. Otherwise choose the individual option.
                         </p>
-                        <p class="mb-0 text-muted">
-                            Your 1099 is issued in the name and tax ID you enter here. Have your date of birth,
-                            Social Security number, EIN if you use a business, and the bank account you want to be
-                            paid into ready.
-                        </p>
+                        @if($country === 'US')
+                            <p class="mb-0 text-muted">
+                                Your 1099 is issued in the name and tax ID you enter here. Have your date of birth,
+                                Social Security number, EIN if you use a business, and the bank account you want to be
+                                paid into ready.
+                            </p>
+                        @else
+                            <p class="mb-0 text-muted">
+                                Your account is being opened in {{ $countries[$country] ?? $country }}. Have your date of
+                                birth, a government-issued photo ID, your {{ $country === 'CA' ? 'Social Insurance Number (SIN), business number if you use a business,' : 'national tax number,' }}
+                                and the bank account you want to be paid into ready.
+                                Commissions are sent in US dollars and Stripe converts them to your bank's currency.
+                            </p>
+                        @endif
                     </div>
                 @endif
 
@@ -159,6 +190,8 @@
                     <h6 class="mb-3">Account details</h6>
                     <div id="connect-manage"></div>
                 @endif
+
+                @endif
             </div>
         </div>
     </div>
@@ -168,7 +201,7 @@
 @endsection
 
 @push('scripts')
-@if($connectEnabled && $publishableKey)
+@if($connectEnabled && $publishableKey && $country)
 <script src="https://connect-js.stripe.com/v1.0/connect.js"></script>
 <script>
 (function () {

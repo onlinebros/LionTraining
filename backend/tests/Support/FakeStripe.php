@@ -178,7 +178,7 @@ class FakeStripe implements ClientInterface
         }
 
         if ($method === 'post' && $path === '/v1/accounts') {
-            $id = $this->connectedAccount('acct_fake'.(count($this->accounts) + 1), ['email' => $params['email'] ?? null]);
+            $id = $this->connectedAccount('acct_fake'.(count($this->accounts) + 1), ['email' => $params['email'] ?? null, 'country' => $params['country'] ?? 'US']);
 
             return $this->respond($this->accounts[$id]);
         }
