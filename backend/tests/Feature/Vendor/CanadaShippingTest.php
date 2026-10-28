@@ -164,7 +164,7 @@ class CanadaShippingTest extends TestCase
 
     // ── Rating ────────────────────────────────────────────────────────────────
 
-    public function test_a_canadian_parcel_is_rated_with_customs_and_duties_billed_to_the_buyer(): void
+    public function test_a_canadian_parcel_is_rated_with_customs(): void
     {
         $this->fakeRate([$this->service('FEDEX_GROUND', 'FedEx International Ground', 38.10, 61.25)]);
 
@@ -183,7 +183,8 @@ class CanadaShippingTest extends TestCase
 
             return $shipment['recipient']['address']['countryCode'] === 'CA'
                 && $shipment['recipient']['address']['stateOrProvinceCode'] === 'ON'
-                && ($customs['dutiesPayment']['paymentType'] ?? null) === 'RECIPIENT'
+                // FedEx refuses RECIPIENT on a rate request; the label sets who pays duties.
+                && ! array_key_exists('dutiesPayment', $customs)
                 && $commodity['quantity'] === 2
                 && $commodity['customsValue'] === ['amount' => 12000.0, 'currency' => 'USD']   // the line, not one unit
                 && $commodity['weight'] === ['units' => 'LB', 'value' => 18.0];
