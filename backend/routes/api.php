@@ -86,6 +86,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 });
 
+// The Proposal Studio relay, called only by dev's worker (see
+// memory-bank/proposal-studio.md): it takes a waiting job's prompt, answers it
+// on dev's Claude CLI and posts the answer back. A 404 unless the studio is on
+// here and a token has been issued with proposal-studio:token.
+Route::prefix('proposal-studio/relay')->name('proposal-studio.relay.')
+    ->middleware(['proposal_studio_token', 'throttle:240,1'])
+    ->controller(\App\Http\Controllers\Api\ProposalStudioRelayController::class)
+    ->group(function () {
+        Route::post('/ping', fn () => response()->json(['ok' => true]))->name('ping');
+        Route::post('/claim', 'claim')->name('claim');
+        Route::post('/{job}/complete', 'complete')->whereNumber('job')->name('complete');
+        Route::post('/{job}/fail', 'fail')->whereNumber('job')->name('fail');
+    });
+
 // The Request Assistant API, called only by dev (see memory-bank/request-assistant.md).
 // Dev collects waiting turns, answers them on its own Claude CLI and posts the
 // answer back (relay), and reviews the requests kept here (review). A 404 unless

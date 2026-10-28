@@ -57,6 +57,18 @@
                         </a>
                     </li>
 
+                    @if(config('proposal-studio.enabled'))
+                    <li class="sidebar-list">
+                        <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('product-partner.proposals*') ? 'active' : '' }}"
+                           href="{{ route('product-partner.proposals', $ctx) }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-project') }}"></use></svg>
+                            <span>Proposals</span>
+                            @php $toReview = \App\Models\Proposal::where('status', 'in_review')->whereHas('prospect.offering', fn ($q) => $q->where('vendor_key', $vendor ?? null))->count(); @endphp
+                            @if($toReview > 0)<span class="badge badge-light-warning ms-auto">{{ $toReview }}</span>@endif
+                        </a>
+                    </li>
+                    @endif
+
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('product-partner.statement*') ? 'active' : '' }}"
                            href="{{ route('product-partner.statement', $ctx) }}">
