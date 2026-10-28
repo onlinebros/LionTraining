@@ -64,7 +64,8 @@ class VendorOrderService
             origin: $vendor['pricing']['shipping']['origin'] ?? [],
             // The address check's classification, so a home is rated as a home.
             destination: $this->destination($lead) + ['residential' => $lead->address_classification === 'RESIDENTIAL'],
-            parcel: $product['parcel'] ?? [],
+            // Declared on a cross-border parcel; ignored for a domestic one.
+            parcel: ($product['parcel'] ?? []) + ['customs_unit_value' => $unit / 100],
             cartons: $cartons,
         );
 

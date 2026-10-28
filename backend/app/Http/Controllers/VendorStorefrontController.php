@@ -14,6 +14,7 @@ use App\Services\Vendor\Shipping\AddressVerification;
 use App\Services\Vendor\VendorOrderService;
 use App\Services\Vendor\VendorStripeClient;
 use App\Services\Vendor\VendorReferralService;
+use App\Support\ShippingCountries;
 use App\Support\Vendors;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
@@ -325,12 +326,12 @@ class VendorStorefrontController extends Controller
             'city'          => ['required', 'string', 'max:100'],
             'state'         => ['required', 'string', 'max:100'],
             'postal_code'   => ['required', 'string', 'max:20'],
-            'country'       => ['nullable', 'string', 'size:2'],
+            'country'       => ['nullable', 'string', Rule::in(ShippingCountries::codes())],
             'quantity'      => ['nullable', 'integer', 'min:1', 'max:99'],
             'notes'         => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $data['country'] = $data['country'] ?? 'US';
+        $data = ShippingCountries::normalize($data);
 
         $lead->fill(array_filter($data, static fn ($v) => $v !== null));
 

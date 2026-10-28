@@ -59,6 +59,17 @@ return [
     ],
 
     /*
+    | Services to price for a parcel leaving the US (Canada, since 2026-10-28).
+    | FEDEX_GROUND is also FedEx's code for International Ground to Canada.
+    | International Economy is kept as the fallback for an address Ground does
+    | not serve; the cheapest eligible one wins, as above.
+    */
+    'international_services' => [
+        'FEDEX_GROUND',
+        'INTERNATIONAL_ECONOMY',
+    ],
+
+    /*
     | ACCOUNT returns the negotiated rate, LIST the published one. Both are
     | requested so a quote can be compared against retail — if they come back
     | identical, the account is not actually linked and we are quoting retail

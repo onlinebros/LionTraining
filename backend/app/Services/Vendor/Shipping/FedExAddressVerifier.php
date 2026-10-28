@@ -2,6 +2,7 @@
 
 namespace App\Services\Vendor\Shipping;
 
+use App\Support\ShippingCountries;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Log;
  */
 class FedExAddressVerifier implements AddressVerifier
 {
-    private const NOT_FOUND = 'FedEx could not confirm this street address. Please check the house number, street and ZIP code.';
 
     public function verify(array $address): AddressVerification
     {
@@ -80,7 +80,7 @@ class FedExAddressVerifier implements AddressVerifier
         $resolved = $body['output']['resolvedAddresses'][0] ?? null;
 
         if (! is_array($resolved)) {
-            return new AddressVerification(AddressVerification::UNVERIFIED, self::NOT_FOUND);
+            return new AddressVerification(AddressVerification::UNVERIFIED, $this->notFound($entered));
         }
 
         $attributes = (array) ($resolved['attributes'] ?? []);
@@ -100,13 +100,13 @@ class FedExAddressVerifier implements AddressVerifier
         }
 
         if (strtoupper((string) ($resolved['countryCode'] ?? '')) !== strtoupper((string) (($entered['country'] ?? null) ?: 'US'))) {
-            return new AddressVerification(AddressVerification::UNVERIFIED, self::NOT_FOUND, null, $classification);
+            return new AddressVerification(AddressVerification::UNVERIFIED, $this->notFound($entered), null, $classification);
         }
 
         $problem = match (true) {
             $flag('SuiteRequiredButMissing') => 'This building needs an apartment, suite or unit number.',
             $flag('InvalidSuiteNumber')      => 'The apartment, suite or unit number was not recognised.',
-            $flag('MultipleMatches')         => 'More than one address matches. Please check the street and ZIP code.',
+            $flag('MultipleMatches')         => 'More than one address matches. Please check the street and '.$this->postalWord($entered).'.',
             default                          => null,
         };
 
@@ -127,7 +127,7 @@ class FedExAddressVerifier implements AddressVerifier
         };
 
         if (! $deliverable) {
-            return new AddressVerification(AddressVerification::UNVERIFIED, self::NOT_FOUND, null, $classification);
+            return new AddressVerification(AddressVerification::UNVERIFIED, $this->notFound($entered), null, $classification);
         }
 
         $standard = $this->standardized($entered, $resolved);
@@ -177,9 +177,7 @@ class FedExAddressVerifier implements AddressVerifier
             'address_line2' => $line2,
             'city'          => filled($resolved['city'] ?? null) ? (string) $resolved['city'] : $entered['city'],
             'state'         => filled($resolved['stateOrProvinceCode'] ?? null) ? (string) $resolved['stateOrProvinceCode'] : $entered['state'],
-            'postal_code'   => filled($base)
-                ? $base.(filled($addOn) ? '-'.$addOn : '')
-                : ((string) ($resolved['postalCode'] ?? '') ?: $entered['postal_code']),
+            'postal_code'   => $this->postal($entered, $resolved, $base, $addOn),
             'country'       => strtoupper((string) ($resolved['countryCode'] ?? (($entered['country'] ?? null) ?: 'US'))),
         ];
     }
@@ -187,7 +185,8 @@ class FedExAddressVerifier implements AddressVerifier
     /**
      * Is the standard form the same place as what the buyer typed?
      *
-     * Compared on house number, city, state and the five-digit ZIP only.
+     * Compared on house number, city, state and the five-digit ZIP only (the
+     * whole postal code in Canada, where there is no ZIP+4 to ignore).
      * Street-name spelling is left out, because standardizing it is exactly the
      * formatting change that should not need the buyer's decision.
      *
@@ -202,7 +201,7 @@ class FedExAddressVerifier implements AddressVerifier
 
         return $this->key($entered['city'] ?? null) === $this->key($standard['city'] ?? null)
             && $this->key($entered['state'] ?? null) === $this->key($standard['state'] ?? null)
-            && substr($this->key($entered['postal_code'] ?? null), 0, 5) === substr($this->key($standard['postal_code'] ?? null), 0, 5)
+            && $this->postalKey($entered) === $this->postalKey($standard)
             && $houseNumber($entered['address_line1'] ?? null) === $houseNumber($standard['address_line1'] ?? null);
     }
 
@@ -222,6 +221,46 @@ class FedExAddressVerifier implements AddressVerifier
     }
 
     /** Uppercase letters and digits only. */
+    private function notFound(array $entered): string
+    {
+        return 'FedEx could not confirm this street address. Please check the house number, street and '
+            .$this->postalWord($entered).'.';
+    }
+
+    /** @param  array<string,?string>  $entered */
+    private function postalWord(array $entered): string
+    {
+        return ShippingCountries::isDomestic($entered['country'] ?? null) ? 'ZIP code' : 'postal code';
+    }
+
+    /**
+     * FedEx's postal code. A US one is ZIP+4; a Canadian one is put back into
+     * the "A1A 1A1" form the buyer's own entry was saved in.
+     *
+     * @param  array<string,?string>  $entered
+     * @param  array<string,mixed>  $resolved
+     */
+    private function postal(array $entered, array $resolved, mixed $base, mixed $addOn): ?string
+    {
+        if (! ShippingCountries::isDomestic($entered['country'] ?? null)) {
+            $code = (string) ($resolved['postalCode'] ?? '') ?: (string) $base;
+
+            return ShippingCountries::canadianPostal($code) ?? ($code ?: $entered['postal_code']);
+        }
+
+        return filled($base)
+            ? $base.(filled($addOn) ? '-'.$addOn : '')
+            : ((string) ($resolved['postalCode'] ?? '') ?: $entered['postal_code']);
+    }
+
+    /** @param  array<string,?string>  $address */
+    private function postalKey(array $address): string
+    {
+        $key = $this->key($address['postal_code'] ?? null);
+
+        return ShippingCountries::isDomestic($address['country'] ?? null) ? substr($key, 0, 5) : $key;
+    }
+
     private function key(?string $value): string
     {
         return preg_replace('/[^A-Z0-9]/', '', strtoupper((string) $value)) ?? '';

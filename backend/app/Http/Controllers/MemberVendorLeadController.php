@@ -9,8 +9,10 @@ use App\Services\Vendor\AddressCheck;
 use App\Services\Vendor\PromotionBonuses;
 use App\Services\Vendor\PromotionTracker;
 use App\Services\Vendor\VendorReferralService;
+use App\Support\ShippingCountries;
 use App\Support\Vendors;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -132,14 +134,15 @@ class MemberVendorLeadController extends Controller
             'city'          => ['required', 'string', 'max:100'],
             'state'         => ['required', 'string', 'max:100'],
             'postal_code'   => ['required', 'string', 'max:20'],
+            'country'       => ['nullable', 'string', Rule::in(ShippingCountries::codes())],
             'quantity'      => ['required', 'integer', 'min:1', 'max:99'],
             'notes'         => ['nullable', 'string', 'max:2000'],
         ]);
 
         // The account email, never a typed one. It is what identifies this order
         // as the partner's own at every later step, the vendor's receipt included.
-        $data['email']   = $user->email;
-        $data['country'] = 'US';
+        $data['email'] = $user->email;
+        $data = ShippingCountries::normalize($data);
 
         $lead = $this->referrals->capture($vendor, $product, $user, $data, [
             'buyer'      => $user,

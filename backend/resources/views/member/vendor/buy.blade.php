@@ -29,7 +29,8 @@
                     <div class="alert alert-danger py-2">{{ $errors->first() }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('member.sales.buy.store', [$vendorSlug, $productKey]) }}">
+                @php $country = old('country', \App\Support\ShippingCountries::DEFAULT); @endphp
+                <form method="POST" action="{{ route('member.sales.buy.store', [$vendorSlug, $productKey]) }}" data-q3-address-form>
                     @csrf
                     <div class="row g-3">
                         <div class="col-sm-6">
@@ -62,6 +63,15 @@
                         </div>
 
                         <div class="col-12">
+                            <label class="form-label" for="country">Country</label>
+                            <select class="form-select" id="country" name="country" autocomplete="country">
+                                @foreach (\App\Support\ShippingCountries::NAMES as $code => $name)
+                                    <option value="{{ $code }}" @selected($country === $code)>{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12">
                             <label class="form-label" for="address_line1">Shipping address</label>
                             <input class="form-control" id="address_line1" name="address_line1" required maxlength="191"
                                    autocomplete="address-line1" value="{{ old('address_line1', $user->address_line1) }}">
@@ -78,12 +88,12 @@
                                    autocomplete="address-level2" value="{{ old('city', $user->city) }}">
                         </div>
                         <div class="col-sm-3">
-                            <label class="form-label" for="state">State</label>
+                            <label class="form-label" for="state" data-q3-region-label>{{ \App\Support\ShippingCountries::regionLabel($country) }}</label>
                             <input class="form-control" id="state" name="state" required maxlength="100"
                                    autocomplete="address-level1" value="{{ old('state', $user->state) }}">
                         </div>
                         <div class="col-sm-4">
-                            <label class="form-label" for="postal_code">ZIP code</label>
+                            <label class="form-label" for="postal_code" data-q3-postal-label>{{ \App\Support\ShippingCountries::postalLabel($country) }}</label>
                             <input class="form-control" id="postal_code" name="postal_code" required maxlength="20"
                                    autocomplete="postal-code" value="{{ old('postal_code', $user->postal_code) }}">
                         </div>
@@ -154,3 +164,5 @@
 </div>
 
 @endsection
+
+@include('partials.address-country-script')
