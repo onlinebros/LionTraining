@@ -302,10 +302,10 @@
     <div class="container">
         @if(\App\Support\Registration::openToPublic())
             <h2>Ready to get started?</h2>
-            <p>Join Quantum Life and take your sponsorship program to the next level.</p>
+            <p>Join The Quantum Solution and take your sponsorship program to the next level.</p>
             <a href="{{ route('register') }}" class="btn-hero">Create Free Account</a>
         @else
-            <h2>Joining Quantum Life</h2>
+            <h2>Joining The Quantum Solution</h2>
             <p>We grow by sponsorship. Ask the partner who told you about us for their
                referral link — it enrols you directly under them.</p>
             <a href="{{ route('login') }}" class="btn-hero">Sign In</a>
