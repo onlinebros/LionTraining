@@ -124,6 +124,12 @@ final class Opportunity
         return (string) ($this->config['short_name'] ?? $this->name());
     }
 
+    /** What the sponsor's invite page calls this line; defaults to name(). */
+    public function inviteName(): string
+    {
+        return (string) ($this->config['invite_name'] ?? $this->name());
+    }
+
     public function tagline(): string
     {
         return (string) ($this->config['tagline'] ?? '');

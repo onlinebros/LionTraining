@@ -107,6 +107,20 @@ class TrainingProgramClosedTest extends TestCase
         ])->assertRedirect(route('member.dashboard'));
     }
 
+    public function test_the_invite_page_names_the_quantum_solution_and_the_add_on_keeps_its_name(): void
+    {
+        $sponsor = $this->member();
+
+        $this->get(route('join', $sponsor->referral_code))
+            ->assertOk()
+            ->assertSee('is inviting you to join The Quantum Solution as their sponsored member.')
+            ->assertSee('The Quantum Solution is free to join', false)
+            ->assertDontSee('join Training Program');
+
+        $this->actingAs($this->member())->get(route('member.dashboard'))
+            ->assertOk()->assertSee('Training Program');
+    }
+
     // ── The section ──────────────────────────────────────────────────────────
 
     public function test_the_section_says_it_is_not_open_and_offers_the_list(): void
