@@ -143,6 +143,9 @@ return [
         'plasmaguard' => [
             'name'       => 'PlasmaGuard Products',
             'short_name' => 'PlasmaGuard',
+
+            // Every invite page says "join The Quantum Solution" — owner, 2026-10-28.
+            'invite_name' => 'The Quantum Solution',
             'tagline'    => 'Sell commercial air purification to businesses.',
 
             /*

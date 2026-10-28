@@ -11,7 +11,7 @@
         </a>
 
         <h1 class="q3-auth-title">Create your account</h1>
-        <p class="q3-auth-sub">Join Quantum Life to manage or receive sponsorships.</p>
+        <p class="q3-auth-sub">Join The Quantum Solution to manage or receive sponsorships.</p>
 
         @if($errors->any())
             <div class="alert alert-danger py-2">{{ $errors->first() }}</div>

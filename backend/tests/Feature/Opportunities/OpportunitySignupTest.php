@@ -93,7 +93,8 @@ class OpportunitySignupTest extends TestCase
 
         $this->get(route('join', $sponsor->referral_code).'?o=plasmaguard&s=q3.life')
             ->assertOk()
-            ->assertSee('PlasmaGuard Products')
+            ->assertSee('is inviting you to join The Quantum Solution as their sponsored member.')
+            ->assertDontSee('join PlasmaGuard Products')
             ->assertSee('No card needed');
     }
 
