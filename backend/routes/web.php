@@ -63,6 +63,8 @@ use App\Http\Controllers\Admin\ProductPartnerController;
 use App\Http\Controllers\Admin\OfferingController;
 use App\Http\Controllers\Admin\ProspectController;
 use App\Http\Controllers\Admin\ProposalController as AdminProposalController;
+use App\Http\Controllers\Admin\BusinessAccountController;
+use App\Http\Controllers\Admin\MicrositeController as AdminMicrositeController;
 use App\Http\Controllers\ScreenRecordingPlaybackController;
 use Illuminate\Support\Facades\Route;
 
@@ -86,6 +88,21 @@ Route::prefix('proposal/{ref}')->name('portal.')->where(['ref' => '[a-z0-9]{16}'
         Route::post('/send',            'submit')->middleware('throttle:20,10')->name('submit');
         Route::post('/ask',             'ask')->middleware('throttle:20,10')->name('ask');
         Route::get('/documents/{document}', 'download')->name('download');
+        Route::post('/sign-out',        'signOut')->name('sign-out');
+    });
+
+// A business account's private microsite (memory-bank/b2b-accounts.md). Only
+// invited people can open it, with an emailed link; they may ask for a
+// colleague to be added, which an admin approves before any link is sent.
+Route::prefix('client/{ref}')->name('microsite.')->where(['ref' => '[a-z0-9]{16}'])
+    ->controller(\App\Http\Controllers\MicrositeController::class)->group(function () {
+        Route::get('/',                 'show')->name('show');
+        Route::get('/enter/{token}',    'enter')->middleware('throttle:20,1')->name('enter');
+        Route::post('/link',            'requestLink')->middleware('throttle:5,10')->name('link');
+        Route::post('/colleagues',      'requestAccess')->middleware('throttle:10,10')->name('request-access');
+        Route::post('/sections/{section}/comments', 'comment')->middleware('throttle:20,10')->name('comment');
+        Route::get('/documents/{document}', 'download')->name('download');
+        Route::get('/logo',             'logo')->middleware('throttle:60,1')->name('logo');
         Route::post('/sign-out',        'signOut')->name('sign-out');
     });
 
@@ -669,6 +686,41 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/prospects/{prospect}/invites/{invite}',               [AdminProposalController::class, 'revoke'])->name('invites.revoke');
             Route::post('/prospects/{prospect}/questions/{submission}/answer',    [AdminProposalController::class, 'answer'])->name('questions.answer');
             Route::get('/prospects/{prospect}/submissions/{submission}/files/{index}', [AdminProposalController::class, 'file'])->whereNumber('index')->name('submissions.file');
+
+            // B2B accounts and their microsites (memory-bank/b2b-accounts.md).
+            Route::get('/accounts',                                         [BusinessAccountController::class, 'index'])->name('accounts.index');
+            Route::get('/accounts/new',                                     [BusinessAccountController::class, 'create'])->name('accounts.create');
+            Route::post('/accounts',                                        [BusinessAccountController::class, 'store'])->name('accounts.store');
+            Route::get('/accounts/{account}',                               [BusinessAccountController::class, 'show'])->name('accounts.show');
+            Route::put('/accounts/{account}',                               [BusinessAccountController::class, 'update'])->name('accounts.update');
+            Route::get('/accounts/{account}/logo',                          [BusinessAccountController::class, 'logo'])->name('accounts.logo');
+            Route::post('/accounts/{account}/contacts',                     [BusinessAccountController::class, 'storeContact'])->name('accounts.contacts.store');
+            Route::put('/accounts/{account}/contacts/{contact}',            [BusinessAccountController::class, 'updateContact'])->name('accounts.contacts.update');
+            Route::delete('/accounts/{account}/contacts/{contact}',         [BusinessAccountController::class, 'destroyContact'])->name('accounts.contacts.destroy');
+            Route::post('/accounts/{account}/activities',                   [BusinessAccountController::class, 'storeActivity'])->name('accounts.activities.store');
+            Route::post('/accounts/{account}/activities/{activity}/done',   [BusinessAccountController::class, 'completeTask'])->name('accounts.activities.done');
+            Route::post('/accounts/{account}/opportunities',                [BusinessAccountController::class, 'storeOpportunity'])->name('accounts.opportunities.store');
+
+            Route::get('/accounts/{account}/site',                          [AdminMicrositeController::class, 'edit'])->name('accounts.site');
+            Route::get('/accounts/{account}/site/status',                   [AdminMicrositeController::class, 'status'])->name('accounts.site.status');
+            Route::get('/accounts/{account}/site/preview',                  [AdminMicrositeController::class, 'preview'])->name('accounts.site.preview');
+            Route::post('/accounts/{account}/site/settings',                [AdminMicrositeController::class, 'settings'])->name('accounts.site.settings');
+            Route::post('/accounts/{account}/site/starter',                 [AdminMicrositeController::class, 'starter'])->name('accounts.site.starter');
+            Route::post('/accounts/{account}/site/draft-empty',             [AdminMicrositeController::class, 'draftEmpty'])->name('accounts.site.draft-empty');
+            Route::post('/accounts/{account}/sections',                     [AdminMicrositeController::class, 'storeSection'])->name('accounts.sections.store');
+            Route::put('/accounts/{account}/sections/{section}',            [AdminMicrositeController::class, 'updateSection'])->name('accounts.sections.update');
+            Route::delete('/accounts/{account}/sections/{section}',         [AdminMicrositeController::class, 'destroySection'])->name('accounts.sections.destroy');
+            Route::post('/accounts/{account}/sections/{section}/draft',     [AdminMicrositeController::class, 'draftSection'])->name('accounts.sections.draft');
+            Route::post('/accounts/{account}/sections/{section}/publish',   [AdminMicrositeController::class, 'publishSection'])->name('accounts.sections.publish');
+            Route::post('/accounts/{account}/sections/{section}/unpublish', [AdminMicrositeController::class, 'unpublishSection'])->name('accounts.sections.unpublish');
+            Route::post('/accounts/{account}/sections/{section}/move',      [AdminMicrositeController::class, 'moveSection'])->name('accounts.sections.move');
+            Route::post('/accounts/{account}/members',                      [AdminMicrositeController::class, 'invite'])->name('accounts.members.store');
+            Route::patch('/accounts/{account}/members/{member}',            [AdminMicrositeController::class, 'updateMember'])->name('accounts.members.update');
+            Route::post('/accounts/{account}/members/{member}/resend',      [AdminMicrositeController::class, 'resend'])->name('accounts.members.resend');
+            Route::delete('/accounts/{account}/members/{member}',           [AdminMicrositeController::class, 'revoke'])->name('accounts.members.revoke');
+            Route::post('/accounts/{account}/members/{member}/approve',     [AdminMicrositeController::class, 'approve'])->name('accounts.members.approve');
+            Route::post('/accounts/{account}/members/{member}/decline',     [AdminMicrositeController::class, 'decline'])->name('accounts.members.decline');
+            Route::post('/accounts/{account}/comments/{comment}/reply',     [AdminMicrositeController::class, 'reply'])->name('accounts.comments.reply');
         });
         Route::prefix('review-requests')->name('review-requests.')->middleware(['super_admin', 'review_console'])->group(function () {
             Route::get('/',                          [ReviewRequestController::class, 'index'])->name('index');

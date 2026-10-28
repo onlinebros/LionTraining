@@ -319,7 +319,7 @@
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link {{ request()->routeIs('admin.proposal-studio.*') ? 'active' : '' }}"
-                           href="{{ route('admin.proposal-studio.prospects.index') }}">
+                           href="{{ route('admin.proposal-studio.accounts.index') }}">
                             <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-project') }}"></use></svg>
                             <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-project') }}"></use></svg>
                             <span>Proposal Studio</span>

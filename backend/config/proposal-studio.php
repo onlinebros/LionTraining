@@ -79,6 +79,22 @@ return [
         'context_chars' => 120000,
     ],
 
+    /*
+     | Business accounts' microsites (memory-bank/b2b-accounts.md): invited
+     | people, colleagues they ask us to add, and the client's logo.
+     */
+    'microsite' => [
+        // Sections one admin may send to the assistant per hour.
+        'hourly_drafts' => (int) env('PROPOSAL_STUDIO_MICROSITE_HOURLY_DRAFTS', 30),
+        // Colleagues one member may ask for per day.
+        'daily_requests' => 5,
+        // Comments one member may leave per hour.
+        'hourly_comments' => 12,
+        // No SVG: it can carry script.
+        'logo_mimes' => ['png', 'jpg', 'jpeg', 'webp'],
+        'logo_max_kb' => 2048,
+    ],
+
     // Uploads to the knowledge library.
     'upload_max_kb' => 30720,
     'upload_mimes' => ['pdf', 'txt', 'md', 'html', 'htm', 'docx', 'pptx', 'csv'],

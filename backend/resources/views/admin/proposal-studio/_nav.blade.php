@@ -8,8 +8,10 @@
     @endif
 @endforeach
 <div class="d-flex gap-2 flex-wrap mb-3">
+    <a href="{{ route('admin.proposal-studio.accounts.index') }}"
+       class="btn btn-sm {{ request()->routeIs('admin.proposal-studio.accounts.*') ? 'btn-primary' : 'btn-outline-secondary' }}">Accounts</a>
     <a href="{{ route('admin.proposal-studio.prospects.index') }}"
-       class="btn btn-sm {{ request()->routeIs('admin.proposal-studio.prospects.*') ? 'btn-primary' : 'btn-outline-secondary' }}">Prospects</a>
+       class="btn btn-sm {{ request()->routeIs('admin.proposal-studio.prospects.*') ? 'btn-primary' : 'btn-outline-secondary' }}">Opportunities</a>
     <a href="{{ route('admin.proposal-studio.offerings.index') }}"
        class="btn btn-sm {{ request()->routeIs('admin.proposal-studio.offerings.*') ? 'btn-primary' : 'btn-outline-secondary' }}">Offerings &amp; knowledge</a>
 </div>

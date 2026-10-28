@@ -1,15 +1,17 @@
 {{-- The proposal itself, shared by the portal, the admin preview and the
      vendor's review page. Claims are rendered from the library, word for
      word, never from the draft's text. $docLink(document) gives a download
-     URL, or null where downloads are not offered. --}}
+     URL, or null where downloads are not offered. Inside a microsite,
+     $embedded titles it as a section and $hidePricing leaves pricing out
+     for people without pricing access. --}}
 @php
     $c = $proposal->content ?? [];
     $md = fn (?string $text) => \Illuminate\Support\Str::markdown((string) $text, ['html_input' => 'escape', 'allow_unsafe_links' => false]);
 @endphp
 
 <section id="top">
-    <span class="eyebrow">Prepared for {{ $prospect->company_name }}</span>
-    <h1 style="margin: 10px 0 16px;">{{ $c['headline'] ?? '' ?: $offering->name.' for '.$prospect->company_name }}</h1>
+    <span class="eyebrow">{{ $eyebrow ?? 'Prepared for '.$prospect->company_name }}</span>
+    <{{ empty($embedded) ? 'h1' : 'h2' }} style="margin: 10px 0 16px;">{{ $c['headline'] ?? '' ?: $offering->name.' for '.$prospect->company_name }}</{{ empty($embedded) ? 'h1' : 'h2' }}>
     @if(!empty($c['intro']))<div class="lede md">{!! $md($c['intro']) !!}</div>@endif
     <p class="muted" style="margin-top: 14px;">Presented by Quantum 3 Solution · {{ $offering->name }} is made and sold by {{ $offering->vendor_name }} · Version {{ $proposal->version }}@if($proposal->published_at), {{ $proposal->published_at->format('F j, Y') }}@endif</p>
 </section>
@@ -89,7 +91,7 @@
 </section>
 @endif
 
-@if(!empty($c['pricing']))
+@if(!empty($c['pricing']) && empty($hidePricing))
 <section id="pricing">
     <div class="sheet">
         <h2>Investment</h2>
