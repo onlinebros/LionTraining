@@ -3,6 +3,7 @@
 namespace App\Services\ProposalStudio;
 
 use App\Models\LibraryQuestion;
+use App\Models\MicrositeSection;
 use App\Models\OfferingDocument;
 use App\Models\Proposal;
 use App\Models\Prospect;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Services\ProposalStudio\Jobs\ClaimExtract;
 use App\Services\ProposalStudio\Jobs\Handler;
 use App\Services\ProposalStudio\Jobs\LibraryAnswer;
+use App\Services\ProposalStudio\Jobs\MicrositeSectionDraft;
 use App\Services\ProposalStudio\Jobs\ProposalDraft;
 use App\Services\ProposalStudio\Jobs\ProspectTurn;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +39,8 @@ class JobQueue
 
     public const LIBRARY_ANSWER = 'library_answer';
 
+    public const MICROSITE_SECTION = 'microsite_section';
+
     // The subject each kind is about, which is also the morph type stored.
     private const SUBJECTS = [
         self::PROSPECT_REPLY => Prospect::class,
@@ -44,6 +48,7 @@ class JobQueue
         self::PROPOSAL_DRAFT => Proposal::class,
         self::CLAIM_EXTRACT => OfferingDocument::class,
         self::LIBRARY_ANSWER => LibraryQuestion::class,
+        self::MICROSITE_SECTION => MicrositeSection::class,
     ];
 
     // A job is tried this many times before it is given up as failed.
@@ -72,6 +77,7 @@ class JobQueue
             self::PROPOSAL_DRAFT => new ProposalDraft,
             self::CLAIM_EXTRACT => new ClaimExtract,
             self::LIBRARY_ANSWER => new LibraryAnswer,
+            self::MICROSITE_SECTION => new MicrositeSectionDraft,
             default => throw new InvalidArgumentException("Unknown job kind {$kind}."),
         };
     }

@@ -21,6 +21,8 @@ class StudioService
         $this->guardRate($user);
 
         return DB::transaction(function () use ($user, $attributes, $intake) {
+            // Every opportunity belongs to a business account: a new company gets one.
+            $attributes['business_account_id'] ??= app(AccountService::class)->createFromProspect($attributes, $user)->id;
             $prospect = Prospect::create($attributes + ['created_by' => $user->id, 'status' => 'discovery']);
             $this->addMessage($user, $prospect, $intake);
 

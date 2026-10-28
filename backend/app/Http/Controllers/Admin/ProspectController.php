@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Offering;
 use App\Models\Prospect;
+use App\Services\ProposalStudio\AccountService;
 use App\Services\ProposalStudio\PortalAssistant;
 use App\Services\ProposalStudio\StudioRefused;
 use App\Services\ProposalStudio\StudioService;
@@ -64,7 +65,7 @@ class ProspectController extends Controller
 
     public function show(Prospect $prospect)
     {
-        $prospect->load('messages.user', 'offering', 'creator', 'proposals.vendorReviewer', 'invites', 'submissions.invite', 'publishedProposal');
+        $prospect->load('account', 'messages.user', 'offering', 'creator', 'proposals.vendorReviewer', 'invites', 'submissions.invite', 'publishedProposal');
 
         return view('admin.proposal-studio.prospects.show', [
             'prospect' => $prospect,
@@ -81,7 +82,11 @@ class ProspectController extends Controller
             'status' => ['required', Rule::in(array_keys(Prospect::STATUSES))],
             'outcome_note' => 'nullable|string|max:5000',
         ]);
+        $wasClosed = in_array($prospect->status, ['won', 'lost'], true);
         $prospect->update($data);
+        if (! $wasClosed) {
+            app(AccountService::class)->opportunityClosed($prospect, $request->user());
+        }
 
         return back()->with('success', 'Saved.');
     }

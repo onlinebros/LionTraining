@@ -4,8 +4,13 @@
 @section('page-title', $prospect->company_name)
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.proposal-studio.prospects.index') }}">Proposal Studio</a></li>
-    <li class="breadcrumb-item active">{{ $prospect->company_name }}</li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.proposal-studio.accounts.index') }}">Proposal Studio</a></li>
+    @if($prospect->account)
+        <li class="breadcrumb-item"><a href="{{ route('admin.proposal-studio.accounts.show', $prospect->account) }}">{{ $prospect->account->name }}</a></li>
+        <li class="breadcrumb-item active">{{ $prospect->offering->vendor_name }} opportunity</li>
+    @else
+        <li class="breadcrumb-item active">{{ $prospect->company_name }}</li>
+    @endif
 @endsection
 
 @php
@@ -132,7 +137,7 @@
                         </div>
                         <div class="mt-3">
                             <label class="form-label small fw-semibold" for="ps-outcome">Why it was won or lost</label>
-                            <textarea id="ps-outcome" name="outcome_note" rows="2" class="form-control" maxlength="5000" placeholder="What decided it. This teaches us what works.">{{ old('outcome_note', $prospect->outcome_note) }}</textarea>
+                            <textarea id="ps-outcome" name="outcome_note" rows="2" class="form-control" maxlength="5000" placeholder="What decided it. The assistant reads this when it works on other companies for this offering, without naming this one.">{{ old('outcome_note', $prospect->outcome_note) }}</textarea>
                         </div>
                         <button class="btn btn-primary btn-sm mt-3">Save</button>
                     </form>

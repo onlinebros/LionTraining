@@ -71,11 +71,14 @@
         details summary { cursor: pointer; font-weight: 600; }
         @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
     </style>
+    @stack('head')
 </head>
 <body>
     <header class="band">
         <div class="wrap">
+            @section('brand')
             <span class="brand"><img src="{{ \App\Support\Asset::v('assets/images/logo/q3-app-icon-192.png') }}" alt="">Quantum 3 Solution</span>
+            @show
             @yield('band-right')
         </div>
     </header>

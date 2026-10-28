@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
  *
  * @property int $id
  * @property int $offering_id
+ * @property ?int $business_account_id
  * @property string $company_name
  * @property ?string $website
  * @property ?string $industry
@@ -41,7 +42,7 @@ class Prospect extends Model
     ];
 
     protected $fillable = [
-        'offering_id', 'company_name', 'website', 'industry',
+        'offering_id', 'business_account_id', 'company_name', 'website', 'industry',
         'contact_name', 'contact_email', 'contact_phone',
         'status', 'outcome_note', 'created_by', 'referred_by_user_id',
     ];
@@ -58,6 +59,16 @@ class Prospect extends Model
     public function offering(): BelongsTo
     {
         return $this->belongsTo(Offering::class);
+    }
+
+    /**
+     * The business account this is an opportunity of.
+     *
+     * @return BelongsTo<BusinessAccount, $this>
+     */
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(BusinessAccount::class, 'business_account_id');
     }
 
     /** @return BelongsTo<User, $this> */
