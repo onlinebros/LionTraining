@@ -506,6 +506,16 @@ return [
                         'units_per_carton'  => 1,
                         'units_per_pallet'  => 45,
                         'contents'  => 'Generator, Hub and Sensor',
+
+                        /*
+                        | Customs, for a parcel to Canada. The declared value is
+                        | the unit price. Country of manufacture and HS code are
+                        | PlasmaGuard's to state; FedEx rates without them, but
+                        | their shipping paperwork will need both.
+                        */
+                        'customs_description'    => 'Air purification system for HVAC ducts (generator, hub and sensor)',
+                        'country_of_manufacture' => env('PLASMAGUARD_PRO_MADE_IN'),
+                        'hs_code'                => env('PLASMAGUARD_PRO_HS_CODE'),
                     ],
 
                     'summary' => 'PlasmaGuard PRO™ combines proven non-thermal cold plasma technology with sophisticated sensors that use real-time data to ensure the best purified indoor environment for employees, visitors, and customers. It installs directly into an existing HVAC system and continuously purifies all ducts and indoor environments during normal heating, cooling, and ventilation cycles.',

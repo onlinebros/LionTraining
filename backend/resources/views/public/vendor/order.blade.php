@@ -26,6 +26,8 @@
     $siteName = \App\Models\SiteSetting::get('site_name');
     $q3Logo   = \App\Support\Asset::v('assets/images/logo/q3_logo-web.png');
     $hasAddress = filled($lead->postal_code);
+    $country    = old('country', $lead->country ?: \App\Support\ShippingCountries::DEFAULT);
+    $abroad     = $hasAddress && ! \App\Support\ShippingCountries::isDomestic($lead->country);
     $money = fn ($minor) => '$'.number_format(((int) $minor) / 100, 2);
 @endphp
 
@@ -79,6 +81,13 @@
                             {{ $quote['cartons'] }} carton(s) via {{ $quote['shipping_quote']->describe() }}.
                             Tax is calculated by {{ $vendor['name'] }} for the delivery address.
                         </p>
+                        @if ($abroad)
+                            <p class="q3-sf-shot-note">
+                                Ships from the United States to {{ \App\Support\ShippingCountries::name($lead->country) }}.
+                                Prices are in US dollars. Import duties, taxes and brokerage fees are
+                                not included and may be collected by FedEx on delivery.
+                            </p>
+                        @endif
                     </div>
                 @endif
             </div>
@@ -110,8 +119,19 @@
                     <div class="q3-sf-alert">{{ $errors->first() }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('vendor.order.address', $lead->public_ref) }}">
+                <form method="POST" action="{{ route('vendor.order.address', $lead->public_ref) }}" data-q3-address-form>
                     @csrf
+
+                    <div class="q3-sf-field">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" autocomplete="country"
+                                class="@error('country') is-invalid @enderror">
+                            @foreach (\App\Support\ShippingCountries::NAMES as $code => $name)
+                                <option value="{{ $code }}" @selected($country === $code)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @error('country') <div class="q3-sf-err">{{ $message }}</div> @enderror
+                    </div>
 
                     <div class="q3-sf-field">
                         <label for="company">Company <span class="q3-sf-opt">(optional)</span></label>
@@ -142,7 +162,7 @@
                             @error('city') <div class="q3-sf-err">{{ $message }}</div> @enderror
                         </div>
                         <div class="q3-sf-field">
-                            <label for="state">State</label>
+                            <label for="state" data-q3-region-label>{{ \App\Support\ShippingCountries::regionLabel($country) }}</label>
                             <input type="text" id="state" name="state" value="{{ old('state', $lead->state) }}"
                                    class="@error('state') is-invalid @enderror" required autocomplete="address-level1">
                             @error('state') <div class="q3-sf-err">{{ $message }}</div> @enderror
@@ -151,7 +171,7 @@
 
                     <div class="q3-sf-row">
                         <div class="q3-sf-field">
-                            <label for="postal_code">ZIP code</label>
+                            <label for="postal_code" data-q3-postal-label>{{ \App\Support\ShippingCountries::postalLabel($country) }}</label>
                             <input type="text" id="postal_code" name="postal_code"
                                    value="{{ old('postal_code', $lead->postal_code) }}"
                                    class="@error('postal_code') is-invalid @enderror" required autocomplete="postal-code">
@@ -384,3 +404,5 @@
 </script>
 @endpush
 @endif
+
+@include('partials.address-country-script')

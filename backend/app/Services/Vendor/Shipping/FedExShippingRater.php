@@ -77,7 +77,7 @@ class FedExShippingRater implements ShippingRater
                 return $this->onOutage($origin, $destination, $parcel, $cartons);
             }
 
-            return $this->rateFrom($response->json(), $shipping);
+            return $this->rateFrom($response->json(), $shipping, $this->isInternational($origin, $destination));
         } catch (\Throwable $e) {
             Log::error('FedEx rating failed', ['vendor' => $this->vendorSlug, 'error' => $e->getMessage()]);
 
@@ -116,9 +116,9 @@ class FedExShippingRater implements ShippingRater
      * @param  array<string,mixed>  $body
      * @param  array<string,mixed>  $shipping
      */
-    private function rateFrom(array $body, array $shipping): ShippingQuote
+    private function rateFrom(array $body, array $shipping, bool $international = false): ShippingQuote
     {
-        $wanted = (array) config('fedex.services', []);
+        $wanted = (array) config($international ? 'fedex.international_services' : 'fedex.services', []);
         $best   = null;
 
         foreach ($body['output']['rateReplyDetails'] ?? [] as $detail) {
@@ -208,18 +208,58 @@ class FedExShippingRater implements ShippingRater
             ],
         ];
 
+        $shipment = [
+            'shipper'   => ['address' => $this->address($origin)],
+            'recipient' => ['address' => $this->address($destination)],
+            'pickupType'      => config('fedex.pickup_type', 'USE_SCHEDULED_PICKUP'),
+            'rateRequestType' => array_values((array) config('fedex.rate_request_types', ['ACCOUNT', 'LIST'])),
+            // One entry per carton — one unit per box for this product, so
+            // three systems is three parcels rather than one heavier one.
+            'requestedPackageLineItems' => array_fill(0, max(1, $cartons), $package),
+        ];
+
+        if ($this->isInternational($origin, $destination)) {
+            $shipment['customsClearanceDetail'] = $this->customs($parcel, $cartons);
+        }
+
         return [
             'accountNumber'     => ['value' => $account],
-            'requestedShipment' => [
-                'shipper'   => ['address' => $this->address($origin)],
-                'recipient' => ['address' => $this->address($destination)],
-                'pickupType'      => config('fedex.pickup_type', 'USE_SCHEDULED_PICKUP'),
-                'rateRequestType' => array_values((array) config('fedex.rate_request_types', ['ACCOUNT', 'LIST'])),
-                // One entry per carton — one unit per box for this product, so
-                // three systems is three parcels rather than one heavier one.
-                'requestedPackageLineItems' => array_fill(0, max(1, $cartons), $package),
-            ],
+            'requestedShipment' => $shipment,
         ];
+    }
+
+    /**
+     * What FedEx needs to rate a parcel that crosses a border.
+     *
+     * Duties are billed to the RECIPIENT: the buyer pays duties, taxes and
+     * brokerage to FedEx on delivery, which is what the order page tells a
+     * Canadian buyer. The quote is carriage only either way.
+     *
+     * @return array<string,mixed>
+     */
+    private function customs(array $parcel, int $cartons): array
+    {
+        $units = max(1, $cartons) * max(1, (int) ($parcel['units_per_carton'] ?? 1));
+
+        return [
+            'dutiesPayment' => ['paymentType' => 'RECIPIENT'],
+            'commodities'   => [array_filter([
+                'description'          => $parcel['customs_description'] ?? $parcel['contents'] ?? 'Merchandise',
+                'quantity'             => $units,
+                'quantityUnits'        => 'PCS',
+                'weight'               => ['units' => 'LB', 'value' => (float) ($parcel['weight_lb'] ?? 1) * max(1, $cartons)],
+                // The value of the whole line, not of one unit.
+                'customsValue'         => ['amount' => round((float) ($parcel['customs_unit_value'] ?? 0) * $units, 2), 'currency' => 'USD'],
+                'countryOfManufacture' => $parcel['country_of_manufacture'] ?? null,
+                'harmonizedCode'       => $parcel['hs_code'] ?? null,
+            ], static fn ($v) => $v !== null && $v !== '')],
+        ];
+    }
+
+    private function isInternational(array $origin, array $destination): bool
+    {
+        return strtoupper((string) (($origin['country'] ?? null) ?: 'US'))
+            !== strtoupper((string) (($destination['country'] ?? null) ?: 'US'));
     }
 
     /**

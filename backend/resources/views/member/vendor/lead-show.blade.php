@@ -48,7 +48,7 @@
                         <dt class="col-sm-4 text-muted fw-normal">Address</dt>
                         <dd class="col-sm-8">
                             {{ $lead->address_line1 }}@if($lead->address_line2), {{ $lead->address_line2 }}@endif<br>
-                            {{ collect([$lead->city, $lead->state, $lead->postal_code])->filter()->implode(', ') }}
+                            {{ collect([$lead->city, $lead->state, $lead->postal_code, \App\Support\ShippingCountries::isDomestic($lead->country) ? null : \App\Support\ShippingCountries::name($lead->country)])->filter()->implode(', ') }}
                             {{-- So the partner knows to ring the customer about an
                                  address FedEx could not confirm. --}}
                             @php [$addressLabel, $addressColor] = $lead->addressCheckLabel(); @endphp

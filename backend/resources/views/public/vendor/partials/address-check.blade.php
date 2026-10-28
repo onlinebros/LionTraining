@@ -26,8 +26,9 @@
         trim(($a['address_line1'] ?? '').' '.($a['address_line2'] ?? '')),
         $a['city'] ?? null,
         trim(($a['state'] ?? '').' '.($a['postal_code'] ?? '')),
+        \App\Support\ShippingCountries::isDomestic($a['country'] ?? null) ? null : \App\Support\ShippingCountries::name($a['country']),
     ])->filter()->implode(', ');
-    $entered   = $lead->only(['address_line1', 'address_line2', 'city', 'state', 'postal_code']);
+    $entered   = $lead->only(['address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country']);
     $delivery  = match ($lead->address_classification) {
         'RESIDENTIAL' => ' · residential delivery',
         'BUSINESS'    => ' · business delivery',

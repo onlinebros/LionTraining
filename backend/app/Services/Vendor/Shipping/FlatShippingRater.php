@@ -43,6 +43,13 @@ class FlatShippingRater implements ShippingRater
             return new ShippingQuote(amount: 0, source: ShippingQuote::SOURCE_FREE);
         }
 
+        // The agreed flat figure is a domestic one. Charging it on a parcel to
+        // Canada would be a number nobody agreed to.
+        if (strtoupper((string) (($destination['country'] ?? null) ?: 'US'))
+            !== strtoupper((string) (($origin['country'] ?? null) ?: 'US'))) {
+            return ShippingQuote::freight('There is no flat shipping rate for deliveries outside the US.');
+        }
+
         $perCarton = (int) ($config['flat_amount'] ?? 0);
 
         /*

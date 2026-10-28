@@ -21,6 +21,13 @@ project are installed (`FEDEX_MODE=live`, `FEDEX_LIVE_API_KEY`,
 - **Sandbox.** It can't test address checks: every request gets the same canned
   Chilean address back.
 
+- **Canada (2026-10-28).** Checkout takes US or CA (`App\Support\ShippingCountries`).
+  A CA parcel is rated with `customsClearanceDetail` (declared value = unit price,
+  duties billed to RECIPIENT) against `fedex.international_services`
+  (FEDEX_GROUND = International Ground, INTERNATIONAL_ECONOMY fallback). The flat
+  rate never applies abroad. Not yet confirmed against live FedEx for a CA
+  address; `PLASMAGUARD_PRO_MADE_IN` / `PLASMAGUARD_PRO_HS_CODE` are unset.
+
 The rest of this runbook records how rating was set up.
 
 ---
