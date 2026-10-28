@@ -77,12 +77,12 @@
                             <dt style="color:var(--q3-text);font-weight:600;">Total</dt>
                             <dd class="q3-sf-price-fig" style="font-size:1.25rem;">{{ $money($quote['total']) }}</dd>
                         </div>
-                        <p class="q3-sf-shot-note" style="margin-top:14px;">
+                        <p class="q3-sf-formnote" style="margin-top:14px;">
                             {{ $quote['cartons'] }} carton(s) via {{ $quote['shipping_quote']->describe() }}.
                             Tax is calculated by {{ $vendor['name'] }} for the delivery address.
                         </p>
                         @if ($abroad)
-                            <p class="q3-sf-shot-note">
+                            <p class="q3-sf-formnote">
                                 Ships from the United States to {{ \App\Support\ShippingCountries::name($lead->country) }}.
                                 Prices are in US dollars. Import duties, taxes and brokerage fees are
                                 not included and may be collected by FedEx on delivery.

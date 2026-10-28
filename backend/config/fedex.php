@@ -61,8 +61,9 @@ return [
     /*
     | Services to price for a parcel leaving the US (Canada, since 2026-10-28).
     | FEDEX_GROUND is also FedEx's code for International Ground to Canada.
-    | International Economy is kept as the fallback for an address Ground does
-    | not serve; the cheapest eligible one wins, as above.
+    | Measured 2026-10-28, Livonia → Toronto, one carton: International Economy
+    | $43.37 negotiated ($359.41 list); Ground $70.63 with no discount, so
+    | require_negotiated skips it. The cheapest eligible one wins, as above.
     */
     'international_services' => [
         'FEDEX_GROUND',

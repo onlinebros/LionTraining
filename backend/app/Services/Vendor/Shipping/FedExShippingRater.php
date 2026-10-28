@@ -231,9 +231,11 @@ class FedExShippingRater implements ShippingRater
     /**
      * What FedEx needs to rate a parcel that crosses a border.
      *
-     * Duties are billed to the RECIPIENT: the buyer pays duties, taxes and
-     * brokerage to FedEx on delivery, which is what the order page tells a
-     * Canadian buyer. The quote is carriage only either way.
+     * No dutiesPayment. The quote is carriage only, and FedEx refuses RECIPIENT
+     * on a rate request outright (RATE.PAYMENTTYPE.NOTALLOWED, measured
+     * 2026-10-28) while SENDER returns the same figures. Who pays duties is set
+     * on the label PlasmaGuard creates; the order page tells a Canadian buyer
+     * they are collected on delivery.
      *
      * @return array<string,mixed>
      */
@@ -242,8 +244,7 @@ class FedExShippingRater implements ShippingRater
         $units = max(1, $cartons) * max(1, (int) ($parcel['units_per_carton'] ?? 1));
 
         return [
-            'dutiesPayment' => ['paymentType' => 'RECIPIENT'],
-            'commodities'   => [array_filter([
+            'commodities' => [array_filter([
                 'description'          => $parcel['customs_description'] ?? $parcel['contents'] ?? 'Merchandise',
                 'quantity'             => $units,
                 'quantityUnits'        => 'PCS',
