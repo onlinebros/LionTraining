@@ -60,6 +60,9 @@ use App\Http\Controllers\ProductPartner\ProspectController as PartnerProspectCon
 use App\Http\Controllers\ProductPartner\SalesController as PartnerSalesController;
 use App\Http\Controllers\ProductPartner\StatementController as PartnerStatementController;
 use App\Http\Controllers\Admin\ProductPartnerController;
+use App\Http\Controllers\Admin\OfferingController;
+use App\Http\Controllers\Admin\ProspectController;
+use App\Http\Controllers\Admin\ProposalController as AdminProposalController;
 use App\Http\Controllers\ScreenRecordingPlaybackController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +73,21 @@ Route::get('/', fn() => view('public.home'))->name('home');
 // Referral sign-up (public, no auth required, before guest middleware)
 Route::get('/join/{code}', [UserAuthController::class, 'showReferral'])->name('join');
 Route::post('/join/{code}', [UserAuthController::class, 'registerViaReferral'])->name('join.post');
+
+// A prospect's proposal portal (Proposal Studio, memory-bank/proposal-studio.md).
+// Only people invited by email can open it: the link in the invitation signs
+// them in to this portal and no other. The writes are throttled because they
+// are unauthenticated in the usual sense.
+Route::prefix('proposal/{ref}')->name('portal.')->where(['ref' => '[a-z0-9]{16}'])
+    ->controller(\App\Http\Controllers\PortalController::class)->group(function () {
+        Route::get('/',                 'show')->name('show');
+        Route::get('/enter/{token}',    'enter')->middleware('throttle:20,1')->name('enter');
+        Route::post('/link',            'requestLink')->middleware('throttle:5,10')->name('link');
+        Route::post('/send',            'submit')->middleware('throttle:20,10')->name('submit');
+        Route::post('/ask',             'ask')->middleware('throttle:20,10')->name('ask');
+        Route::get('/documents/{document}', 'download')->name('download');
+        Route::post('/sign-out',        'signOut')->name('sign-out');
+    });
 
 // ── Partner spot claim (public, co-branded) ───────────────────────────────────
 //
@@ -357,6 +375,14 @@ Route::prefix('product-partner')->name('product-partner.')
         // The pipeline in numbers only — see the controller for why.
         Route::get('/prospects',      [PartnerProspectController::class, 'index'])->name('prospects');
 
+        // Proposals for their product line: review the first few (D5), and
+        // see the prospect once one is published (D6). Proposal Studio only.
+        Route::get('/proposals',              [\App\Http\Controllers\ProductPartner\ProposalController::class, 'index'])->name('proposals');
+        Route::get('/proposals/{proposal}',   [\App\Http\Controllers\ProductPartner\ProposalController::class, 'show'])->name('proposals.show');
+        Route::get('/proposals/{proposal}/preview', [\App\Http\Controllers\ProductPartner\ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::post('/proposals/{proposal}/review', [\App\Http\Controllers\ProductPartner\ProposalController::class, 'review'])
+            ->middleware('throttle:20,10')->name('proposals.review');
+
         // What is owed and what has been paid, one copy, both sides.
         Route::get('/statement',      [PartnerStatementController::class, 'index'])->name('statement');
         Route::post('/statement/payments', [PartnerStatementController::class, 'storePayment'])
@@ -602,6 +628,47 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{changeRequest}/message',  [AdminChangeRequestController::class, 'message'])->name('message');
             Route::post('/{changeRequest}/plan',     [AdminChangeRequestController::class, 'draftPlan'])->name('plan');
             Route::post('/{changeRequest}/submit',   [AdminChangeRequestController::class, 'submit'])->name('submit');
+        });
+        // The Proposal Studio (memory-bank/proposal-studio.md). Super admins only,
+        // and only where its worker runs (PROPOSAL_STUDIO_ENABLED, dev for now).
+        Route::prefix('proposal-studio')->name('proposal-studio.')->middleware(['super_admin', 'proposal_studio'])->group(function () {
+            Route::get('/offerings',                                  [OfferingController::class, 'index'])->name('offerings.index');
+            Route::post('/offerings',                                 [OfferingController::class, 'store'])->name('offerings.store');
+            Route::get('/offerings/{offering}',                       [OfferingController::class, 'show'])->name('offerings.show');
+            Route::put('/offerings/{offering}',                       [OfferingController::class, 'update'])->name('offerings.update');
+            Route::post('/offerings/{offering}/documents',            [OfferingController::class, 'storeDocument'])->name('offerings.documents.store');
+            Route::get('/offerings/{offering}/documents/{document}',  [OfferingController::class, 'showDocument'])->name('offerings.documents.show');
+            Route::patch('/offerings/{offering}/documents/{document}', [OfferingController::class, 'updateDocument'])->name('offerings.documents.update');
+            Route::get('/offerings/{offering}/documents/{document}/download', [OfferingController::class, 'downloadDocument'])->name('offerings.documents.download');
+            Route::delete('/offerings/{offering}/documents/{document}', [OfferingController::class, 'destroyDocument'])->name('offerings.documents.destroy');
+            Route::get('/offerings/{offering}/status',                [OfferingController::class, 'status'])->name('offerings.status');
+            Route::post('/offerings/{offering}/documents/{document}/extract', [OfferingController::class, 'extractClaims'])->name('offerings.documents.extract');
+            Route::post('/offerings/{offering}/documents/{document}/claims',  [OfferingController::class, 'storeClaim'])->name('offerings.documents.claims.store');
+            Route::patch('/offerings/{offering}/claims/{claim}',      [OfferingController::class, 'reviewClaim'])->name('offerings.claims.review');
+            Route::post('/offerings/{offering}/claims/review',        [OfferingController::class, 'reviewClaims'])->name('offerings.claims.review-many');
+            Route::post('/offerings/{offering}/ask',                  [OfferingController::class, 'ask'])->name('offerings.ask');
+
+            Route::get('/',                              [ProspectController::class, 'index'])->name('prospects.index');
+            Route::get('/prospects/new',                 [ProspectController::class, 'create'])->name('prospects.create');
+            Route::post('/prospects',                    [ProspectController::class, 'store'])->name('prospects.store');
+            Route::get('/prospects/{prospect}',          [ProspectController::class, 'show'])->name('prospects.show');
+            Route::put('/prospects/{prospect}',          [ProspectController::class, 'update'])->name('prospects.update');
+            Route::get('/prospects/{prospect}/status',   [ProspectController::class, 'status'])->name('prospects.status');
+            Route::post('/prospects/{prospect}/message', [ProspectController::class, 'message'])->name('prospects.message');
+            Route::post('/prospects/{prospect}/draft',   [ProspectController::class, 'draft'])->name('prospects.draft');
+
+            // The proposal page and the client portal.
+            Route::post('/prospects/{prospect}/proposals',                        [AdminProposalController::class, 'draft'])->name('proposals.draft');
+            Route::get('/prospects/{prospect}/proposals/{proposal}',              [AdminProposalController::class, 'edit'])->name('proposals.edit');
+            Route::put('/prospects/{prospect}/proposals/{proposal}',              [AdminProposalController::class, 'update'])->name('proposals.update');
+            Route::get('/prospects/{prospect}/proposals/{proposal}/preview',      [AdminProposalController::class, 'preview'])->name('proposals.preview');
+            Route::post('/prospects/{prospect}/proposals/{proposal}/publish',     [AdminProposalController::class, 'publish'])->name('proposals.publish');
+            Route::post('/prospects/{prospect}/proposals/{proposal}/new-version', [AdminProposalController::class, 'newVersion'])->name('proposals.new-version');
+            Route::post('/prospects/{prospect}/invites',                          [AdminProposalController::class, 'invite'])->name('invites.store');
+            Route::post('/prospects/{prospect}/invites/{invite}/resend',          [AdminProposalController::class, 'resend'])->name('invites.resend');
+            Route::delete('/prospects/{prospect}/invites/{invite}',               [AdminProposalController::class, 'revoke'])->name('invites.revoke');
+            Route::post('/prospects/{prospect}/questions/{submission}/answer',    [AdminProposalController::class, 'answer'])->name('questions.answer');
+            Route::get('/prospects/{prospect}/submissions/{submission}/files/{index}', [AdminProposalController::class, 'file'])->whereNumber('index')->name('submissions.file');
         });
         Route::prefix('review-requests')->name('review-requests.')->middleware(['super_admin', 'review_console'])->group(function () {
             Route::get('/',                          [ReviewRequestController::class, 'index'])->name('index');

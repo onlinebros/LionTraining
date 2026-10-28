@@ -315,6 +315,17 @@
                             <span>Change Requests</span>
                         </a>
                     </li>
+                    @if(config('proposal-studio.enabled'))
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link {{ request()->routeIs('admin.proposal-studio.*') ? 'active' : '' }}"
+                           href="{{ route('admin.proposal-studio.prospects.index') }}">
+                            <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-project') }}"></use></svg>
+                            <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-project') }}"></use></svg>
+                            <span>Proposal Studio</span>
+                        </a>
+                    </li>
+                    @endif
                     @if(\App\Services\RequestAssistant\Upstream::isConnected())
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
