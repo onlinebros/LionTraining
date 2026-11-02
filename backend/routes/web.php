@@ -101,6 +101,8 @@ Route::prefix('client/{ref}')->name('microsite.')->where(['ref' => '[a-z0-9]{16}
         Route::post('/link',            'requestLink')->middleware('throttle:5,10')->name('link');
         Route::post('/colleagues',      'requestAccess')->middleware('throttle:10,10')->name('request-access');
         Route::post('/sections/{section}/comments', 'comment')->middleware('throttle:20,10')->name('comment');
+        Route::post('/sections/{section}/plan/{index}', 'plan')->whereNumber('index')->middleware('throttle:60,1')->name('plan');
+        Route::post('/reading',         'reading')->middleware('throttle:30,1')->name('reading');
         Route::get('/documents/{document}', 'download')->name('download');
         Route::get('/logo',             'logo')->middleware('throttle:60,1')->name('logo');
         Route::post('/sign-out',        'signOut')->name('sign-out');
@@ -714,6 +716,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/accounts/{account}/sections/{section}/publish',   [AdminMicrositeController::class, 'publishSection'])->name('accounts.sections.publish');
             Route::post('/accounts/{account}/sections/{section}/unpublish', [AdminMicrositeController::class, 'unpublishSection'])->name('accounts.sections.unpublish');
             Route::post('/accounts/{account}/sections/{section}/move',      [AdminMicrositeController::class, 'moveSection'])->name('accounts.sections.move');
+            Route::post('/accounts/{account}/sections/order',               [AdminMicrositeController::class, 'reorder'])->name('accounts.sections.order');
+            Route::post('/accounts/{account}/sections/{section}/plan/{index}', [AdminMicrositeController::class, 'planStep'])->whereNumber('index')->name('accounts.sections.plan');
+            Route::post('/accounts/{account}/site/build',                   [AdminMicrositeController::class, 'build'])->name('accounts.site.build');
             Route::post('/accounts/{account}/members',                      [AdminMicrositeController::class, 'invite'])->name('accounts.members.store');
             Route::patch('/accounts/{account}/members/{member}',            [AdminMicrositeController::class, 'updateMember'])->name('accounts.members.update');
             Route::post('/accounts/{account}/members/{member}/resend',      [AdminMicrositeController::class, 'resend'])->name('accounts.members.resend');

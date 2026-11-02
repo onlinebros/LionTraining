@@ -8,8 +8,10 @@ use App\Models\MicrositeSection;
 use App\Models\OfferingDocument;
 use App\Services\ProposalStudio\MicrositeService;
 use App\Services\ProposalStudio\StudioRefused;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -92,7 +94,7 @@ class MicrositeController extends Controller
     public function download(Request $request, string $ref, OfferingDocument $document): StreamedResponse
     {
         [$account, $member] = $this->signedIn($request, $ref);
-        $offerings = self::siteView($account, $member)['sections']->map(fn ($s) => $s->opportunity?->offering_id)->filter()->unique();
+        $offerings = self::siteView($account, $member)['sections']->map(fn ($s) => $s->offering()?->id)->filter()->unique();
         abort_unless($document->audience === 'shareable' && $document->file_path && $offerings->contains($document->offering_id), 404);
         $account->log('client', "{$member->label()} downloaded \"{$document->title}\".", null, ['member' => $member->id, 'document' => $document->id]);
 
@@ -124,7 +126,8 @@ class MicrositeController extends Controller
      */
     public static function siteView(BusinessAccount $account, ?MicrositeMember $member): array
     {
-        $account->loadMissing('sections.opportunity.offering', 'sections.opportunity.publishedProposal', 'sections.comments.member');
+        $account->loadMissing('offering', 'owner', 'sections.opportunity.offering', 'sections.opportunity.publishedProposal', 'sections.comments.member');
+        $account->sections->each->setRelation('account', $account);
         $preview = $member === null;
         $pricing = $preview || $member->can_see_pricing;
 
@@ -150,6 +153,37 @@ class MicrositeController extends Controller
     }
 
     /** @return array{0: BusinessAccount, 1: MicrositeMember} */
+    /** A contributor ticks a step of the shared action plan off, or reopens it. */
+    public function plan(Request $request, string $ref, MicrositeSection $section, int $index): JsonResponse|RedirectResponse
+    {
+        [$account, $member] = $this->signedIn($request, $ref);
+        abort_unless($section->business_account_id === $account->id && $section->isPublished() && $member->canComment(), 404);
+        abort_unless($member->can_see_pricing || ! $section->pricing_only, 404);
+
+        try {
+            $this->sites->setPlanStep($section, $index, $request->boolean('done'), $member, null);
+        } catch (StudioRefused) {
+            abort(404);
+        }
+        $steps = collect($section->fresh()->c()['steps'] ?? []);
+
+        return $request->expectsJson()
+            ? response()->json(['done' => $steps->where('done', true)->count(), 'total' => $steps->count()])
+            : redirect()->to(route('microsite.show', $ref).'#s-'.$section->id);
+    }
+
+    /** Reading time per section, sent by the page as a beacon. */
+    public function reading(Request $request, string $ref): Response
+    {
+        [, $member] = $this->signedIn($request, $ref);
+        $seconds = json_decode((string) $request->input('seconds'), true);
+        if (is_array($seconds) && count($seconds) <= 50) {
+            $this->sites->recordReading($member, $seconds);
+        }
+
+        return response()->noContent();
+    }
+
     private function signedIn(Request $request, string $ref): array
     {
         $account = $this->account($ref);

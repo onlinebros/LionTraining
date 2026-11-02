@@ -3,6 +3,7 @@
 namespace App\Services\ProposalStudio;
 
 use App\Models\BusinessAccount;
+use App\Models\Offering;
 use App\Models\BusinessActivity;
 use App\Models\BusinessContact;
 use App\Models\Prospect;
@@ -25,7 +26,10 @@ class AccountService
     public function create(User $by, array $attributes, ?array $contact = null): BusinessAccount
     {
         return DB::transaction(function () use ($by, $attributes, $contact) {
+            // With one product line, every site presents it.
+            $only = Offering::where('is_active', true)->limit(2)->pluck('id');
             $account = BusinessAccount::create($attributes + [
+                'offering_id' => $only->count() === 1 ? $only->first() : null,
                 'created_by' => $by->id,
                 'owner_user_id' => $by->id,
                 'stage' => 'target',
@@ -53,7 +57,7 @@ class AccountService
             'website' => $p['website'] ?? null,
             'industry' => $p['industry'] ?? null,
             'stage' => 'engaged',
-        ], $name ? [
+        ] + (isset($p['offering_id']) ? ['offering_id' => (int) $p['offering_id']] : []), $name ? [
             'name' => $name,
             'email' => $p['contact_email'] ?? null,
             'phone' => $p['contact_phone'] ?? null,

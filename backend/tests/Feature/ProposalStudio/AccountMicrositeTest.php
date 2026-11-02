@@ -32,7 +32,8 @@ class AccountMicrositeTest extends StudioTestCase
     private function publishedSection(BusinessAccount $account, string $kind = 'welcome', string $body = 'Welcome, Bright Smile.', array $extra = []): MicrositeSection
     {
         $section = app(MicrositeService::class)->addSection($account, $kind, $account->opportunities()->first());
-        $section->forceFill(['body' => $body] + $extra)->save();
+        // Free text, so the tests can look for its body.
+        $section->forceFill(['layout' => 'text', 'body' => $body] + $extra)->save();
         app(MicrositeService::class)->publish($section, $this->super);
 
         return $section->fresh();
@@ -105,7 +106,7 @@ class AccountMicrositeTest extends StudioTestCase
 
         // With no opportunity, the outline still starts, and the builder says why it is thin.
         $this->post("/admin/proposal-studio/accounts/{$account->id}/site/starter");
-        $this->get("/admin/proposal-studio/accounts/{$account->id}/site")->assertOk()->assertSee('Welcome')->assertSee('Draft with AI');
+        $this->get("/admin/proposal-studio/accounts/{$account->id}/site")->assertOk()->assertSee('Welcome')->assertSee('Write empty sections');
         $this->get("/admin/proposal-studio/accounts/{$account->id}/site/preview")->assertOk()->assertSee('Harbor Hotels');
     }
 
@@ -147,26 +148,36 @@ class AccountMicrositeTest extends StudioTestCase
 
         $this->runnerAnswering(<<<TXT
 ```section
-{"title": "What the testing shows", "body": "Here is what the independent testing found.", "claim_ids": [{$approved->id}, 999]}
+{"title": "What the testing shows", "content": {"lead": "Here is what the independent testing found."}, "claim_ids": [{$approved->id}, 999]}
 ```
 TXT);
         $this->work();
 
         $evidence->refresh();
-        $this->assertSame('Here is what the independent testing found.', $evidence->body);
+        $this->assertSame('proof', $evidence->layout);
+        $this->assertSame('Here is what the independent testing found.', $evidence->content['lead']);
         $this->assertSame([$approved->id], $evidence->claim_ids);
         $this->assertSame('draft', $evidence->status);
         $this->get("/admin/proposal-studio/accounts/{$account->id}/site/preview")->assertOk()
-            ->assertSee('Reduces airborne mold by 99.4%.*')->assertSee('Draft: not on the site yet');
+            ->assertSee('Reduces airborne mold by <span class="n">99.4</span>%.*', false)->assertSee('Draft: not on the site yet');
     }
 
-    public function test_a_section_about_the_product_needs_an_opportunity(): void
+    public function test_a_section_about_the_product_draws_on_the_sites_product_line_without_an_opportunity(): void
     {
         $account = $this->account();
+        $this->assertSame($this->plasmaguard->id, $account->offering_id);
         $section = app(MicrositeService::class)->addSection($account, 'evidence', null);
+        $this->assertSame($this->plasmaguard->id, $section->offering()?->id);
 
+        $account->update(['offering_id' => null]);
         $this->actingAs($this->super)->post("/admin/proposal-studio/accounts/{$account->id}/sections/{$section->id}/draft")
             ->assertSessionHas('error');
+
+        $account->update(['offering_id' => $this->plasmaguard->id]);
+        $this->post("/admin/proposal-studio/accounts/{$account->id}/sections/{$section->id}/draft", ['instruction' => 'Lead with mold.'])
+            ->assertSessionHas('success');
+        $this->assertSame('Lead with mold.', $section->fresh()->ai_instruction);
+        $this->assertStringContainsString('Lead with mold.', Prompts::micrositeSection($section->fresh()));
     }
 
     public function test_the_section_prompt_carries_what_we_learned_without_contact_details(): void
@@ -326,5 +337,143 @@ TXT);
         $this->assertSame('#1a5f7a', $account->brand_color);
         $this->assertSame('#ffffff', $account->brandInk());
         Storage::disk('local')->assertExists($account->logo_path);
+    }
+
+    public function test_build_lays_out_the_site_and_the_assistant_fills_each_layout(): void
+    {
+        $doc = $this->document('Ozone output: none detected.* *Tested to UL 2998.');
+        $claim = $this->approvedClaim($doc, 'Ozone output: none detected.*');
+        $account = $this->account();
+        $this->runnerAnswering('Reply.');
+        $this->work();
+
+        $this->actingAs($this->super)->post("/admin/proposal-studio/accounts/{$account->id}/site/build", ['goal' => 'Win a pilot in two clinics.'])
+            ->assertSessionHas('success');
+        $this->assertSame('Win a pilot in two clinics.', $account->fresh()->site_goal);
+        $this->assertSame(
+            ['welcome', 'challenges', 'solution', 'how_it_works', 'evidence', 'faq', 'next_steps', 'closing'],
+            $account->sections()->pluck('kind')->all(),
+        );
+        $this->assertSame(8, \App\Models\StudioJob::where('kind', 'microsite_section')->count());
+        // Their challenges come second, as cards.
+        $cards = $account->sections()->where('kind', 'challenges')->firstOrFail();
+        $this->assertSame('cards', $cards->layout);
+        $this->assertStringContainsString('Win a pilot in two clinics.', Prompts::micrositeSection($cards));
+        $this->assertStringContainsString('"icon"', Prompts::micrositeSection($cards));
+
+        // Answers arrive in job order: the hero first, then the cards.
+        $this->runnerAnswering(
+            "```section\n".json_encode(['title' => 'Welcome', 'content' => ['eyebrow' => 'Bright Smile', 'headline' => 'Cleaner air in every chair', 'lead' => 'Built for your team.', 'highlights' => ['Your clinics', 'Results', 'Next steps', 'Extra', 'Too many']]])."\n```",
+            "```section\n".json_encode(['title' => 'What changes', 'content' => ['lead' => 'Three things.', 'items' => [
+                ['icon' => 'wind', 'title' => 'Quiet', 'text' => 'Runs in the duct.'],
+                ['icon' => 'rocket', 'title' => 'Simple', 'text' => '<b>No</b> filters to swap.'],
+            ]], 'claim_ids' => [$claim->id]])."\n```",
+        );
+        $this->work(2);
+
+        $hero = $account->sections()->where('kind', 'welcome')->firstOrFail();
+        $this->assertSame('Cleaner air in every chair', $hero->content['headline']);
+        $this->assertCount(4, $hero->content['highlights']);
+        $cards->refresh();
+        $this->assertSame('spark', $cards->content['items'][1]['icon']);
+        $this->assertSame('No filters to swap.', $cards->content['items'][1]['text']);
+        $this->assertSame([$claim->id], $cards->claim_ids);
+
+        $this->get("/admin/proposal-studio/accounts/{$account->id}/site?section={$cards->id}")->assertOk()->assertSee('No filters to swap.');
+        $this->get("/admin/proposal-studio/accounts/{$account->id}/site/preview")->assertOk()
+            ->assertSee('Cleaner air in')->assertSee('every chair')->assertSee('Runs in the duct.')->assertSee('Ozone output: none detected.*');
+    }
+
+    public function test_content_keeps_only_what_the_layout_uses(): void
+    {
+        $clean = MicrositeSection::cleanContent('plan', ['steps' => [
+            ['title' => 'Site survey', 'owner' => 'us', 'when' => 'Week 1', 'done' => '1', 'extra' => 'x'],
+            ['title' => 'Sign off', 'owner' => 'the board'],
+            ['title' => ''],
+        ], 'junk' => 'x']);
+        $this->assertSame(['lead' => '', 'steps' => [
+            ['title' => 'Site survey', 'owner' => 'us', 'when' => 'Week 1', 'done' => true],
+            ['title' => 'Sign off', 'owner' => 'both', 'when' => '', 'done' => false],
+        ]], $clean);
+
+        $this->assertSame('', MicrositeSection::cleanContent('cta', ['button_url' => 'javascript:alert(1)'])['button_url']);
+        $this->assertSame('https://cal.example/q3', MicrositeSection::cleanContent('cta', ['button_url' => 'https://cal.example/q3'])['button_url']);
+        $this->assertCount(6, MicrositeSection::cleanContent('cards', ['items' => array_fill(0, 9, ['title' => 'A', 'text' => 'B'])])['items']);
+    }
+
+    public function test_claim_numbers_are_marked_without_changing_a_word(): void
+    {
+        $quote = "Cut O'Brien's 1,200 spores by 99.9% in 30 minutes.*";
+        $html = MicrositeSection::markNumbers($quote);
+        $this->assertStringContainsString('<span class="n">1,200</span>', $html);
+        $this->assertSame($quote, html_entity_decode(strip_tags($html), ENT_QUOTES));
+    }
+
+    public function test_contributors_tick_off_the_action_plan_and_reading_time_is_recorded(): void
+    {
+        $account = $this->account();
+        $plan = app(MicrositeService::class)->addSection($account, 'next_steps', null);
+        $plan->forceFill(['content' => MicrositeSection::cleanContent('plan', ['steps' => [['title' => 'Walk the building', 'owner' => 'both'], ['title' => 'Sign the pilot', 'owner' => 'you']]])])->save();
+        app(MicrositeService::class)->publish($plan, $this->super);
+        $draft = app(MicrositeService::class)->addSection($account, 'custom', null);
+        $ref = $account->fresh()->site_ref;
+
+        $this->signIn($account, 'viewer@brightsmile.test');
+        $this->get("/client/{$ref}")->assertOk()->assertSee('Walk the building')->assertDontSee('aria-label="Tick off', false);
+        $this->postJson("/client/{$ref}/sections/{$plan->id}/plan/0", ['done' => 1])->assertNotFound();
+
+        $member = $this->signIn($account, 'dana@brightsmile.test', 'contributor');
+        $this->postJson("/client/{$ref}/sections/{$plan->id}/plan/0", ['done' => 1])->assertOk()->assertJson(['done' => 1, 'total' => 2]);
+        $this->assertTrue($plan->fresh()->content['steps'][0]['done']);
+        $this->assertTrue($account->activities()->where('body', 'like', '%ticked off "Walk the building"%')->exists());
+
+        // Seconds on published sections of this site only, capped per report.
+        $this->post("/client/{$ref}/reading", ['seconds' => json_encode([$plan->id => 45, $draft->id => 30])])->assertNoContent();
+        $this->post("/client/{$ref}/reading", ['seconds' => json_encode([$plan->id => 5000])])->assertNoContent();
+        $rows = \Illuminate\Support\Facades\DB::table('microsite_section_views')->get();
+        $this->assertCount(1, $rows);
+        $this->assertSame(645, (int) $rows[0]->seconds);
+        $this->assertSame($member->id, (int) $rows[0]->microsite_member_id);
+
+        $this->actingAs($this->super)->get("/admin/proposal-studio/accounts/{$account->id}/site?tab=insights")->assertOk()->assertSee('10 min 45 s');
+    }
+
+    public function test_sections_can_be_reordered_by_dragging(): void
+    {
+        $account = $this->account();
+        app(MicrositeService::class)->starterSections($account);
+        $ids = $account->sections()->pluck('id')->all();
+
+        $this->actingAs($this->super)->postJson("/admin/proposal-studio/accounts/{$account->id}/sections/order", ['ids' => array_reverse($ids)])->assertOk();
+        $this->assertSame(array_reverse($ids), $account->sections()->pluck('id')->all());
+    }
+
+    public function test_the_library_moves_between_servers_with_its_claims_still_verbatim(): void
+    {
+        Storage::fake('local');
+        $doc = $this->document('Kills 99.9% of airborne mold.* *Lab test, 2024.', ['audience' => 'shareable']);
+        $this->approvedClaim($doc, 'Kills 99.9% of airborne mold.*');
+        $zip = tempnam(sys_get_temp_dir(), 'lib').'.zip';
+
+        $this->artisan('proposal-studio:library', ['action' => 'export', 'path' => $zip])->assertSuccessful();
+        // Tamper with the bundle: a claim that is not in the document.
+        $archive = new \ZipArchive;
+        $archive->open($zip);
+        $data = json_decode($archive->getFromName('library.json'), true);
+        $data['claims'][] = ['document_ref' => $doc->id, 'topic' => null, 'quote' => 'Cures colds.', 'footnote' => null, 'status' => 'approved'];
+        $archive->addFromString('library.json', json_encode($data));
+        $archive->close();
+
+        $this->plasmaguard->documents()->each(fn ($d) => $d->delete());
+        $this->artisan('proposal-studio:library', ['action' => 'import', 'path' => $zip])->assertSuccessful();
+
+        $imported = $this->plasmaguard->documents()->firstOrFail();
+        $this->assertNotSame($doc->id, $imported->id);
+        $this->assertGreaterThan(0, $imported->passages()->count());
+        $this->assertSame(['Kills 99.9% of airborne mold.*'], $this->plasmaguard->approvedClaims()->pluck('quote')->all());
+
+        // Running it again adds nothing.
+        $this->artisan('proposal-studio:library', ['action' => 'import', 'path' => $zip])->expectsOutputToContain('Added 0 documents (1 already here)')->assertSuccessful();
+        @unlink($zip);
     }
 }

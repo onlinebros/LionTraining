@@ -1,19 +1,24 @@
-@extends('layouts.portal')
+@extends('microsite.layout')
 
 @section('title', 'Sign in')
 
-@include('microsite._brand')
-
-@section('content')
-<div class="wrap" style="padding-block: 56px;">
-    <div class="sheet" style="max-width: 560px;">
-        <span class="eyebrow">Private site</span>
-        <h1 style="font-size: 32px; margin: 8px 0 14px;">Prepared for {{ $account->name }}</h1>
-        <p>Open it with the link in the email we sent you. If the link has expired, enter your email address and we will send a new one.</p>
-        <p class="muted">Not on the list? Ask a colleague who is to add you from inside the site.</p>
-        @if(session('error'))<div class="flash err">{{ session('error') }}</div>@endif
-        @if(session('success'))<div class="flash ok">{{ session('success') }}</div>@endif
-        <form method="POST" action="{{ route('microsite.link', $ref) }}" style="margin-top: 20px;" class="stack">
+@section('body')
+<main class="hero" style="min-height: 100vh;">
+    <div class="orb o1"></div><div class="orb o2"></div><div class="grid-bg"></div>
+    <div class="wrap" style="max-width: 640px;">
+        <span class="brand rv" style="margin-bottom: 30px;">
+            @if($account->logo_path)
+                <img class="client-logo" src="{{ route('microsite.logo', $ref) }}?v={{ $account->updated_at?->timestamp }}" alt="{{ $account->name }}">
+            @else
+                <span>{{ $account->name }}</span>
+            @endif
+            <span class="x" aria-hidden="true">×</span>
+            <span class="q3"><img src="{{ \App\Support\Asset::v('assets/images/logo/q3-app-icon-192.png') }}" alt=""><span>Quantum 3 Solution</span></span>
+        </span>
+        <span class="eyebrow rv">Private site</span>
+        <h1 class="rv" style="font-size: clamp(36px, 6vw, 60px); margin: 16px 0 18px;">Prepared for <span class="grad">{{ $account->name }}</span></h1>
+        <p class="lead rv">Open it with the link in the email we sent you. If the link has expired, enter your email address and we will send a new one.</p>
+        <form method="POST" action="{{ route('microsite.link', $ref) }}" class="stack rv" style="margin-top: 26px;">
             @csrf
             <div>
                 <label for="ml-email">Your email address</label>
@@ -21,6 +26,13 @@
             </div>
             <div><button class="btn" type="submit">Email me a new link</button></div>
         </form>
+        <p class="muted rv" style="margin-top: 22px;">Not on the list? Ask a colleague who is to add you from inside the site.</p>
     </div>
-</div>
+</main>
+@if(session('success'))<div class="flash ok" role="status">{{ session('success') }}</div>@endif
+@if(session('error'))<div class="flash err" role="alert">{{ session('error') }}</div>@endif
 @endsection
+
+@push('scripts')
+<script>document.querySelectorAll('.rv').forEach(function (el, i) { setTimeout(function () { el.classList.add('in'); }, 80 * i); });</script>
+@endpush

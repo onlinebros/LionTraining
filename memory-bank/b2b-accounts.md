@@ -65,6 +65,41 @@ offering, and the last 15 questions prospects asked in their portals. New system
 name or hint at another company in anything a prospect reads. Only the industry travels with a
 lesson, not the company name. The outcome-note field on a prospect now says this.
 
+## The builder, second pass (2026-10-29)
+
+The owner found the first builder "box and tackle" and saw that it did not use the knowledge base.
+Both were true: live had no library (it was only on dev), and sections reached a library only
+through an opportunity. Research (Qwilr, PandaDoc, Storydoc, Gamma, digital sales rooms) pointed
+to: one-click AI generation from a knowledge base, a live preview, designed blocks rather than
+text boxes, a mutual action plan, and reading analytics. What changed:
+
+- **The account presents an offering** (`business_accounts.offering_id`, chosen under Design;
+  set automatically when there is one product line, or from the first opportunity). Every
+  section draws on that library and its approved claims; an opportunity only adds its
+  conversation and proposal. `MicrositeSection::offering()` = opportunity's, else the account's.
+- **Layouts** (`microsite_sections.layout` + `content` JSON): hero, cards (with icons), timeline,
+  proof, faq, plan (mutual action plan), cta, text. `MicrositeSection::cleanContent` keeps only
+  each layout's fields, plain text, bounded lists, icons/owners from the lists, https/mailto
+  links only. The assistant answers in the layout's JSON shape (`Prompts::sectionTask`).
+- **"Build my site"** (`MicrositeService::build`): saves the goal (`site_goal`, read by every
+  prompt), lays out nine sections if there are none, and drafts every empty one (or all, with
+  "rewrite"). Per-section "Ask the assistant" stores `ai_instruction` for the next draft only.
+- **Builder**: a panel (Build · Design · Access · Insights) beside the real site in an iframe
+  (`preview?embed=1`), with desktop/tablet/phone widths. Clicking a section in either opens its
+  editor; drag to reorder (`sections/order`). It polls while the assistant writes.
+- **Client site** (`microsite/layout`, `show`, `_section`): its own layout, three themes
+  (`site_theme`: aurora, daylight, editorial) tinted by their colour, a full-screen opening,
+  reveal-on-scroll, scroll progress. **Claims stay verbatim**: `markNumbers` only wraps digits
+  in a span so they count up; without script the text is exactly the library's.
+- **Action plan**: contributors tick steps off on the site (`microsite.plan`), logged on the
+  timeline; a redraft keeps steps already done.
+- **Insights**: the page reports seconds per visible section (`microsite.reading`, beacon,
+  capped at 600 s a report and 4 h a day) into `microsite_section_views`; the Insights tab shows
+  time by section and by person, plus recent client activity.
+- **Library between servers**: `php artisan proposal-studio:library export|import <zip>`.
+  Import adds documents not already there (same title and size), re-indexes passages, and keeps
+  claims' status only if the quote is still word for word in the document.
+
 ## Not built yet
 
 - Partners or Product Partners building microsites (A2, later).
