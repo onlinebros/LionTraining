@@ -37,18 +37,50 @@ class MicrositeService
             return;
         }
         $opportunity = $account->opportunities()->first();
-        $kinds = ['welcome', 'challenges', 'solution', 'evidence'];
+        $kinds = ['welcome', 'challenges', 'solution', 'how_it_works', 'evidence'];
         if ($opportunity?->publishedProposal) {
             $kinds[] = 'proposal';
         }
-        array_push($kinds, 'faq', 'next_steps');
+        array_push($kinds, 'faq', 'next_steps', 'closing');
 
         foreach ($kinds as $kind) {
             $this->addSection($account, $kind, $opportunity);
         }
     }
 
-    public function addSection(BusinessAccount $account, string $kind, ?Prospect $opportunity): MicrositeSection
+    /**
+     * "Build the site": the usual outline if there is none yet, then the
+     * assistant drafts every section it writes. With $rewrite it redrafts
+     * the ones already written too; otherwise only the empty ones.
+     *
+     * @return int how many sections were sent to the assistant
+     */
+    public function build(BusinessAccount $account, User $by, ?string $goal, bool $rewrite = false): int
+    {
+        if ($goal !== null) {
+            $account->forceFill(['site_goal' => $goal])->save();
+        }
+        $this->starterSections($account);
+        $sections = $account->sections()->get()->filter(fn (MicrositeSection $s) => $s->isWritten() && ($rewrite || ! $s->hasContent()));
+        if ($sections->count() > $this->draftsLeft($by)) {
+            throw new StudioRefused('That is more drafts than the assistant takes in an hour. Try again later, or redraft sections one at a time.');
+        }
+
+        $sent = 0;
+        foreach ($sections as $section) {
+            try {
+                $this->draft($section, $by);
+                $sent++;
+            } catch (StudioRefused) {
+                // Already being written, or nothing to draw on: skip it.
+            }
+        }
+        $account->log('system', "Asked the assistant to build the microsite ({$sent} section".($sent === 1 ? '' : 's').').', $by);
+
+        return $sent;
+    }
+
+    public function addSection(BusinessAccount $account, string $kind, ?Prospect $opportunity, ?int $after = null): MicrositeSection
     {
         if (! isset(MicrositeSection::KINDS[$kind])) {
             throw new StudioRefused('Unknown kind of section.');
@@ -56,16 +88,25 @@ class MicrositeService
         if ($opportunity !== null && $opportunity->business_account_id !== $account->id) {
             throw new StudioRefused('That opportunity belongs to another account.');
         }
-        [, $title, $brief] = MicrositeSection::KINDS[$kind];
+        [, $title, $brief, , $layout] = MicrositeSection::KINDS[$kind];
 
-        return $account->sections()->create([
-            'kind' => $kind,
-            'title' => $title,
-            'brief' => $brief ?: null,
-            'prospect_id' => $opportunity?->id,
-            'position' => (int) $account->sections()->max('position') + 1,
-            'status' => 'draft',
-        ]);
+        return DB::transaction(function () use ($account, $kind, $title, $brief, $layout, $opportunity, $after) {
+            $position = (int) $account->sections()->max('position') + 1;
+            if ($after !== null && ($anchor = $account->sections()->find($after)) !== null) {
+                $position = $anchor->position + 1;
+                $account->sections()->where('position', '>=', $position)->increment('position');
+            }
+
+            return $account->sections()->create([
+                'kind' => $kind,
+                'layout' => $layout,
+                'title' => $title,
+                'brief' => $brief ?: null,
+                'prospect_id' => $opportunity?->id,
+                'position' => $position,
+                'status' => 'draft',
+            ]);
+        });
     }
 
     /** @param  array<string, mixed>  $data */
@@ -75,7 +116,13 @@ class MicrositeService
             && ! Prospect::where('id', $data['prospect_id'])->where('business_account_id', $section->business_account_id)->exists()) {
             throw new StudioRefused('That opportunity belongs to another account.');
         }
+        if (isset($data['layout']) && (! $section->isWritten() || ! isset(MicrositeSection::LAYOUTS[$data['layout']]))) {
+            unset($data['layout']);
+        }
         $section->fill($data);
+        if (array_key_exists('content', $data)) {
+            $section->content = MicrositeSection::cleanContent($section->layout, $data['content']);
+        }
         if (array_key_exists('claim_ids', $data)) {
             $section->setRelation('opportunity', $section->prospect_id ? Prospect::with('offering')->find($section->prospect_id) : null);
             $section->claim_ids = Jobs\MicrositeSectionDraft::cleanClaimIds($data['claim_ids'], $section);
@@ -83,40 +130,99 @@ class MicrositeService
         $section->save();
     }
 
-    public function draft(MicrositeSection $section, User $by): void
+    /** The assistant (re)writes a section, following $instruction if one is given. */
+    public function draft(MicrositeSection $section, User $by, ?string $instruction = null): void
     {
         if (! $section->isWritten()) {
             throw new StudioRefused('This section shows material from the library as it is. There is nothing for the assistant to write.');
         }
-        if (in_array($section->kind, ['solution', 'evidence', 'faq'], true) && $section->prospect_id === null) {
-            throw new StudioRefused('Link this section to an opportunity first, so the assistant knows which product to draw on.');
+        if (in_array($section->kind, ['solution', 'how_it_works', 'evidence', 'faq'], true) && $section->offering() === null) {
+            throw new StudioRefused('Choose the product line this site presents first (Design), so the assistant knows which library to draw on.');
         }
         if ($section->isAssistantBusy()) {
             throw new StudioRefused('The assistant is already writing this section.');
         }
         $this->guardDraftRate($by);
+        $section->forceFill(['ai_instruction' => filled($instruction) ? mb_substr(trim($instruction), 0, 2000) : null])->save();
         $this->queue->dispatch(JobQueue::MICROSITE_SECTION, $section, $by);
     }
 
     /** @return int how many sections were sent to the assistant */
     public function draftEmpty(BusinessAccount $account, User $by): int
     {
-        $sent = 0;
-        foreach ($account->sections()->whereNull('body')->get() as $section) {
-            try {
-                $this->draft($section, $by);
-                $sent++;
-            } catch (StudioRefused) {
-                // Not one the assistant writes, or not linked yet: skip it.
-            }
-        }
+        return $this->build($account, $by, null);
+    }
 
-        return $sent;
+    /**
+     * Puts the account's sections in the given order. Ids not on the
+     * account are ignored, and any left out keep their place at the end.
+     *
+     * @param  list<int>  $ids
+     */
+    public function reorder(BusinessAccount $account, array $ids): void
+    {
+        DB::transaction(function () use ($account, $ids) {
+            $sections = $account->sections()->lockForUpdate()->get()->keyBy('id');
+            $ordered = collect($ids)->map(fn ($id) => $sections->get((int) $id))->filter()->unique('id');
+            $ordered = $ordered->concat($sections->except($ordered->pluck('id')->all())->values());
+            foreach ($ordered->values() as $i => $section) {
+                if ($section->position !== $i + 1) {
+                    $section->forceFill(['position' => $i + 1])->save();
+                }
+            }
+        });
+    }
+
+    /**
+     * Ticks or unticks a step of a shared action plan. Clients tick from
+     * their site (contributors only); admins from the builder.
+     */
+    public function setPlanStep(MicrositeSection $section, int $index, bool $done, ?MicrositeMember $member, ?User $by): void
+    {
+        if ($section->layout !== 'plan') {
+            throw new StudioRefused('That section is not an action plan.');
+        }
+        DB::transaction(function () use ($section, $index, $done, $member, $by) {
+            $section = MicrositeSection::lockForUpdate()->findOrFail($section->id);
+            $content = $section->c();
+            if (! isset($content['steps'][$index]) || (bool) ($content['steps'][$index]['done'] ?? false) === $done) {
+                return;
+            }
+            $content['steps'][$index]['done'] = $done;
+            $section->forceFill(['content' => $content])->save();
+            $step = $content['steps'][$index]['title'];
+            $who = $member?->label() ?? $by?->name ?? 'Someone';
+            $section->account->log($member ? 'client' : 'system', "{$who} ".($done ? 'ticked off' : 'reopened')." \"{$step}\" in the action plan.", $by, ['section' => $section->id] + ($member ? ['member' => $member->id] : []));
+        });
+    }
+
+    /**
+     * Seconds a member spent reading each section, sent from their browser.
+     * Capped so a tab left open does not count as hours of reading.
+     *
+     * @param  array<int|string, mixed>  $seconds  section id => seconds
+     */
+    public function recordReading(MicrositeMember $member, array $seconds): void
+    {
+        $sectionIds = $member->account->sections()->where('status', 'published')->pluck('id')->all();
+        $today = now()->toDateString();
+        foreach ($seconds as $id => $secs) {
+            $id = (int) $id;
+            $secs = min(600, max(0, (int) $secs));
+            if ($secs < 1 || ! in_array($id, $sectionIds, true)) {
+                continue;
+            }
+            DB::table('microsite_section_views')->upsert(
+                [['microsite_section_id' => $id, 'microsite_member_id' => $member->id, 'day' => $today, 'seconds' => $secs, 'created_at' => now(), 'updated_at' => now()]],
+                ['microsite_section_id', 'microsite_member_id', 'day'],
+                ['seconds' => DB::raw('LEAST(microsite_section_views.seconds + excluded.seconds, 14400)'), 'updated_at' => now()],
+            );
+        }
     }
 
     public function publish(MicrositeSection $section, User $by): void
     {
-        if ($section->isWritten() && blank($section->body)) {
+        if (! $section->hasContent()) {
             throw new StudioRefused('Write or draft the section before publishing it.');
         }
         if ($section->kind === 'proposal' && $section->opportunity?->publishedProposal === null) {
@@ -340,12 +446,18 @@ class MicrositeService
         }
     }
 
+    private function draftsLeft(User $by): int
+    {
+        $sent = StudioJob::where('created_by', $by->id)->where('kind', JobQueue::MICROSITE_SECTION)
+            ->where('created_at', '>=', now()->subHour())->count();
+
+        return max(0, (int) config('proposal-studio.microsite.hourly_drafts') - $sent);
+    }
+
     private function guardDraftRate(User $by): void
     {
         $limit = (int) config('proposal-studio.microsite.hourly_drafts');
-        $sent = StudioJob::where('created_by', $by->id)->where('kind', JobQueue::MICROSITE_SECTION)
-            ->where('created_at', '>=', now()->subHour())->count();
-        if ($sent >= $limit) {
+        if ($this->draftsLeft($by) === 0) {
             throw new StudioRefused("You have sent {$limit} sections to the assistant in the last hour, which is the limit. Please try again a little later.");
         }
     }

@@ -31,6 +31,9 @@ use Illuminate\Support\Str;
  * @property bool $site_show_progress
  * @property ?string $logo_path
  * @property ?string $brand_color
+ * @property ?int $offering_id
+ * @property ?string $site_goal
+ * @property ?string $site_theme
  */
 class BusinessAccount extends Model
 {
@@ -41,12 +44,20 @@ class BusinessAccount extends Model
         'dormant' => 'Dormant',
     ];
 
+    /** Theme => [label, what it looks like]. The first is the default. */
+    public const THEMES = [
+        'aurora' => ['Aurora', 'Dark, with glowing colour behind the opening'],
+        'daylight' => ['Daylight', 'Bright and clean, with their colour as the accent'],
+        'editorial' => ['Editorial', 'Warm paper and serif headings, like a printed proposal'],
+    ];
+
     public const SIZES = ['1–49', '50–249', '250–999', '1,000–4,999', '5,000+'];
 
     protected $fillable = [
         'name', 'website', 'industry', 'size', 'headquarters', 'stage', 'notes',
         'next_step', 'next_step_due', 'owner_user_id', 'created_by',
         'site_title', 'site_intro', 'site_show_progress', 'brand_color',
+        'offering_id', 'site_goal', 'site_theme',
     ];
 
     protected function casts(): array
@@ -61,6 +72,23 @@ class BusinessAccount extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    /** @return BelongsTo<Offering, $this> The product line the site presents. */
+    public function offering(): BelongsTo
+    {
+        return $this->belongsTo(Offering::class);
+    }
+
+    public function theme(): string
+    {
+        return array_key_exists((string) $this->site_theme, self::THEMES) ? $this->site_theme : array_key_first(self::THEMES);
+    }
+
+    /** Their colour, or our gold. */
+    public function accent(): string
+    {
+        return $this->brand_color ?: '#d4af37';
     }
 
     /** @return HasMany<BusinessContact, $this> */

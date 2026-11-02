@@ -115,30 +115,31 @@ TXT,
     /** One section of a business account's microsite. */
     public static function micrositeSection(MicrositeSection $section): string
     {
-        $section->loadMissing('account.contacts', 'opportunity.offering', 'opportunity.messages.user', 'comments.member');
+        $section->loadMissing('account.contacts', 'account.offering', 'opportunity.offering', 'opportunity.messages.user', 'comments.member');
         $account = $section->account;
         $opportunity = $section->opportunity;
-        $offering = $opportunity?->offering;
-        $query = implode(' ', array_filter([$account->industry, $section->title, $section->brief, $opportunity?->profile['summary'] ?? null]));
+        $offering = $section->offering();
+        $query = implode(' ', array_filter([$account->industry, $account->site_goal, $section->title, $section->brief, $section->ai_instruction, $opportunity?->profile['summary'] ?? null]));
 
-        $others = $account->sections()->where('id', '!=', $section->id)->whereNotNull('body')->get()
-            ->map(fn (MicrositeSection $s) => "## {$s->title} ({$s->kindLabel()}, {$s->status})\n".mb_substr((string) $s->body, 0, 1500))
+        $others = $account->sections()->where('id', '!=', $section->id)->get()
+            ->map(fn (MicrositeSection $s) => "## {$s->position}. {$s->title} ({$s->kindLabel()}, {$s->layoutLabel()}, {$s->status})".($s->hasContent() && $s->isWritten() ? "\n".mb_substr($s->summary(), 0, 1200) : ''))
             ->implode("\n\n");
         $comments = $section->comments
             ->map(fn ($c) => '- '.($c->member?->label() ?? 'Someone').': '.$c->body.($c->reply ? "\n  Our reply: {$c->reply}" : ''))
             ->implode("\n");
 
         return self::join([
-            $offering ? self::offering($offering) : "# OFFERING\nNo opportunity is linked to this section, so there is no product material. Write only about the company and working with Q3, and state no product facts.",
+            $offering ? self::offering($offering) : "# OFFERING\nThis site does not present a product line yet, so there is no product material. Write only about the company and working with Q3, and state no product facts.",
             $offering ? app(Knowledge::class)->claimsBlock($offering) : null,
             $offering ? app(Knowledge::class)->documentsBlock($offering, $query) : null,
             $offering ? self::lessons($offering, $opportunity) : null,
             self::account($account),
+            $account->site_goal ? "# WHAT THIS SITE IS FOR (from the admin)\n{$account->site_goal}" : null,
             $opportunity ? self::prospect($opportunity) : null,
             $opportunity ? self::conversation($opportunity) : null,
             $opportunity?->publishedProposal ? "# THEIR PUBLISHED PROPOSAL (v{$opportunity->publishedProposal->version})\n".json_encode($opportunity->publishedProposal->content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null,
-            $others ? "# THE REST OF THEIR MICROSITE\nDo not repeat what these sections already say.\n\n{$others}" : null,
-            $section->body ? "# THIS SECTION NOW\n{$section->body}" : null,
+            $others ? "# THE WHOLE SITE, IN ORDER\nWrite this section to fit the story the site tells, and do not repeat what other sections say.\n\n{$others}" : null,
+            $section->hasContent() && $section->isWritten() ? "# THIS SECTION NOW\n".$section->summary() : null,
             $comments ? "# FEEDBACK FROM THEIR PEOPLE ON THIS SECTION\n{$comments}" : null,
             self::sectionTask($section, $offering !== null),
         ]);
@@ -211,30 +212,52 @@ TXT,
     private static function sectionTask(MicrositeSection $section, bool $hasOffering): string
     {
         $brief = $section->brief ?: (MicrositeSection::KINDS[$section->kind][2] ?? '');
+        $instruction = $section->ai_instruction ? "\nThe admin's instruction for this draft, which comes first:\n{$section->ai_instruction}\n" : '';
         $claims = $hasOffering
-            ? ($section->kind === 'evidence'
-                ? '"claim_ids" lists the approved claims that matter most to this company, most relevant first, at most eight. "body" is a short introduction to them.'
-                : '"claim_ids" may list up to four approved claims that support what the section says, or none.')
+            ? ($section->layout === 'proof'
+                ? '"claim_ids" lists the approved claims that matter most to this company, most relevant first, between three and eight. Choose claims whose numbers speak to their situation.'
+                : '"claim_ids" may list up to three approved claims that back up what the section says, or none.')
             : '"claim_ids" is [].';
+        $icons = implode(', ', MicrositeSection::ICONS);
+
+        [$shape, $guide] = match ($section->layout) {
+            'hero' => ['{"title": "", "content": {"eyebrow": "", "headline": "", "lead": "", "highlights": ["", "", ""]}, "claim_ids": []}',
+                '"headline" is the line they remember: about them and what changes for them, at most 12 words, not a slogan about us. "eyebrow" is a few words above it (for example their name and the subject). "lead" is one or two sentences. "highlights" are three short phrases (2 to 5 words) naming what the site covers for them.'],
+            'cards' => ['{"title": "", "content": {"lead": "", "items": [{"icon": "", "title": "", "text": ""}]}, "claim_ids": []}',
+                "\"lead\" is one or two sentences. \"items\" has three to six cards: a title of 2 to 6 words and one or two sentences of text each. \"icon\" is one of: {$icons}."],
+            'timeline' => ['{"title": "", "content": {"lead": "", "steps": [{"title": "", "text": "", "when": ""}]}, "claim_ids": []}',
+                '"steps" has three to six steps in order. "when" is a short, honest timing such as "Week 1" or "After the survey", or empty when unknown.'],
+            'proof' => ['{"title": "", "content": {"lead": ""}, "claim_ids": []}',
+                '"lead" is one or two sentences saying why these results matter to them. It must not restate any result.'],
+            'faq' => ['{"title": "", "content": {"lead": "", "items": [{"q": "", "a": ""}]}, "claim_ids": []}',
+                '"items" has four to eight questions a company like this asks, in their words, each answered in two to four sentences from the documents. Where the honest answer is "it depends" or "we will confirm", say so.'],
+            'plan' => ['{"title": "", "content": {"lead": "", "steps": [{"title": "", "owner": "us", "when": "", "done": false}]}, "claim_ids": []}',
+                '"steps" is a shared plan from here to a decision and the start of work: four to eight steps, each a short action. "owner" is "us" (Q3), "you" (their people) or "both". "when" is a rough timing or empty. Mark a step "done": true only if the conversation shows it has happened.'],
+            'cta' => ['{"title": "", "content": {"headline": "", "text": "", "button_label": ""}, "claim_ids": []}',
+                '"headline" is a short, confident close. "text" is one or two sentences. "button_label" is 2 to 4 words for the one next step (the admin sets where it goes).'],
+            default => ['{"title": "", "body": "", "claim_ids": []}',
+                '"body" is Markdown: paragraphs, lists and bold, with ### subheadings only if it is long. No top-level heading. 80 to 300 words.'],
+        };
 
         return <<<TXT
 # YOUR TASK
-Write the "{$section->title}" section ({$section->kindLabel()}) of the private microsite Q3 is building for this company. Their people read it. It is written by Q3, presenting the vendor's product, and speaks to them directly ("you").
+Write the "{$section->title}" section ({$section->kindLabel()}, shown as {$section->layoutLabel()}) of the private microsite Q3 is building for this company. Their decision makers read it, often on a phone. It is written by Q3, presenting the vendor's product, and speaks to them directly ("you"). Make it specific to them: their buildings, their people, their goals. Write like a sharp consultant, not a brochure: short sentences, concrete, no hype words.
 
 The admin's brief for this section:
 {$brief}
-
-- "body" is Markdown: paragraphs, lists and bold, with ### subheadings only if the section is long. No top-level heading; the title is shown above it. Aim for 80 to 300 words.
-- "body" must not state any performance, safety, health, test or certification result. Those appear only through "claim_ids", shown word for word beneath the text, so do not repeat them.
+{$instruction}
+- {$guide}
+- No text field may state any performance, safety, health, test or certification result. Those appear only through "claim_ids", shown word for word beside the text, so do not repeat or paraphrase them.
 - {$claims}
 - Where their people have left feedback on this section, address it.
 - Do not mention prices.
-- "title" may improve on the current title, or repeat it.
+- "title" may improve on the current title (at most 8 words), or repeat it.
+- Plain text in every field except "body"; no Markdown there.
 
 Answer with only this fenced block:
 
 ```section
-{"title": "", "body": "", "claim_ids": []}
+{$shape}
 ```
 TXT;
     }

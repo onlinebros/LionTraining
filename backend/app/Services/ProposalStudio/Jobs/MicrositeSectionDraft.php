@@ -23,15 +23,36 @@ class MicrositeSectionDraft implements Handler
     {
         $section = $this->section($job);
         $decoded = Prompts::fenced($text, 'section');
-        if ($decoded === null || ! is_string($decoded['body'] ?? null) || trim($decoded['body']) === '') {
+        if ($decoded === null) {
             throw new RuntimeException('The section did not come back in the expected form.');
+        }
+        $body = is_string($decoded['body'] ?? null) ? trim($decoded['body']) : '';
+        $content = MicrositeSection::cleanContent($section->layout, $decoded['content'] ?? []);
+        $claimIds = self::cleanClaimIds($decoded['claim_ids'] ?? [], $section);
+        if ($section->layout === 'plan') {
+            // Steps already ticked off stay ticked off.
+            $done = collect($section->c()['steps'] ?? [])->filter(fn ($s) => $s['done'] ?? false)->pluck('title')->all();
+            $content['steps'] = array_map(fn ($s) => ['done' => $s['done'] || in_array($s['title'], $done, true)] + $s, $content['steps']);
+        }
+        if ($section->layout === 'cta') {
+            $content['button_url'] = $section->c()['button_url'] ?? '';
+        }
+        $filled = match ($section->layout) {
+            'text' => $body !== '',
+            'proof' => $claimIds !== [] || ($content['lead'] ?? '') !== '',
+            default => implode('', array_map(fn ($v) => is_array($v) ? json_encode($v) : (string) $v, array_filter($content))) !== '',
+        };
+        if (! $filled) {
+            throw new RuntimeException('The section came back empty.');
         }
 
         $title = is_string($decoded['title'] ?? null) ? trim($decoded['title']) : '';
         $section->forceFill([
             'title' => mb_substr($title !== '' ? $title : $section->title, 0, 255),
-            'body' => trim($decoded['body']),
-            'claim_ids' => self::cleanClaimIds($decoded['claim_ids'] ?? [], $section),
+            'body' => $section->layout === 'text' ? $body : null,
+            'content' => $section->layout === 'text' ? null : $content,
+            'claim_ids' => $claimIds,
+            'ai_instruction' => null,
             'drafted_at' => now(),
         ])->save();
 
@@ -65,6 +86,6 @@ class MicrositeSectionDraft implements Handler
 
     private function section(StudioJob $job): MicrositeSection
     {
-        return MicrositeSection::with('account', 'opportunity.offering')->findOrFail($job->subject_id);
+        return MicrositeSection::with('account.offering', 'opportunity.offering')->findOrFail($job->subject_id);
     }
 }

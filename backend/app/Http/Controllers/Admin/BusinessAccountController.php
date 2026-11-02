@@ -171,6 +171,9 @@ class BusinessAccountController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
         $account->log('system', "Opportunity started for {$prospect->offering->name}.", $request->user(), ['prospect' => $prospect->id]);
+        if ($account->offering_id === null) {
+            $account->forceFill(['offering_id' => $prospect->offering_id])->save();
+        }
         if ($account->stage === 'target') {
             $this->accounts->update($account, ['stage' => 'engaged'], $request->user());
         }
