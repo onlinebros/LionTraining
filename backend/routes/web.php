@@ -72,6 +72,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => view('public.home'))->name('home');
 
+// Live links: q3.life/live-zoom → wherever Admin → Live Links points it today.
+// Only "live-…" paths match, so no other top-level page can be captured.
+Route::get('/{slug}', \App\Http\Controllers\LiveLinkRedirectController::class)
+    ->where('slug', \App\Models\LiveLink::SLUG_PATTERN)
+    ->middleware('throttle:120,1')
+    ->name('live-links.go');
+
 // Referral sign-up (public, no auth required, before guest middleware)
 Route::get('/join/{code}', [UserAuthController::class, 'showReferral'])->name('join');
 Route::post('/join/{code}', [UserAuthController::class, 'registerViaReferral'])->name('join.post');
@@ -617,6 +624,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [SiteSettingController::class, 'index'])->name('index');
             Route::post('/', [SiteSettingController::class, 'update'])->name('update');
             Route::delete('logo', [SiteSettingController::class, 'removeLogo'])->name('logo.remove');
+        });
+
+        // Live links (q3.life/live-zoom …) — super admin only: they decide where
+        // an address on the company's own domain sends people.
+        Route::prefix('live-links')->name('live-links.')->middleware('super_admin')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\LiveLinkController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Admin\LiveLinkController::class, 'store'])->name('store');
+            Route::put('/{liveLink}', [\App\Http\Controllers\Admin\LiveLinkController::class, 'update'])->name('update');
+            Route::delete('/{liveLink}', [\App\Http\Controllers\Admin\LiveLinkController::class, 'destroy'])->name('destroy');
         });
 
         // Support tickets
