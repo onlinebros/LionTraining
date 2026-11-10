@@ -80,6 +80,7 @@ class LiveLinksTest extends TestCase
 
     public function test_super_admin_points_a_link_somewhere_new(): void
     {
+        config(['live_links.public_base_url' => 'https://q3.life']);
         $admin = $this->user(Role::SUPER_ADMIN);
         $link  = LiveLink::where('slug', 'live-zoom')->first();
 
