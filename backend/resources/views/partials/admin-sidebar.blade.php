@@ -203,7 +203,7 @@
                     {{-- Presentations --}}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
-                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.presentations.*', 'admin.funnels.*', 'admin.cta-items.*') ? 'active' : '' }}" href="#">
+                        <a class="sidebar-link sidebar-title {{ request()->routeIs('admin.presentations.*', 'admin.funnels.*', 'admin.cta-items.*', 'admin.live-links.*') ? 'active' : '' }}" href="#">
                             <svg class="stroke-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#stroke-coming-soon') }}"></use></svg>
                             <svg class="fill-icon"><use href="{{ asset('assets/svg/icon-sprite.svg#fill-coming-soon') }}"></use></svg>
                             <span>Presentations</span>
@@ -222,6 +222,10 @@
                             <li><a href="{{ route('member.presentations.live') }}">Your Rooms</a></li>
                             <li><a href="{{ route('admin.cta-items.index') }}"
                                    class="{{ request()->routeIs('admin.cta-items.*') ? 'active' : '' }}">Calls To Action</a></li>
+                            @if(auth()->user()?->isSuperAdmin())
+                            <li><a href="{{ route('admin.live-links.index') }}"
+                                   class="{{ request()->routeIs('admin.live-links.*') ? 'active' : '' }}">Live Links</a></li>
+                            @endif
                         </ul>
                     </li>
 
